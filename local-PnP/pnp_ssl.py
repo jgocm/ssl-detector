@@ -1,9 +1,10 @@
-import cv2
+
 import numpy as np
+import cv2
 import math
 
-img = cv2.imread('/home/joao/ssl-detector/6.jpg',1)
-img = cv2.imread('/home/joao/ssl-detector/25.jpg',1)
+#img = cv2.imread('/home/joao/ssl-detector/6.jpg',1)
+img = cv2.imread('../ssl-detector/25.jpg',1)
 height = 0
 
 test_point = np.array([(324,102,1)])
