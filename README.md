@@ -1,2 +1,2 @@
 # ssl-detector
-Object Detection and Localization for RobpCup SSL using Jetson Nano
+Object Detection and Localization for RoboCup SSL using Jetson Nano
