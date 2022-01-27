@@ -1,0 +1,16 @@
+SSL VISION
+POSITION        |   IMAGE PATH      |   COORDINATES
+FIELD CENTER    |   experiments/30  |   -3.87, 62.50
+CENTER LINE     |   32              |   -1151.76, 19.80
+RANDOM POSE     |   30              |   -1167.15, -1243.98
+
+----------------------------------------------------------
+
+ON BOARD VISION
+POSITION        |   IMAGE PATH      |   COORDINATES    
+FIELD CENTER    |   experiments/30  |   -13.71, 26.39
+CENTER LINE     |   32              |   -939.91, 15.33
+RANDOM POSE     |   30              |   -1478.26, -1115.90
+
+*all measures are in milimeters
+**calibration nbr: 30

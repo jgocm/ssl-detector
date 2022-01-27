@@ -138,7 +138,8 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 controller = GUI(img=img, play=play, display_menu=False, mode=mode)
 
 # experiment number
-exp_nr = 25
+exp_nr = 32
+load_nr = 30
 
 while input.isOpened():
     timeStamp = time.time()
@@ -146,7 +147,7 @@ while input.isOpened():
     if controller.play==True:
         # capture the next image
         ret, frame = input.read()
-        #frame = cv2.imread('/home/joao/ssl-detector/19.jpg')
+        frame = cv2.imread('experiments/30.jpg')
         #frame = cv2.imread('/home/joao/ssl-dataset/1_resized/00285.jpg')
         last_frame = frame
 
@@ -338,7 +339,7 @@ while input.isOpened():
             exp_nr+=1
         print('IMAGE SAVED')
     elif key & 0xFF == ord('l'):
-        nr=25
+        nr=load_nr
         points2d = np.loadtxt(f'experiments/{nr}_points2d.txt', dtype="float64")
         points3d = np.loadtxt(f'experiments/{nr}_points3d.txt', dtype="float64")
         # FIND CAMERA POSE

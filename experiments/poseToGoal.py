@@ -3,9 +3,10 @@ import numpy as np
 import math
 
 #img = cv2.imread('/home/joao/ssl-detector/experiments/25.jpg')
-img = cv2.imread('experiments/25.jpg')
+img = cv2.imread('experiments/30.jpg')
+#img = cv2.imread('30.jpg')
 
-nr = 25
+nr = 30
 points2d = np.loadtxt(f'experiments/{nr}_points2d.txt', dtype="float64")
 points3d = np.loadtxt(f'experiments/{nr}_points3d.txt', dtype="float64")
 
@@ -72,7 +73,7 @@ print(cameraPosition)
 camera_height = cameraPosition[2,0]
 
 # TEST POINT:
-test_point = np.array([(320,51,1)])     # goal middle
+test_point = np.array([(318,52,1)])     # goal middle
 test_point_height = 0
 
 # FIND TEST POINT GLOBAL POSITION
@@ -104,7 +105,7 @@ print('POINT TO CAMERA RELATIVE POSITION WITH NEW ROTATION MATRIX')
 print(pCam)
 
 # GOAL POINTS RELATIVE POSITIONS TO CAMERA
-goalMiddle = np.array([(320,52,1)])
+goalMiddle = np.array([(318,52,1)])
 cv2.circle(img,(int(goalMiddle[0][0]),int(goalMiddle[0][1])),3,(0,0,255),-1)
 d = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.transpose(goalMiddle)))
 s = camera_height/d[2]
@@ -113,7 +114,7 @@ x, y = p[0], p[1]
 print('GOAL CENTER RELATIVE POSITION')
 print(p)
 
-goalLeft = np.array([(255,52,1)])
+goalLeft = np.array([(252,52,1)])
 cv2.circle(img,(int(goalLeft[0][0]),int(goalLeft[0][1])),3,(0,0,255),-1)
 d1 = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.transpose(goalLeft)))
 s1 = camera_height/d1[2]
@@ -122,7 +123,7 @@ x1, y1 = p1[0], p1[1]
 print('GOAL LEFT CORNER RELATIVE POSITION')
 print(p1)
 
-goalRight = np.array([(385,52,1)])
+goalRight = np.array([(383,52,1)])
 cv2.circle(img,(int(goalRight[0][0]),int(goalRight[0][1])),3,(0,0,255),-1)
 d2 = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.transpose(goalRight)))
 s2 = camera_height/d2[2]
@@ -178,4 +179,3 @@ while True:
     key = cv2.waitKey(0) 
     if key & 0xFF==ord('q'):
         break
-

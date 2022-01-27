@@ -19,7 +19,7 @@ def mark_point(event,x,y,flags,params):
 
 if __name__=="__main__":
 
-    img = cv2.imread('/home/joao/ssl-detector/23.jpg',1)
+    img = cv2.imread('/home/joao/ssl-detector/30.jpg',1)
     #input = cv2.VideoCapture('/dev/video0')
     line_x = 320
     line_y = 240

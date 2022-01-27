@@ -267,50 +267,45 @@ class camera():
         p1 = self.pixelToCameraCoordinates(x1,y1)   # goal lower left corner relative position to camera
         p2 = self.pixelToCameraCoordinates(x2,y2)   # goal lower right corner relative position to camera
 
-        # CAMERA TO BBOX POINTS DISTANCES
-        d = cv2.sqrt(p[0]*p[0]+p[1]*p[1])
-        d1 = cv2.sqrt(p1[0]*p1[0]+p1[1]*p1[1])
-        d2 = cv2.sqrt(p2[0]*p2[0]+p2[1]*p2[1])
-
-        # GOAL LENGTH
-        l = 710                    # goal length in milimeters 
-
         # AXIS ROTATION
-        l = 710
-        tan_theta1 = (y1-y2)/(x2-x1)
-        theta1=np.arctan(tan_theta1)
-        print(f'theta={theta1}')
-        s1 = math.sin(theta1)
-        c1 = math.cos(theta1)
-
-        sin_theta2 = (l*(y1-y2))/((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
-        theta2=np.arcsin(sin_theta2)
-        print(f'theta={theta2}')
-        s2 = math.sin(theta2)
-        c2 = math.cos(theta2)
-
-        theta = (theta1+theta2)/2
+        tan_theta = (y1-y2)/(x2-x1)
+        theta=np.arctan(tan_theta)
+        #theta=-0.7629
+        print(f'Z AXIS ROTATION IN DEGREES:')
+        print(f'theta={math.degrees(theta)}')
+        #theta = math.radians(theta)
         s = math.sin(theta)
         c = math.cos(theta)
+        print(f'theta sine={s}')
+        print(f'theta cosine={c}')
 
+        # ROBOT ABSOLUTE POSITION
+        x0 = 0
+        y0 = 3000
+        xt = c*x-s*y-x0
+        yt = s*x+c*y-y0
+        print('ROBOT TRANSLATION BASED ON GOAL CENTER')
+        print(xt,yt)
+
+        x0 = -350
+        y0 = 3000
+        xt = c*x1-s*y1-x0
+        yt = s*x1+c*y1-y0
+        print('ROBOT TRANSLATION BASED ON GOAL LEFT CORNER')
+        print(xt,yt)
+
+        x0 = 350
+        y0 = 3000
+        xt = c*x2-s*y2-x0
+        yt = s*x2+c*y2-y0
+        print('CAMERA TRANSLATION BASED ON GOAL RIGHT CORNER')
+        print(xt,yt)
+
+        # GOAL LENGTH
+        #l = 710                    # goal length in milimeters  
         l = c*(x2-x1)-s*(y2-y1)     # goal length according to camera positions
         print(f'goal length={l}')
-
-        # CAMERA ABSOLUTE POSITION
-        x0 = s*y-c*x
-        y0 = s*x+c*y
-        print(f'camera absolute position:{x0},{y0}')
-
-        # UPDATE CAMERA POSITION
-        cam_x = x0
-        cam_y = y0
-        position = np.array([(cam_x,cam_y,1)]).T
-
-        # UPDATE Z AXIS ROTATION
-        theta_z = theta
-        #self.updateRotation(theta_z=theta_z)
-
-        return position
+        #return position
               
 
 def main():
