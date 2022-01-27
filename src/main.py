@@ -138,8 +138,8 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 controller = GUI(img=img, play=play, display_menu=False, mode=mode)
 
 # experiment number
-exp_nr = 32
-load_nr = 30
+exp_nr = 46
+load_nr = 33
 
 while input.isOpened():
     timeStamp = time.time()
@@ -147,7 +147,7 @@ while input.isOpened():
     if controller.play==True:
         # capture the next image
         ret, frame = input.read()
-        frame = cv2.imread('experiments/30.jpg')
+        #frame = cv2.imread('experiments/30.jpg')
         #frame = cv2.imread('/home/joao/ssl-dataset/1_resized/00285.jpg')
         last_frame = frame
 
@@ -205,7 +205,7 @@ while input.isOpened():
                     right_bottom = points2d[3]
                     center_bottom = (left_bottom+right_bottom)/2
                     flag = ssl_robot.isLocated()
-                    flag = True
+                    flag = False
                     color=(0,255,0)
                     pointToCamera = vision.pixelToCameraCoordinates(x=center_bottom[0],y=center_bottom[1])
                     pointToField = pointToCamera
@@ -250,6 +250,7 @@ while input.isOpened():
                     ballAsPoint = controller.ballAsPoint(left=left, top=top, right=right, bottom=bottom)
                     ballToCamera = vision.pixelToCameraCoordinates(x=ballAsPoint[0],y=ballAsPoint[1])
                     flag = ssl_robot.isLocated()
+                    flag = False
                     ballToField = None
                     color=(255,0,0)
                     if flag:
@@ -272,6 +273,7 @@ while input.isOpened():
                     robotToField = robotToCamera
                     color=(0,0,255)
                     flag = True
+                    flag = False
                     if flag:
                         robotToField = vision.pixelToWorldCoordinates(x=robotAsPoint[0],y=robotAsPoint[1],height=0)
 
@@ -289,6 +291,7 @@ while input.isOpened():
             pointToCamera = vision.pixelToCameraCoordinates(x=x,y=y)
             flag = ssl_robot.isLocated()
             pointToField = None
+            flag = False
             if flag:
                 pointToField = vision.pixelToWorldCoordinates(x=x,y=y,height=0)
 
@@ -336,8 +339,8 @@ while input.isOpened():
             np.savetxt(f'experiments/{exp_nr}_points2d.txt',points2d)
             np.savetxt(f'experiments/{exp_nr}_points3d.txt',points3d)
             print(f'EXPERIMENT {exp_nr} DATA SAVED')
-            exp_nr+=1
         print('IMAGE SAVED')
+        exp_nr+=1
     elif key & 0xFF == ord('l'):
         nr=load_nr
         points2d = np.loadtxt(f'experiments/{nr}_points2d.txt', dtype="float64")
