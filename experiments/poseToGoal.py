@@ -3,10 +3,10 @@ import numpy as np
 import math
 
 #img = cv2.imread('/home/joao/ssl-detector/experiments/25.jpg')
-img = cv2.imread('experiments/30.jpg')
-#img = cv2.imread('30.jpg')
+#img = cv2.imread('experiments/30.jpg')
+img = cv2.imread('39.jpg')
 
-nr = 30
+nr = 33
 points2d = np.loadtxt(f'experiments/{nr}_points2d.txt', dtype="float64")
 points3d = np.loadtxt(f'experiments/{nr}_points3d.txt', dtype="float64")
 
@@ -25,6 +25,8 @@ rmtx, jacobian=cv2.Rodrigues(rvec)
 pose = cv2.hconcat((rmtx,tvec))
 
 K, R, _, rX, rY, rZ, euler_angles = cv2.decomposeProjectionMatrix(pose)
+
+#euler_angles = np.loadtxt(f'experiments/{nr}_camera_rotation.txt', dtype="float64")
 
 theta_x = euler_angles[0][0]    # global x axis
 theta_y = euler_angles[1][0]    # global y axis
@@ -72,8 +74,24 @@ cameraPosition = -np.matrix(rmtx).T*np.matrix(tvec)
 print(cameraPosition)
 camera_height = cameraPosition[2,0]
 
-# TEST POINT:
-test_point = np.array([(318,52,1)])     # goal middle
+# TEST POINTS:
+'''
+IMAGE 42:
+goalCenter = np.array([(318,79,1)])
+goalLeft = np.array([(198,85,1)])
+goalRight = np.array([(406,75,1)])'''
+
+'''
+IMAGE 39:
+goalCenter = np.array([(322,56,1)])
+goalLeft = np.array([(256,56,1)])
+goalRight = np.array([(388,56,1)])'''
+
+goalCenter = np.array([(322,56,1)])
+goalLeft = np.array([(256,56,1)])
+goalRight = np.array([(388,56,1)])
+
+test_point = goalCenter     # goal middle
 test_point_height = 0
 
 # FIND TEST POINT GLOBAL POSITION
@@ -102,32 +120,30 @@ leftsideMat = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.tran
 s = camera_height/leftsideMat[2]
 pCam = -s*leftsideMat
 print('POINT TO CAMERA RELATIVE POSITION WITH NEW ROTATION MATRIX')
-print(pCam)
+print(pCam+cameraPosition)
 
 # GOAL POINTS RELATIVE POSITIONS TO CAMERA
-goalMiddle = np.array([(318,52,1)])
+goalMiddle = goalCenter
 cv2.circle(img,(int(goalMiddle[0][0]),int(goalMiddle[0][1])),3,(0,0,255),-1)
 d = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.transpose(goalMiddle)))
 s = camera_height/d[2]
-p = -s*d
+p = -s*d+cameraPosition
 x, y = p[0], p[1]
 print('GOAL CENTER RELATIVE POSITION')
 print(p)
 
-goalLeft = np.array([(252,52,1)])
 cv2.circle(img,(int(goalLeft[0][0]),int(goalLeft[0][1])),3,(0,0,255),-1)
 d1 = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.transpose(goalLeft)))
 s1 = camera_height/d1[2]
-p1 = -s1*d1
+p1 = -s1*d1+cameraPosition
 x1, y1 = p1[0], p1[1]
 print('GOAL LEFT CORNER RELATIVE POSITION')
 print(p1)
 
-goalRight = np.array([(383,52,1)])
 cv2.circle(img,(int(goalRight[0][0]),int(goalRight[0][1])),3,(0,0,255),-1)
 d2 = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.transpose(goalRight)))
 s2 = camera_height/d2[2]
-p2 = -s2*d2
+p2 = -s2*d2+cameraPosition
 x2, y2 = p2[0],p2[1]
 print('GOAL RIGHT CORNER RELATIVE POSITION')
 print(p2)
@@ -170,9 +186,12 @@ print('CAMERA GLOBAL POSITION DURING CALIBRATION')
 print(rightsideMat)
 
 # GOAL LENGTH
-#l = 710                    # goal length in milimeters  
+L = 710                     # goal length in milimeters  
 l = c*(x2-x1)-s*(y2-y1)     # goal length according to camera positions
 print(f'goal length={l}')
+
+# error measure:
+e = L - l
 
 while True:
     cv2.imshow('img', img)

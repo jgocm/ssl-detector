@@ -16,18 +16,18 @@ class camera():
         self.intrinsic_parameters = camera_matrix
         self.distortion_parameters = camera_distortion
 
-        euler_angles = np.array([(94.0588, -3.8788, -1.2585)]).T
+        #euler_angles = np.array([(94.0588, -3.8788, -1.2585)]).T
 
         self.rotation_vector = None
         self.rotation_matrix = None
         self.translation_vector = None
 
         self.calib_position = None
-        self.calib_rotation = euler_angles
+        self.calib_rotation = None
         self.calib_height = camera_height
 
         self.position = camera_initial_position
-        self.rotation = euler_angles
+        self.rotation = None
         self.height = camera_height
         
     def getIntrinsicParameters(self):
@@ -114,7 +114,7 @@ class camera():
 
         self.position = camera_position
         self.rotation = euler_angles
-        self.camera_height = height
+        self.height = height
 
         return camera_position, euler_angles, height
 
@@ -200,10 +200,14 @@ class camera():
         ])
         
         rmtx = rZ_cam @ rY_cam @ rX_cam
-        leftsideMat = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.transpose(uvPoint)))
-        s = -height/leftsideMat[2]
 
-        p = s*leftsideMat
+        tvec = self.translation_vector
+        camera_position = -np.matrix(self.rotation_matrix).T*np.matrix(tvec)
+        
+        leftsideMat = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.transpose(uvPoint)))
+        s = height/leftsideMat[2]
+
+        p = -s*leftsideMat+camera_position
 
         return p
 

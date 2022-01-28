@@ -147,7 +147,8 @@ while input.isOpened():
     if controller.play==True:
         # capture the next image
         ret, frame = input.read()
-        #frame = cv2.imread('experiments/30.jpg')
+        #frame = cv2.imread('experiments/42.jpg')
+        frame = cv2.imread('/home/joao/Desktop/ssl-detector/39.jpg')
         #frame = cv2.imread('/home/joao/ssl-dataset/1_resized/00285.jpg')
         last_frame = frame
 
@@ -289,7 +290,7 @@ while input.isOpened():
             x, y = point[0]
             color = point[1]
             pointToCamera = vision.pixelToCameraCoordinates(x=x,y=y)
-            flag = ssl_robot.isLocated()
+            #flag = ssl_robot.isLocated()
             pointToField = None
             flag = False
             if flag:
