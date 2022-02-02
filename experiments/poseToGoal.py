@@ -4,7 +4,7 @@ import math
 
 #img = cv2.imread('/home/joao/ssl-detector/experiments/25.jpg')
 #img = cv2.imread('experiments/30.jpg')
-img = cv2.imread('58.jpg')
+img = cv2.imread('62.jpg')
 
 nr = 47
 points2d = np.loadtxt(f'experiments/{nr}_points2d.txt', dtype="float64")
@@ -87,9 +87,24 @@ goalCenter = np.array([(322,56,1)])
 goalLeft = np.array([(256,56,1)])
 goalRight = np.array([(388,56,1)])'''
 
+'''IMAGE 58:
 goalCenter = np.array([(305,70,1)])
 goalLeft = np.array([(219,78,1)])
-goalRight = np.array([(372,65,1)])
+goalRight = np.array([(372,65,1)])'''
+
+'''IMAGE 51:
+goalCenter = np.array([(313,51,1)])
+goalLeft = np.array([(246,51,1)])
+goalRight = np.array([(377,51,1)])'''
+
+'''IMAGE 47:
+goalCenter = np.array([(322,52,1)])
+goalLeft = np.array([(258,52,1)])
+goalRight = np.array([(389,52,1)])'''
+
+goalLeft = np.array([(293,78,1)])
+goalCenter = np.array([(400,78,1)])
+goalRight = np.array([(507,78,1)])
 
 test_point = goalCenter     # goal middle
 test_point_height = 0
@@ -152,7 +167,7 @@ print(p2)
 tan_theta = (y1-y2)/(x2-x1)
 theta=np.arctan(tan_theta)
 
-theta=-2*np.arctan(np.sqrt(x2-x1-355)/np.sqrt(x2-x1+355))
+#theta=-2*np.arctan(np.sqrt(x2-x1-355)/np.sqrt(x2-x1+355))
 print(f'Z AXIS ROTATION IN DEGREES:')
 print(f'theta={math.degrees(theta)}')
 #theta = math.radians(theta)
@@ -193,6 +208,6 @@ e = L - l
 
 while True:
     cv2.imshow('img', img)
-    key = cv2.waitKey(0) 
+    key = cv2.waitKey(1) 
     if key & 0xFF==ord('q'):
         break
