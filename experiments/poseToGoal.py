@@ -4,9 +4,9 @@ import math
 
 #img = cv2.imread('/home/joao/ssl-detector/experiments/25.jpg')
 #img = cv2.imread('experiments/30.jpg')
-img = cv2.imread('39.jpg')
+img = cv2.imread('58.jpg')
 
-nr = 33
+nr = 47
 points2d = np.loadtxt(f'experiments/{nr}_points2d.txt', dtype="float64")
 points3d = np.loadtxt(f'experiments/{nr}_points3d.txt', dtype="float64")
 
@@ -87,9 +87,9 @@ goalCenter = np.array([(322,56,1)])
 goalLeft = np.array([(256,56,1)])
 goalRight = np.array([(388,56,1)])'''
 
-goalCenter = np.array([(322,56,1)])
-goalLeft = np.array([(256,56,1)])
-goalRight = np.array([(388,56,1)])
+goalCenter = np.array([(305,70,1)])
+goalLeft = np.array([(219,78,1)])
+goalRight = np.array([(372,65,1)])
 
 test_point = goalCenter     # goal middle
 test_point_height = 0
@@ -151,7 +151,8 @@ print(p2)
 # AXIS ROTATION
 tan_theta = (y1-y2)/(x2-x1)
 theta=np.arctan(tan_theta)
-#theta=-0.7629
+
+theta=-2*np.arctan(np.sqrt(x2-x1-355)/np.sqrt(x2-x1+355))
 print(f'Z AXIS ROTATION IN DEGREES:')
 print(f'theta={math.degrees(theta)}')
 #theta = math.radians(theta)
@@ -166,24 +167,21 @@ y0 = 3000
 xt = c*x-s*y-x0
 yt = s*x+c*y-y0
 print('ROBOT TRANSLATION BASED ON GOAL CENTER')
-print(xt,yt)
+print(-xt,-yt)
 
 x0 = -350
 y0 = 3000
 xt = c*x1-s*y1-x0
 yt = s*x1+c*y1-y0
 print('ROBOT TRANSLATION BASED ON GOAL LEFT CORNER')
-print(xt,yt)
+print(-xt,-yt)
 
 x0 = 350
 y0 = 3000
 xt = c*x2-s*y2-x0
 yt = s*x2+c*y2-y0
 print('CAMERA TRANSLATION BASED ON GOAL RIGHT CORNER')
-print(xt,yt)
-
-print('CAMERA GLOBAL POSITION DURING CALIBRATION')
-print(rightsideMat)
+print(-xt,-yt)
 
 # GOAL LENGTH
 L = 710                     # goal length in milimeters  
