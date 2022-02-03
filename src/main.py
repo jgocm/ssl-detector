@@ -141,7 +141,7 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 controller = GUI(img=img, play=play, display_menu=False, mode=mode)
 
 # experiment number
-exp_nr = 47
+exp_nr = 69
 load_nr = 47
 
 # communication
@@ -160,7 +160,7 @@ while input.isOpened():
         # capture the next image
         ret, frame = input.read()
         #frame = cv2.imread('experiments/42.jpg')
-        #frame = cv2.imread('/home/joao/Desktop/ssl-detector/39.jpg')
+        frame = cv2.imread('48.jpg')
         #frame = cv2.imread('/home/joao/ssl-dataset/1_resized/00285.jpg')
         last_frame = frame
 

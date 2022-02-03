@@ -190,14 +190,14 @@ class GUI():
         [(x,y), (color), item] = point
         cv2.circle(self.img,(x,y),3,color,-1)
         cv2.putText(self.img,'Pixel:' + str(x) + ',' + str(y), 
-                    (x+5,y-5), font,
+                    (x-50,y+10), font,
                     0.4, color, 1)
         cv2.putText(self.img,'Point to Camera:' + str(int(pointToCamera[0])) + ',' + str(int(pointToCamera[1])), 
-                    (x+5,y+5), font,
+                    (x-150,y+20), font,
                     0.4, color, 1)
         if flag==True:
             cv2.putText(self.img,'Point to Field:' + str(int(pointToField[0])) + ',' + str(int(pointToField[1])), 
-                        (x+5,y+15), font,
+                        (x-100,y+30), font,
                         0.4, color, 1)
         return self.img
 
