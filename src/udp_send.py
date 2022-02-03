@@ -1,5 +1,18 @@
 import socket
 
+def shapeData(ball_position,robot_position,goal_position):
+
+    ball_x, ball_y, ball_z = ball_position
+    ball = [int(ball_x),int(ball_y)]
+
+    robot_x, robot_y, robot_z = robot_position
+    robot = [int(robot_x),int(robot_y)]
+
+    goal_x, goal_y, goal_z = goal_position   
+    goal = [int(goal_x),int(goal_y)]
+
+    return ball, robot, goal
+
 def encodePacket(detections, ball_position, robot_position, goal_position, pos_size=20):
     mask = 2**(pos_size-1)-1
 
@@ -76,26 +89,26 @@ for i in range(-1024, 1025):
     assert i == bytes_to_int(int_to_bytes(i, signed=True), signed=True)
 
 
+if __name__=='__main__':
+    UDP_IP ='172.20.10.2'
+    #UDP_IP ='192.168.1.7'
+    UDP_PORT = 5005
 
-UDP_IP ='172.20.10.2'
-#UDP_IP ='192.168.1.7'
-UDP_PORT = 5005
+    sock = socket.socket(socket.AF_INET,
+                        socket.SOCK_DGRAM)
 
-sock = socket.socket(socket.AF_INET,
-                    socket.SOCK_DGRAM)
+    pos_size = 20
 
-pos_size = 20
+    detections = [1,1,0]
+    ball_position = [-8,4]
+    robot_position = [4,2]
+    goal_position = [2,1]
 
-detections = [1,1,0]
-ball_position = [-8,4]
-robot_position = [4,2]
-goal_position = [2,1]
-
-data = encodePacket(detections, ball_position, robot_position, goal_position, pos_size=pos_size)
-print(data)
-
-bytes_data = int_to_bytes(data)
-
-while True:
-    sock.sendto(bytes_data, (UDP_IP, UDP_PORT))
+    data = encodePacket(detections, ball_position, robot_position, goal_position, pos_size=pos_size)
     print(data)
+
+    bytes_data = int_to_bytes(data)
+
+    while True:
+        sock.sendto(bytes_data, (UDP_IP, UDP_PORT))
+        print(data)

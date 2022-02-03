@@ -1,14 +1,17 @@
+from base64 import encode
 import cv2
 from robot import robot
 from object_localization import camera
 from object_detection import detectnet
 from GUI import GUI
+import udp_send
 
 import jetson.inference
 import jetson.utils
 
 import numpy as np
 import time
+import socket
 import argparse
 import sys
 import os
@@ -141,6 +144,15 @@ controller = GUI(img=img, play=play, display_menu=False, mode=mode)
 exp_nr = 47
 load_nr = 47
 
+# communication
+UDP_IP ='172.20.10.2'
+#UDP_IP ='192.168.1.7'
+UDP_PORT = 5005
+
+sock = socket.socket(socket.AF_INET,
+                    socket.SOCK_DGRAM)
+
+
 while input.isOpened():
     timeStamp = time.time()
 
@@ -186,7 +198,8 @@ while input.isOpened():
     cv2.line(img, (line_x,0), (line_x,2*line_y), (0,0,0), 1)
     cv2.line(img, (0,line_y), (2*line_x,line_y), (0,0,0), 1)
 
-    if controller.mode=='detection':  
+    if controller.mode=='detection':
+        ballToCamera,robotToCamera,goalToCamera = [0,0,0],[0,0,0],[0,0,0]
         for detection in detections:
             ID = detection.ClassID			# class ID number
             item = net.GetClassDesc(ID)		# class ID title
@@ -209,6 +222,7 @@ while input.isOpened():
                     flag = False
                     color=(0,255,0)
                     pointToCamera = vision.pixelToCameraCoordinates(x=center_bottom[0],y=center_bottom[1])
+                    goalToCamera = pointToCamera
                     pointToField = pointToCamera
                     if flag:
                         pointToField = vision.pixelToWorldCoordinates(x=center_bottom[0],y=center_bottom[1],height=0)
@@ -285,6 +299,11 @@ while input.isOpened():
                                             pointToField=robotToField, 
                                             flag=flag)
 
+        ball_data,robot_data,goal_data = udp_send.shapeData(ballToCamera,robotToCamera,goalToCamera)                                   
+        data = udp_send.encodePacket(controller.objToDetect,ball_data,robot_data,goal_data)
+        #print(data)
+        data = udp_send.int_to_bytes(data)
+        sock.sendto(data, (UDP_IP, UDP_PORT))
     if controller.mode=='marker':
         for point in controller.marker_points:
             x, y = point[0]
@@ -356,6 +375,7 @@ while input.isOpened():
         controller.commandHandler(key=key)
 
     print(controller.state)
+    #print(controller.objToDetect)
     
     cv2.setMouseCallback(winname,controller.markPoint)
 
