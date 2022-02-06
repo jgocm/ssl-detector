@@ -141,12 +141,13 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 controller = GUI(img=img, play=play, display_menu=False, mode=mode)
 
 # experiment number
-exp_nr = 69
-load_nr = 47
+exp_nr = 70
+load_nr = 69
 
 # communication
 UDP_IP ='172.20.10.2'
 #UDP_IP ='192.168.1.7'
+#UDP_IP = '192.168.137.1'
 UDP_PORT = 5005
 
 sock = socket.socket(socket.AF_INET,
@@ -160,7 +161,7 @@ while input.isOpened():
         # capture the next image
         ret, frame = input.read()
         #frame = cv2.imread('experiments/42.jpg')
-        frame = cv2.imread('48.jpg')
+        #frame = cv2.imread('48.jpg')
         #frame = cv2.imread('/home/joao/ssl-dataset/1_resized/00285.jpg')
         last_frame = frame
 
@@ -339,6 +340,8 @@ while input.isOpened():
             ssl_robot.setPose(position, rotation)
             print("Robot position:")
             print(ssl_robot.position)
+            print("Robot Rotation:")
+            print(rotation)
 
     img = controller.updateGUI(img)
     
@@ -374,7 +377,7 @@ while input.isOpened():
     else:
         controller.commandHandler(key=key)
 
-    print(controller.state)
+    print(controller.state, fps)
     #print(controller.objToDetect)
     
     cv2.setMouseCallback(winname,controller.markPoint)

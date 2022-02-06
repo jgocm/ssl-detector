@@ -192,11 +192,11 @@ class GUI():
         cv2.putText(self.img,'Pixel:' + str(x) + ',' + str(y), 
                     (x-50,y+10), font,
                     0.4, color, 1)
-        cv2.putText(self.img,'Point to Camera:' + str(int(pointToCamera[0])) + ',' + str(int(pointToCamera[1])), 
-                    (x-150,y+20), font,
+        cv2.putText(self.img,'Cam:' + str(int(pointToCamera[0])) + ',' + str(int(pointToCamera[1])), 
+                    (x-70,y+20), font,
                     0.4, color, 1)
         if flag==True:
-            cv2.putText(self.img,'Point to Field:' + str(int(pointToField[0])) + ',' + str(int(pointToField[1])), 
+            cv2.putText(self.img,'Field:' + str(int(pointToField[0])) + ',' + str(int(pointToField[1])), 
                         (x-100,y+30), font,
                         0.4, color, 1)
         return self.img
