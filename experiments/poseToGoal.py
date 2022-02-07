@@ -4,9 +4,9 @@ import math
 
 #img = cv2.imread('/home/joao/ssl-detector/experiments/25.jpg')
 #img = cv2.imread('experiments/30.jpg')
-img = cv2.imread('62.jpg')
+img = cv2.imread('70.jpg')
 
-nr = 47
+nr = 71
 points2d = np.loadtxt(f'experiments/{nr}_points2d.txt', dtype="float64")
 points3d = np.loadtxt(f'experiments/{nr}_points3d.txt', dtype="float64")
 
@@ -102,9 +102,15 @@ goalCenter = np.array([(322,52,1)])
 goalLeft = np.array([(258,52,1)])
 goalRight = np.array([(389,52,1)])'''
 
+'''
+#IMAGE 62
 goalLeft = np.array([(293,78,1)])
 goalCenter = np.array([(400,78,1)])
-goalRight = np.array([(507,78,1)])
+goalRight = np.array([(507,78,1)])'''
+
+goalLeft = np.array([(262,50,1)])
+goalCenter = np.array([(327,50,1)])
+goalRight = np.array([(393,50,1)])
 
 test_point = goalCenter     # goal middle
 test_point_height = 0

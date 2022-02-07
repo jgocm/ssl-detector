@@ -19,7 +19,7 @@ def mark_point(event,x,y,flags,params):
 
 if __name__=="__main__":
 
-    img = cv2.imread('62.jpg',1)
+    img = cv2.imread('70.jpg',1)
     while True:
         key=cv2.waitKey(1) & 0xFF
 
