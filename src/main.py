@@ -161,7 +161,7 @@ while input.isOpened():
         # capture the next image
         ret, frame = input.read()
         #frame = cv2.imread('experiments/42.jpg')
-        frame = cv2.imread('93.jpg')
+        #frame = cv2.imread('93.jpg')
         #frame = cv2.imread('/home/joao/ssl-dataset/1_resized/00285.jpg')
         last_frame = frame
 
@@ -178,7 +178,6 @@ while input.isOpened():
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
         fps = round(getFPS(lastTimeStamp=timeStamp, lastFps=fps),2)
-        #window_title = "SSL Detector | Network {:.0f} FPS".format(fps)
 
     elif controller.play==False:
         img = cv2.cvtColor(last_frame, cv2.COLOR_BGR2RGBA).astype(np.float32)
@@ -254,12 +253,12 @@ while input.isOpened():
                                             pointToField=pointToField, 
                                             flag=flag)'''
                     
-                    position = vision.computePoseToBBox(left=left, top=top, right=right, bottom=bottom)
+                    #position = vision.computePoseToBBox(left=left, top=top, right=right, bottom=bottom)
                     #vision.setPose(points3d, points2d)
-                    position, rotation = vision.position, vision.rotation
-                    ssl_robot.setPose(position=position, euler_angles=rotation)
-                    print("Robot position:")
-                    print(ssl_robot.position)
+                    #position, rotation = vision.position, vision.rotation
+                    #ssl_robot.setPose(position=position, euler_angles=rotation)
+                    #print("Robot position:")
+                    #print(ssl_robot.position)
 
             if controller.objToDetect[1]:
                 if item=="ball":
@@ -281,8 +280,8 @@ while input.isOpened():
 
             if controller.objToDetect[2]:
                 if item=="robot":
-                    print("ROBOT DETECTED")
-                    print("Robot to Camera Relative Position:")
+                    #print("ROBOT DETECTED")
+                    #print("Robot to Camera Relative Position:")
                     robotAsPoint=controller.robotAsPoint(left=left, top=top, right=right, bottom=bottom)
                     robotToCamera = vision.pixelToCameraCoordinates(x=robotAsPoint[0],y=robotAsPoint[1])
                     flag = ssl_robot.isLocated()
@@ -320,7 +319,6 @@ while input.isOpened():
                                     pointToCamera=pointToCamera, 
                                     pointToField=pointToField, 
                                     flag=flag)
-
     if controller.mode=='calibration':
         if controller.isCollecting()==False:
             field_points = fieldCoordinates()
@@ -377,7 +375,7 @@ while input.isOpened():
     else:
         controller.commandHandler(key=key)
 
-    print(controller.state, fps)
+    print(controller.state, f"FPS={fps}")
     #print(controller.objToDetect)
     
     cv2.setMouseCallback(winname,controller.markPoint)
