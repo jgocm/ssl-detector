@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+message protoSpeedSSL{
+    double vx = 1;
+    double vy = 2;
+    double vw  = 3;
+    bool front  = 4;
+    bool chip  = 5;
+    bool charge  = 6;
+    double kickStrength = 7 ;
+    bool dribbler = 8;
+    double dribSpeed =9;
+};
+
+message protoPositionSSL{
+    double x = 1;
+    double y = 2;
+    double w = 3;
+    enum TypePos{
+        unknown = 0;
+        source = 1;
+        target = 2;
+        motionControl = 3;
+        rotateControl = 4;
+        rotateInPoint = 5;
+    }
+    TypePos typePos = 4;
+};
