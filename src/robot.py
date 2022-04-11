@@ -1,15 +1,31 @@
 import cv2
 import numpy as np
-import Jetson.GPIO as GPIO
 
-class robot():
-    def __init__(self):
-        super(robot, self).__init__()
-        self.id = None
+class SSLRobot():
+    def __init__(
+                self,
+                id = 0,
+                height = 155,
+                diameter = 180,
+                camera_offset = 90
+                ):
+        super(SSLRobot, self).__init__()
+        self.id = id
+        self.height = height
+        self.diameter = diameter
+
         self.position = None
         self.rotation = None
         self.pose_confidence = 0
-        self.pinMode = GPIO.BOARD
+        self.camera_offset = self.diameter/2
+
+        self.front = False
+        self.chip = False
+        self.charge = False
+        self.kick_strength = 0
+
+        self.dribbler = False
+        self.dribbler_speed = 0
     
     def isLocated(self):
         if self.pose_confidence > 0.7:
@@ -35,4 +51,9 @@ class robot():
         self.position = position
         self.rotation = euler_angles[2][0]
         self.updatePoseConfidence(confidence=1)
+    
+    def cameraToRobotCoordinates(self, x, y):
+        robot_x = y + self.camera_offset
+        robot_y = -x
 
+        return robot_x, robot_y
