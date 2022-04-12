@@ -6,7 +6,8 @@ class GUI():
                 self,
                 screen = np.zeros((640,480)),
                 play = True,
-                mode = "calibration"
+                mode = "calibration",
+                center_lines = True
                 ):
         super(GUI, self).__init__()
 
@@ -20,6 +21,8 @@ class GUI():
         self.create_marker = True
         self.is_calibrating = False
         self.arrow_key = None
+
+        self.center_lines = center_lines
 
     def clearUI(self):
         self.markers = []
@@ -43,20 +46,20 @@ class GUI():
         if key == ord('p'):
             self.play = 1-self.play
         if key == ord('s'):
-            if not self.is_calibrating:
-                self.save = True
+            if self.mode == 'calibration' and (not self.is_calibrating):
+                self.save = True 
         if key == ord('c'):
             if self.mode == 'debug':
                 self.clearMarkers()
         
         # CALIBRATION CONTROLLER
-        if key == 81:   # left arrow key
+        if key == 81 or key == 37 or key == ord('a'):   # left arrow key
             self.arrow_key = "left"
-        if key == 82:   # up arrow key
+        if key == 82 or key == 38 or key == ord('w'):   # up arrow key
             self.arrow_key = "up"
-        if key == 83:   # right arrow key
+        if key == 83 or key == 39 or key == ord('d'):   # right arrow key
             self.arrow_key = "right"
-        if key == 84:   # down arrow key
+        if key == 84 or key == 40 or key == ord('s'):   # down arrow key
             self.arrow_key = "down"
 
         if key == 32:   # space key
@@ -192,7 +195,6 @@ class GUI():
         return done, img
     
     def makeFieldMarkerUI(self, img):
-
         if self.create_marker:
             self.current_marker = self.createCrossMarker()
             self.create_marker = False
@@ -209,6 +211,10 @@ class GUI():
         return done, img
     
     def runUI(self, img):
+        line_x = int(img.shape[1]/2)
+        line_y = int(img.shape[0]/2)
+        cv2.line(img, (line_x,0), (line_x,2*line_y), (0,0,0), 1)
+        cv2.line(img, (0,line_y), (2*line_x,line_y), (0,0,0), 1)
         if self.mode=="calibration":
             done, img = self.makeCalibrationUI(img)
             self.is_calibrating = 1-done

@@ -15,6 +15,8 @@ import communication_proto
 import interface
 
 def main():
+    cwd = os.getcwd()
+
     # START TIME
     start = time.time()
 
@@ -84,6 +86,11 @@ def main():
                 )
     trt_net.loadModel()
 
+    # BALL TO PIXEL REGRESSION WEIGHTS
+    regression_weights = np.loadtxt(cwd+f"/models/regression_weights.txt")
+    # OFFSET
+    offset = np.loadtxt(cwd+f"/configs/offset.txt")
+
     # CONFIGURING AND LOAD DURATION
     config_time = time.time()- start
     print(f"Configuration Time: {config_time:.2f}s")
@@ -104,6 +111,13 @@ def main():
                 #print("ball detected")
                 # COMPUTE PIXEL FOR BALL POSITION
                 pixel_x, pixel_y = ssl_cam.ballAsPoint(left=xmin, top=ymin, right=xmax, bottom=ymax, weight_y=0.2)
+                '''pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
+                                                                    left=xmin, 
+                                                                    top=ymin, 
+                                                                    right=xmax, 
+                                                                    bottom=ymax, 
+                                                                    weight_x=regression_weights[0],
+                                                                    weight_y=regression_weights[1])'''
             
                 # DRAW OBJECT POINT ON SCREEN
                 myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))

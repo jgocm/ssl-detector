@@ -1,4 +1,4 @@
-from unittest import skip
+import os
 import interface
 import numpy as np
 import cv2
@@ -7,12 +7,14 @@ import object_localization
 if __name__=="__main__":
     WINDOW_TITLE = "Camera Calibration"
 
+    cwd = os.getcwd()
+
     # CAMERA PARAMETERS SETUP
-    PATH_TO_INTRINSIC_PARAMETERS = "/home/joao/ssl-detector/configs/camera_matrix_C922.txt"
-    PATH_TO_DISTORTION_PARAMETERS = "/home/joao/ssl-detector/configs/camera_distortion_C922.txt"
-    PATH_TO_2D_POINTS = "/home/joao/ssl-detector/configs/calibration_points2d.txt"
-    PATH_TO_3D_POINTS = "/home/joao/ssl-detector/configs/calibration_points3d.txt"
-    PATH_TO_FIELD_POINTS = "/home/joao/ssl-detector/configs/field_points3d.txt"
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/camera_matrix_C922.txt"
+    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/camera_distortion_C922.txt"
+    PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
+    PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
+    PATH_TO_FIELD_POINTS = cwd+"/configs/field_points3d.txt"
     FIELD_POINTS = np.loadtxt(PATH_TO_FIELD_POINTS, dtype="float64")
     ssl_cam = object_localization.Camera(
                 camera_matrix_path=PATH_TO_INTRINSIC_PARAMETERS,
@@ -25,8 +27,8 @@ if __name__=="__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # IMAGE READ SETUP
-    #PATH_TO_IMG = r"/home/joao/ssl-detector/images/calibration_image_1.jpg"
-    #img = cv2.imread(PATH_TO_IMG)
+    PATH_TO_IMG = cwd+"/configs/calibration_image.jpg"
+    img = cv2.imread(PATH_TO_IMG)
 
     # USER INTERFACE SETUP
     myGUI = interface.GUI(
