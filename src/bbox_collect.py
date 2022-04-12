@@ -1,4 +1,4 @@
-from turtle import position
+import os
 import numpy as np
 import cv2
 import math
@@ -9,6 +9,7 @@ import time
 import object_localization
 
 if __name__=="__main__":
+    cwd = os.getcwd()
 
     # START TIME
     start = time.time()
@@ -39,13 +40,17 @@ if __name__=="__main__":
     trt_net.loadModel()
 
     # CAMERA PARAMETERS SETUP
-    PATH_TO_INTRINSIC_PARAMETERS = "/home/joao/ssl-detector/configs/camera_matrix_C922.txt"
-    PATH_TO_DISTORTION_PARAMETERS = "/home/joao/ssl-detector/configs/camera_distortion_C922.txt"
-    PATH_TO_2D_POINTS = "/home/joao/ssl-detector/configs/calibration_points2d.txt"
-    PATH_TO_3D_POINTS = "/home/joao/ssl-detector/configs/calibration_points3d.txt"
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/camera_matrix_C922.txt"
+    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/camera_distortion_C922.txt"
+    PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
+    PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
+    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
+    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
+    calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
-                camera_matrix_path=PATH_TO_INTRINSIC_PARAMETERS,
-                camera_distortion_path=PATH_TO_DISTORTION_PARAMETERS
+                camera_matrix=camera_matrix,
+                camera_distortion=camera_distortion,
+                camera_initial_position=calibration_position
                 )
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
@@ -59,7 +64,7 @@ if __name__=="__main__":
                         )
 
     # EXPERIMENT SAVING CONFIGS
-    PATH_TO_EXPERIMENT = "/home/joao/ssl-detector/experiments/9abr"
+    PATH_TO_EXPERIMENT = "/home/joao/ssl-detector/experiments/12abr"
     np.savetxt(f'{PATH_TO_EXPERIMENT}/calibration_points2d.txt', points2d)
     np.savetxt(f'{PATH_TO_EXPERIMENT}/calibration_points3d.txt', points3d)
     cv2.imwrite(f'{PATH_TO_EXPERIMENT}/calibration_image.jpg', img)

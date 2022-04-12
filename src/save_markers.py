@@ -9,7 +9,7 @@ if __name__=="__main__":
 
     cwd = os.getcwd()
 
-    img = cv2.imread(cwd+'/experiments/9abr/1.jpg')
+    img = cv2.imread(cwd+'/experiments/12abr/30.jpg')
     img = cv2.resize(img, (640, 480))
 
     # CAMERA PARAMETERS SETUP
@@ -17,9 +17,13 @@ if __name__=="__main__":
     PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/camera_distortion_C922.txt"
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
+    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
+    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
+    calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
-                camera_matrix_path=PATH_TO_INTRINSIC_PARAMETERS,
-                camera_distortion_path=PATH_TO_DISTORTION_PARAMETERS
+                camera_matrix=camera_matrix,
+                camera_distortion=camera_distortion,
+                camera_initial_position=calibration_position
                 )
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
@@ -62,7 +66,7 @@ if __name__=="__main__":
         key = cv2.waitKey(10) & 0xFF
         quit = myGUI.commandHandler(key=key)
         if quit:
-            np.savetxt(cwd+'/experiments/9abr/field_pixels.txt', pixels)
+            np.savetxt(cwd+'/experiments/12abr/field_pixels.txt', pixels)
             break
             
 
