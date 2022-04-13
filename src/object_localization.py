@@ -156,8 +156,6 @@ class Camera():
         
         leftsideMat = np.linalg.inv(rmtx)@(np.linalg.inv(mtx)@np.transpose(uvPoint))
         s = -(height-z_world)/leftsideMat[2]
-
-        rightsideMat = np.linalg.inv(rmtx)@tvec
         
         p = s*leftsideMat
 
@@ -206,10 +204,6 @@ if __name__=="__main__":
     import os
     
     cwd = os.getcwd()
-    
-    # TEST FOR BALL LOCALIZATION ON IMAGE OR USB CAMERA CAPTURE
-    test_x = 315
-    test_y = 264
 
     # START TIME
     start = time.time()
@@ -223,7 +217,7 @@ if __name__=="__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # IMAGE READ SETUP
-    PATH_TO_IMG = r"/home/joao/ssl-detector/images/calibration_image_1.jpg"
+    PATH_TO_IMG = cwd+"/experiments/13abr/4.jpg"
     img = cv2.imread(PATH_TO_IMG)
 
     # OBJECT DETECTION MODEL
@@ -232,16 +226,17 @@ if __name__=="__main__":
                 labels_path="/home/joao/ssl-detector/models/ssl_labels.txt", 
                 input_width=300, 
                 input_height=300,
-                score_threshold = 0.32,
+                score_threshold = 0.5,
                 draw = False,
                 display_fps = False,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
                 )
     trt_net.loadModel()
+    regression_weights = np.loadtxt(cwd+f"/experiments/12abr/regression_weights.txt")
 
     # CAMERA PARAMETERS SETUP
-    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/camera_matrix_C922.txt"
-    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/camera_distortion_C922.txt"
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
+    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/dist.txt"
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
@@ -249,7 +244,6 @@ if __name__=="__main__":
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = Camera(
                 camera_matrix=camera_matrix,
-                camera_distortion=camera_distortion,
                 camera_initial_position=calibration_position
                 )
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
@@ -279,7 +273,13 @@ if __name__=="__main__":
             # BALL LOCALIZATION ON IMAGE
             if class_id==1:     # ball
                 # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = ssl_cam.ballAsPoint(left=xmin, top=ymin, right=xmax, bottom=ymax, weight_y = 0.25)
+                pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
+                                                                    left = xmin, 
+                                                                    top = ymin, 
+                                                                    right = xmax, 
+                                                                    bottom = ymax, 
+                                                                    weight_x = regression_weights[0],
+                                                                    weight_y = regression_weights[1])
 
                 # DRAW OBJECT POINT ON SCREEN
                 myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
@@ -294,9 +294,11 @@ if __name__=="__main__":
         key = cv2.waitKey(10) & 0xFF
         quit = myGUI.commandHandler(key=key)
         run_time = time.time()-start
-        myGUI.drawText(myGUI.screen, f"running time: {run_time:.2f}s", (8, 13), 0.5)
+        #myGUI.drawText(myGUI.screen, f"running time: {run_time:.2f}s", (8, 13), 0.5)
         cv2.imshow(WINDOW_NAME, myGUI.screen)
         
+        if key == ord('s'):
+            cv2.imwrite(cwd+"/experiments/13abr/position3d.jpg",myGUI.screen)
         if quit:
             break
         else: myGUI.updateGUI(img)

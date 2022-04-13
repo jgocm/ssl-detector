@@ -206,7 +206,7 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    PATH_TO_IMG = r"/home/joao/ssl-detector/images/calibration_image_1.jpg"
+    PATH_TO_IMG = r"/home/joao/ssl-detector/experiments/13abr/4.jpg"
     im = cv2.imread(PATH_TO_IMG)
 
     trt_net = DetectNet(
@@ -214,7 +214,7 @@ if __name__ == "__main__":
                 labels_path="/home/joao/ssl-detector/models/ssl_labels.txt", 
                 input_width=300, 
                 input_height=300,
-                score_threshold = 0.32,
+                score_threshold = 0.5,
                 draw = True,
                 display_fps = False,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
@@ -222,19 +222,25 @@ if __name__ == "__main__":
     
     trt_net.loadModel()
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            print("Check video capture path")
-            break
+    while True:
+        if cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                print("Check video capture path")
+                break
+        else: 
+            frame=im.copy()
 
-        trt_net.inference(im)
+        trt_net.inference(frame)
 
         # DISPLAY WINDOW
         cv2.moveWindow(WINDOW_NAME, 100, 50)
-        cv2.imshow(WINDOW_NAME, im)
-        if cv2.waitKey(10) & 0xFF == ord("q"):
+        cv2.imshow(WINDOW_NAME, frame)
+        key = cv2.waitKey(10) & 0xFF
+        if key == ord("q"):
             break
+        elif key == ord('s'):
+            cv2.imwrite("/home/joao/ssl-detector/experiments/13abr/bbox.jpg", frame)
         
     # RELEASE WINDOW AND DESTROY
     cap.release()

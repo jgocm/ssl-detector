@@ -9,7 +9,7 @@ if __name__=="__main__":
 
     cwd = os.getcwd()
 
-    img = cv2.imread(cwd+'/configs/calibration_image.jpg')
+    img = cv2.imread(cwd+'/experiments/13abr/4.jpg')
     img = cv2.resize(img, (640, 480))
 
     # CAMERA PARAMETERS SETUP
