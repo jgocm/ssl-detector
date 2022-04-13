@@ -73,7 +73,7 @@ if __name__=="__main__":
         field_x.append(x)
         field_y.append(y)
     plt.scatter(field_x, field_y, label="Regression")
-    plt.title('Ground Aware Ball Localization')
+    plt.title('Ground-Aware Ball Localization')
     plt.xlabel('x')
     plt.ylabel('y')
     plt.legend()
