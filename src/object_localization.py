@@ -217,7 +217,7 @@ if __name__=="__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # IMAGE READ SETUP
-    PATH_TO_IMG = cwd+"/experiments/13abr/4.jpg"
+    PATH_TO_IMG = cwd+"/experiments/13abr/1.jpg"
     img = cv2.imread(PATH_TO_IMG)
 
     # OBJECT DETECTION MODEL
@@ -287,8 +287,8 @@ if __name__=="__main__":
                 # BACK PROJECT BALL POSITION TO CAMERA 3D COORDINATES
                 object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
                 x, y, z = (position[0] for position in object_position)
-                caption = f"Position:{x:.2f},{y:.2f}"
-                myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.35)
+                #caption = f"Position:{x:.2f},{y:.2f}"
+                #myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.35)
 
         # DISPLAY WINDOW
         key = cv2.waitKey(10) & 0xFF
@@ -298,7 +298,7 @@ if __name__=="__main__":
         cv2.imshow(WINDOW_NAME, myGUI.screen)
         
         if key == ord('s'):
-            cv2.imwrite(cwd+"/experiments/13abr/position3d.jpg",myGUI.screen)
+            cv2.imwrite(cwd+"/experiments/13abr/point2d.jpg",myGUI.screen)
         if quit:
             break
         else: myGUI.updateGUI(img)

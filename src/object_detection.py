@@ -206,7 +206,7 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    PATH_TO_IMG = r"/home/joao/ssl-detector/experiments/13abr/4.jpg"
+    PATH_TO_IMG = r"/home/joao/ssl-detector/experiments/13abr/1.jpg"
     im = cv2.imread(PATH_TO_IMG)
 
     trt_net = DetectNet(
