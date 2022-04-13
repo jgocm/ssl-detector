@@ -10,16 +10,16 @@ if __name__=="__main__":
     cwd = os.getcwd()
 
     # CAMERA PARAMETERS SETUP
-    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
-    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/dist.txt"
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/camera_matrix_C922.txt"
+    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/camera_distortion_C922.txt"
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
-    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
-    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
+    mtx = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
+    dist = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
-                camera_matrix=camera_matrix,
-                camera_distortion=camera_distortion,
+                camera_matrix=mtx,
+                camera_distortion=dist,
                 camera_initial_position=calibration_position
                 )
     PATH_TO_FIELD_POINTS = cwd+"/configs/field_points3d.txt"
@@ -31,11 +31,8 @@ if __name__=="__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # IMAGE READ SETUP
-    PATH_TO_IMG = cwd+"/images/calibration_image-5.jpg"
+    PATH_TO_IMG = cwd+"/configs/calibration_image.jpg"
     img = cv2.imread(PATH_TO_IMG)
-
-    #dst = cv2.undistort(img, camera_matrix, camera_distortion)
-    #img = dst
 
     # USER INTERFACE SETUP
     myGUI = interface.GUI(

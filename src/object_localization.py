@@ -89,7 +89,7 @@ class Camera():
 
         camera_position = -np.linalg.inv(rmtx)@tvec
         height = camera_position[2,0]
-        #self.offset = (self.initial_position+camera_position.T).T
+        self.offset = (camera_position.T-self.initial_position).T
 
         self.rotation_vector = rvec
         self.rotation_matrix = rmtx
@@ -151,12 +151,15 @@ class Camera():
         uvPoint = np.array([(x,y,1)])
         mtx = self.intrinsic_parameters
         rmtx = self.rotation_matrix
+        tvec = self.translation_vector
         height = self.height
         
         leftsideMat = np.linalg.inv(rmtx)@(np.linalg.inv(mtx)@np.transpose(uvPoint))
         s = -(height-z_world)/leftsideMat[2]
 
-        p = s*leftsideMat+self.offset
+        rightsideMat = np.linalg.inv(rmtx)@tvec
+        
+        p = s*leftsideMat
 
         return p
 
@@ -193,7 +196,7 @@ class Camera():
         s = rightSideMat[2]
 
         uvPoint = rightSideMat/s
-        #import pdb; pdb.set_trace()
+
         return uvPoint
 
 if __name__=="__main__":

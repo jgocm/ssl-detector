@@ -13,8 +13,8 @@ if __name__=="__main__":
     img = cv2.resize(img, (640, 480))
 
     # CAMERA PARAMETERS SETUP
-    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/camera_matrix_C922.txt"
-    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/camera_distortion_C922.txt"
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
+    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/dist.txt"
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
@@ -22,7 +22,7 @@ if __name__=="__main__":
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
                 camera_matrix=camera_matrix,
-                camera_distortion=camera_distortion,
+                #camera_distortion=camera_distortion,
                 camera_initial_position=calibration_position
                 )
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")

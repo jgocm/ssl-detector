@@ -89,7 +89,7 @@ class Camera():
 
         camera_position = -np.linalg.inv(rmtx)@tvec
         height = camera_position[2,0]
-        #self.offset = (self.initial_position+camera_position.T).T
+        self.offset = (camera_position.T-self.initial_position).T
 
         self.rotation_vector = rvec
         self.rotation_matrix = rmtx
@@ -151,12 +151,15 @@ class Camera():
         uvPoint = np.array([(x,y,1)])
         mtx = self.intrinsic_parameters
         rmtx = self.rotation_matrix
+        tvec = self.translation_vector
         height = self.height
         
         leftsideMat = np.linalg.inv(rmtx)@(np.linalg.inv(mtx)@np.transpose(uvPoint))
         s = -(height-z_world)/leftsideMat[2]
 
-        p = s*leftsideMat+self.offset
+        rightsideMat = np.linalg.inv(rmtx)@tvec
+        
+        p = s*leftsideMat
 
         return p
 
@@ -193,13 +196,16 @@ class Camera():
         s = rightSideMat[2]
 
         uvPoint = rightSideMat/s
-        #import pdb; pdb.set_trace()
+
         return uvPoint
 
 if __name__=="__main__":
     import object_detection
     import tensorrt as trt
     import interface
+    import os
+    
+    cwd = os.getcwd()
     
     # TEST FOR BALL LOCALIZATION ON IMAGE OR USB CAMERA CAPTURE
     test_x = 315
@@ -234,13 +240,17 @@ if __name__=="__main__":
     trt_net.loadModel()
 
     # CAMERA PARAMETERS SETUP
-    PATH_TO_INTRINSIC_PARAMETERS = "/home/joao/ssl-detector/configs/camera_matrix_C922.txt"
-    PATH_TO_DISTORTION_PARAMETERS = "/home/joao/ssl-detector/configs/camera_distortion_C922.txt"
-    PATH_TO_2D_POINTS = "/home/joao/ssl-detector/configs/calibration_points2d.txt"
-    PATH_TO_3D_POINTS = "/home/joao/ssl-detector/configs/calibration_points3d.txt"
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/camera_matrix_C922.txt"
+    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/camera_distortion_C922.txt"
+    PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
+    PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
+    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
+    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
+    calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = Camera(
-                camera_matrix_path=PATH_TO_INTRINSIC_PARAMETERS,
-                camera_distortion_path=PATH_TO_DISTORTION_PARAMETERS
+                camera_matrix=camera_matrix,
+                camera_distortion=camera_distortion,
+                camera_initial_position=calibration_position
                 )
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
