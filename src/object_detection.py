@@ -186,7 +186,7 @@ class DetectNet():
         self.detections = detections
 
         # COMPUTE AVG FPS
-        self.elapsed_list.append(inference_time)
+        '''self.elapsed_list.append(inference_time)
         avg_text = ""
         if len(self.elapsed_list) > 100:
             self.elapsed_list.pop(0)
@@ -196,7 +196,7 @@ class DetectNet():
         # DISPLAY FPS
         fps_text = "Inference: {0:.2f}ms".format(inference_time)
         display_text = fps_text + avg_text
-        if self.display_fps: self.draw_caption(img, (10, 30), display_text)
+        if self.display_fps: self.draw_caption(img, (10, 30), display_text)'''
         return self
 
 if __name__ == "__main__":
@@ -216,7 +216,7 @@ if __name__ == "__main__":
                 input_height=300,
                 score_threshold = 0.5,
                 draw = True,
-                display_fps = False,
+                display_fps = True,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
                 )
     

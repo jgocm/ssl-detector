@@ -22,7 +22,7 @@ def main():
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = True
+    SHOW_DISPLAY = False
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -59,14 +59,18 @@ def main():
                         mode = "detection"
                         )
 
-    # CAMERA PARAMETERS SETUP
-    PATH_TO_INTRINSIC_PARAMETERS = "/home/joao/ssl-detector/configs/camera_matrix_C922.txt"
-    PATH_TO_DISTORTION_PARAMETERS = "/home/joao/ssl-detector/configs/camera_distortion_C922.txt"
-    PATH_TO_2D_POINTS = "/home/joao/ssl-detector/configs/calibration_points2d.txt"
-    PATH_TO_3D_POINTS = "/home/joao/ssl-detector/configs/calibration_points3d.txt"
+   # CAMERA PARAMETERS SETUP
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
+    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/dist.txt"
+    PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
+    PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
+    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
+    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
+    calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
-                camera_matrix_path=PATH_TO_INTRINSIC_PARAMETERS,
-                camera_distortion_path=PATH_TO_DISTORTION_PARAMETERS
+                camera_matrix=camera_matrix,
+                #camera_distortion=camera_distortion,
+                camera_initial_position=calibration_position
                 )
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
@@ -81,21 +85,20 @@ def main():
                 input_width = 300, 
                 input_height = 300,
                 score_threshold = 0.5,
-                draw = True,
+                draw = False,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
                 )
     trt_net.loadModel()
 
     # BALL TO PIXEL REGRESSION WEIGHTS
     regression_weights = np.loadtxt(cwd+f"/models/regression_weights.txt")
-    # OFFSET
-    offset = np.loadtxt(cwd+f"/configs/offset.txt")
 
     # CONFIGURING AND LOAD DURATION
-    config_time = time.time()- start
+    config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
-
+    avg_time = 0
     while cap.isOpened():
+        start_time = time.time()
         if myGUI.play:
             ret, frame = cap.read()
             if not ret:
@@ -110,24 +113,24 @@ def main():
             if class_id==1:     # ball
                 #print("ball detected")
                 # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = ssl_cam.ballAsPoint(left=xmin, top=ymin, right=xmax, bottom=ymax, weight_y=0.2)
-                '''pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
+                #pixel_x, pixel_y = ssl_cam.ballAsPoint(left=xmin, top=ymin, right=xmax, bottom=ymax, weight_y=0.2)
+                pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
                                                                     left=xmin, 
                                                                     top=ymin, 
                                                                     right=xmax, 
                                                                     bottom=ymax, 
                                                                     weight_x=regression_weights[0],
-                                                                    weight_y=regression_weights[1])'''
+                                                                    weight_y=regression_weights[1])
             
                 # DRAW OBJECT POINT ON SCREEN
-                myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
+                #myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
 
                 # BACK PROJECT BALL POSITION TO CAMERA 3D COORDINATES
                 object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
                 x, y = object_position[0], object_position[1]
 
-                caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
-                myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
+                #caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
+                #myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y = ssl_robot.cameraToRobotCoordinates(x, y)
@@ -135,20 +138,22 @@ def main():
                 y = -y[0]/1000
 
                 # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
-                eth_comm.sendPosition(x=x, y=y, w=0)
+                #eth_comm.sendPosition(x=x, y=y, w=0)
                 
         # DISPLAY WINDOW
+        frame_time = time.time()-start_time
+        avg_time = 0.8*avg_time + 0.2*frame_time
         if SHOW_DISPLAY:
             key = cv2.waitKey(10) & 0xFF
-            quit = myGUI.commandHandler(key=key)
-            run_time = time.time()-start
-            myGUI.drawText(myGUI.screen, f"running time: {run_time:.2f}s", (8, 13), 0.5)
+            quit = myGUI.commandHandler(key=key)    
+            #myGUI.drawText(myGUI.screen, f"running time: {run_time:.2f}s", (8, 13), 0.5)
             cv2.imshow(WINDOW_NAME, myGUI.screen)
             if quit:
-                eth_comm.sendPosition(x=0, y=0, w=0)
+                #eth_comm.sendPosition(x=0, y=0, w=0)
                 break
         else:
-            if time.time()-config_time>60:
+            if time.time()-config_time-start>120:
+                print(f'Avg frame processing time:{avg_time}')
                 break
 
         
