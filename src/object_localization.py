@@ -73,7 +73,7 @@ class Camera():
 
         points2d: pixel positions on image
         """
-        points3d = self.fixPoints3d(points3d=points3d)
+        #points3d = self.fixPoints3d(points3d=points3d)
         _,rvec,tvec=cv2.solvePnP(
                                 points3d,
                                 points2d,
@@ -187,9 +187,8 @@ class Camera():
         t = self.translation_vector
         height = self.height
         cameraPoint = np.array([(x,y,z_world-height)])
-        offset = np.array([(self.offset_x,self.offset_y,0)])
 
-        rightSideMat = M@(R@(cameraPoint+offset).T)
+        rightSideMat = M@(R@(cameraPoint).T)
 
         s = rightSideMat[2]
 

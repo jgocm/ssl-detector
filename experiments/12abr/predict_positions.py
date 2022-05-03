@@ -99,6 +99,7 @@ if __name__=="__main__":
     # REGRESS BALL XY RELATIVE POSITIONS TO CAMERA ON FIELD
     ball_x = []
     ball_y = []
+    theta = []
     for bounding_box in bboxes[init_nr:last_nr]:
         [xmin, xmax, ymin, ymax] = bounding_box
         pixel_x, pixel_y = predictLinearRegression(xmin, xmax, ymin, ymax, regression_weights[0], regression_weights[1])
@@ -107,9 +108,11 @@ if __name__=="__main__":
         x, y, z = (position[0] for position in object_position)
         ball_x.append(x)
         ball_y.append(y)
-    plt.scatter(ball_x, ball_y, label="Regression")
+        rad = math.atan(x/y)
+        theta.append(math.degrees(rad))
+    np.savetxt(cwd+f"/experiments/13abr/theta.txt", theta)
+    plt.scatter(ball_x, ball_y, label="On-Board Vision")
 
-    print("Pre distortion correction")
     e2 = (ball_x-ground_truth_x)**2 + (ball_y-ground_truth_y)**2
     RMSE = math.sqrt(sum(e2)/len(e2))
     print(f'Ball RMSE:{RMSE}')
@@ -149,6 +152,9 @@ if __name__=="__main__":
         fix_y.append(predictUndistortion(point_x, point_y, weights_x, weights_y)[1])
 
     #plt.scatter(fix_x, fix_y, label="Marker Distortion Fix")
+
+    # PLOT ROBOT POSITION
+    #plt.scatter(0, 0)
 
     plt.title('Ground-Aware Ball Localization')
     plt.xlabel('x')

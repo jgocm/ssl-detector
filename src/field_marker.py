@@ -9,7 +9,7 @@ if __name__=="__main__":
 
     cwd = os.getcwd()
 
-    img = cv2.imread(cwd+'/experiments/13abr/4.jpg')
+    img = cv2.imread(cwd+'/images/calibration_image-5.jpg')
     img = cv2.resize(img, (640, 480))
 
     # CAMERA PARAMETERS SETUP
@@ -28,6 +28,7 @@ if __name__=="__main__":
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
     ssl_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
+    print(ssl_cam.position)
 
     # USER INTERFACE SETUP
     myGUI = interface.GUI(
@@ -62,7 +63,8 @@ if __name__=="__main__":
         quit = myGUI.commandHandler(key=key)
         if quit:
             break
-
+        #if key == ord('s'):
+            #cv2.imwrite(cwd+'/experiments/13abr/field_mark.jpg', myGUI.screen)
         cv2.setMouseCallback(WINDOW_TITLE, myGUI.pointCrossMarker)
         myGUI.updateGUI(img)
     

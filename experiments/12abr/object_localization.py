@@ -73,7 +73,7 @@ class Camera():
 
         points2d: pixel positions on image
         """
-        points3d = self.fixPoints3d(points3d=points3d)
+        #points3d = self.fixPoints3d(points3d=points3d)
         _,rvec,tvec=cv2.solvePnP(
                                 points3d,
                                 points2d,

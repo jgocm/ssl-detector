@@ -213,11 +213,11 @@ class GUI():
     def runUI(self, img):
         line_x = int(img.shape[1]/2)
         line_y = int(img.shape[0]/2)
-        cv2.line(img, (line_x,0), (line_x,2*line_y), (0,0,0), 1)
-        cv2.line(img, (0,line_y), (2*line_x,line_y), (0,0,0), 1)
         if self.mode=="calibration":
             done, img = self.makeCalibrationUI(img)
             self.is_calibrating = 1-done
+            cv2.line(img, (line_x,0), (line_x,2*line_y), (0,0,0), 1)
+            cv2.line(img, (0,line_y), (2*line_x,line_y), (0,0,0), 1)
         if self.mode=="debug":
             done, img = self.makeFieldMarkerUI(img)
             
