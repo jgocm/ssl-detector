@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 
 class SSLRobot():
     def __init__(
@@ -53,7 +54,8 @@ class SSLRobot():
         self.updatePoseConfidence(confidence=1)
     
     def cameraToRobotCoordinates(self, x, y):
-        robot_x = y + self.camera_offset
-        robot_y = -x
+        robot_x = (y + self.camera_offset)/1000
+        robot_y = -x/1000
+        robot_w = math.atan2(robot_y, robot_x)
 
-        return robot_x, robot_y
+        return robot_x, robot_y, robot_w

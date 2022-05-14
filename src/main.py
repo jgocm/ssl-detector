@@ -20,9 +20,12 @@ def main():
     # START TIME
     start = time.time()
 
+    # DISPLAYS POSITIONS AND MARKERS ON SCREEN
+    DRAW = True
+
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = False
+    SHOW_DISPLAY = True
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -65,11 +68,9 @@ def main():
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
-    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
                 camera_matrix=camera_matrix,
-                #camera_distortion=camera_distortion,
                 camera_initial_position=calibration_position
                 )
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
@@ -97,8 +98,13 @@ def main():
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
+
+    # START ROBOT INITIAL POSITION
+    eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
+
     while cap.isOpened():
         start_time = time.time()
+
         if myGUI.play:
             ret, frame = cap.read()
             if not ret:
@@ -111,9 +117,7 @@ def main():
         for detection in detections:
             class_id, score, xmin, xmax, ymin, ymax = detection
             if class_id==1:     # ball
-                #print("ball detected")
                 # COMPUTE PIXEL FOR BALL POSITION
-                #pixel_x, pixel_y = ssl_cam.ballAsPoint(left=xmin, top=ymin, right=xmax, bottom=ymax, weight_y=0.2)
                 pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
                                                                     left=xmin, 
                                                                     top=ymin, 
@@ -123,33 +127,34 @@ def main():
                                                                     weight_y=regression_weights[1])
             
                 # DRAW OBJECT POINT ON SCREEN
-                #myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
+                if DRAW:
+                    myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
 
                 # BACK PROJECT BALL POSITION TO CAMERA 3D COORDINATES
                 object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
                 x, y = object_position[0], object_position[1]
 
-                #caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
-                #myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
+                if DRAW:
+                    caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
+                    myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-                x, y = ssl_robot.cameraToRobotCoordinates(x, y)
-                x = -x[0]/1000
-                y = -y[0]/1000
+                x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
+                print(x, y, w)
 
                 # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
-                #eth_comm.sendPosition(x=x, y=y, w=0)
+                eth_comm.sendTargetPosition(x=x-ssl_robot.camera_offset/1000, y=y, w=w)
                 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
         avg_time = 0.8*avg_time + 0.2*frame_time
         if SHOW_DISPLAY:
             key = cv2.waitKey(10) & 0xFF
-            quit = myGUI.commandHandler(key=key)    
-            #myGUI.drawText(myGUI.screen, f"running time: {run_time:.2f}s", (8, 13), 0.5)
+            quit = myGUI.commandHandler(key=key)   
+            if DRAW: 
+                myGUI.drawText(myGUI.screen, f"AVG FPS: {1/avg_time:.2f}s", (8, 13), 0.5)
             cv2.imshow(WINDOW_NAME, myGUI.screen)
             if quit:
-                #eth_comm.sendPosition(x=0, y=0, w=0)
                 break
         else:
             if time.time()-config_time-start>120:

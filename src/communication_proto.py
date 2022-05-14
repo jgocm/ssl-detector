@@ -17,6 +17,7 @@ class SocketUDP():
         self.host_port = host_port
         self.device_address = device_address
         self.device_port = device_port
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
     def setHostUDP(self, address, port):
         self.host_address=address
@@ -26,18 +27,25 @@ class SocketUDP():
         self.device_address=address
         self.device_port=port
 
-    def sendPosition(self, x, y, w, position_type='source'):
+    def sendTargetPosition(self, x, y, w):
         msg = pb.protoPositionSSL()
+
         msg.x = x   # positivo = frente
         msg.y = y   # positivo = esquerda
         msg.w = w   # positivo = anti-horário
-        msg.typePos = pb.protoPositionSSL.TypePos.Value(position_type)
+        msg.posType = pb.protoPositionSSL.target
 
-        conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        conn.sendto(
-            msg.SerializeToString(), 
-            (self.device_address, self.device_port)
-            )
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
+
+    def sendSourcePosition(self, x, y, w):
+        msg = pb.protoPositionSSL()
+
+        msg.x = x   # positivo = frente
+        msg.y = y   # positivo = esquerda
+        msg.w = w   # positivo = anti-horário
+        msg.posType = pb.protoPositionSSL.source
+
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
     
     def sendSpeed(self, vx, vy, vw, front=False, chip=False, kick_strength=0, dribbler=False, dribbler_speed=0):
         msg = pb.protoSpeedSSL()
