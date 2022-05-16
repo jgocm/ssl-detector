@@ -21,11 +21,11 @@ def main():
     start = time.time()
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = True
+    DRAW = False
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = True
+    SHOW_DISPLAY = False
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -102,7 +102,11 @@ def main():
     # START ROBOT INITIAL POSITION
     eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
 
+    # TARGET
+    target_x, target_y, target_w = 0,0,0
+
     while cap.isOpened():
+        TARGET = False
         start_time = time.time()
 
         if myGUI.play:
@@ -140,11 +144,15 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                print(x, y, w)
-
-                # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
-                eth_comm.sendTargetPosition(x=x-ssl_robot.camera_offset/1000, y=y, w=w)
+                target_x, target_y, target_w = x-ssl_robot.camera_offset/1000, y, w
                 
+                # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
+                eth_comm.sendTargetPosition(x=target_x, y=target_y, w=target_w)
+                TARGET = True
+        
+        if not TARGET:
+            eth_comm.sendMotionControl(x=target_x, y=target_y, w=target_w)
+
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
         avg_time = 0.8*avg_time + 0.2*frame_time
@@ -155,10 +163,12 @@ def main():
                 myGUI.drawText(myGUI.screen, f"AVG FPS: {1/avg_time:.2f}s", (8, 13), 0.5)
             cv2.imshow(WINDOW_NAME, myGUI.screen)
             if quit:
+                eth_comm.sendMotionControl(x=0, y=0, w=0)
                 break
         else:
-            if time.time()-config_time-start>120:
-                print(f'Avg frame processing time:{avg_time}')
+            if time.time()-config_time-start>30:
+                eth_comm.sendMotionControl(x=0, y=0, w=0)
+                #print(f'Avg frame processing time:{avg_time}')
                 break
 
         

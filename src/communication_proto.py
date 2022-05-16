@@ -37,6 +37,16 @@ class SocketUDP():
 
         self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
+    def sendMotionControl(self, x, y, w):
+        msg = pb.protoPositionSSL()
+
+        msg.x = x   # positivo = frente
+        msg.y = y   # positivo = esquerda
+        msg.w = w   # positivo = anti-horário
+        msg.posType = pb.protoPositionSSL.motionControl
+
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
+
     def sendSourcePosition(self, x, y, w):
         msg = pb.protoPositionSSL()
 
