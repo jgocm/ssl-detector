@@ -1,3 +1,4 @@
+import math
 import cv2
 import numpy as np
 import tensorrt as trt
@@ -21,11 +22,11 @@ def main():
     start = time.time()
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = False
+    DRAW = True
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = False
+    SHOW_DISPLAY = True
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -102,11 +103,14 @@ def main():
     # START ROBOT INITIAL POSITION
     eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
 
-    # TARGET
+    # INIT TARGET
+    TARGET = False
     target_x, target_y, target_w = 0,0,0
 
+    # INIT VISION BLACKOUT STATE MACHINE
+    state = "search"
+
     while cap.isOpened():
-        TARGET = False
         start_time = time.time()
 
         if myGUI.play:
@@ -147,12 +151,24 @@ def main():
                 target_x, target_y, target_w = x-ssl_robot.camera_offset/1000, y, w
                 
                 # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
-                eth_comm.sendTargetPosition(x=target_x, y=target_y, w=target_w)
                 TARGET = True
-        
-        if not TARGET:
-            eth_comm.sendMotionControl(x=target_x, y=target_y, w=target_w)
 
+        # STATE MACHINE
+        dist = math.sqrt(target_x**2+target_y**2)
+        if state == "search":
+            eth_comm.sendRotateSearch(x=target_x, y=target_y, w=target_w)
+            if TARGET: 
+                state = "drive"
+                eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
+        elif state == "drive":
+            eth_comm.sendTargetPosition(x=target_x, y=target_y, w=target_w)
+            if dist<0.270:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                state = "dock"
+        elif state == "dock":
+            eth_comm.sendBallDocking(x=target_x, y=target_y, w=target_w)
+            if dist>0.270:
+                state = "drive"
+            
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
         avg_time = 0.8*avg_time + 0.2*frame_time
@@ -163,12 +179,15 @@ def main():
                 myGUI.drawText(myGUI.screen, f"AVG FPS: {1/avg_time:.2f}s", (8, 13), 0.5)
             cv2.imshow(WINDOW_NAME, myGUI.screen)
             if quit:
-                eth_comm.sendMotionControl(x=0, y=0, w=0)
+                eth_comm.sendTargetPosition(x=0, y=0, w=0)
                 break
+            if key == ord('ç'): # RESTART
+                state = "search"
+                TAGET = False
+                eth_comm.sendTargetPosition(x=0, y=0, w=0)
         else:
             if time.time()-config_time-start>30:
-                eth_comm.sendMotionControl(x=0, y=0, w=0)
-                #print(f'Avg frame processing time:{avg_time}')
+                print(f'Avg frame processing time:{avg_time}')
                 break
 
         
