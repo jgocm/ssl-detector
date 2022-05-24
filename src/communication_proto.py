@@ -27,13 +27,13 @@ class SocketUDP():
         self.device_address=address
         self.device_port=port
 
-    def sendSourcePosition(self, x, y, w):
+    def sendStopMotion(self):
         msg = pb.protoPositionSSL()
 
-        msg.x = x   # positivo = frente
-        msg.y = y   # positivo = esquerda
-        msg.w = w   # positivo = anti-horário
-        msg.posType = pb.protoPositionSSL.source
+        msg.x = 0   # positivo = frente
+        msg.y = 0   # positivo = esquerda
+        msg.w = 0   # positivo = anti-horário
+        msg.posType = pb.protoPositionSSL.stop
 
         self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
@@ -43,9 +43,41 @@ class SocketUDP():
         msg.x = x   # positivo = frente
         msg.y = y   # positivo = esquerda
         msg.w = w   # positivo = anti-horário
+        msg.posType = pb.protoPositionSSL.rotateOnSelf
+
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
+
+    def sendRotateInPoint(self, x, y, w):
+        msg = pb.protoPositionSSL()
+
+        msg.x = x   # positivo = frente
+        msg.y = y   # positivo = esquerda
+        msg.w = w   # positivo = anti-horário
         msg.posType = pb.protoPositionSSL.rotateInPoint
 
         self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
+
+
+    def sendRotateControl(self, x, y, w):
+        msg = pb.protoPositionSSL()
+
+        msg.x = x   # positivo = frente
+        msg.y = y   # positivo = esquerda
+        msg.w = w   # positivo = anti-horário
+        msg.posType = pb.protoPositionSSL.rotateControl
+
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
+
+    def sendBallDocking(self, x, y, w):
+        msg = pb.protoPositionSSL()
+
+        msg.x = x   # positivo = frente
+        msg.y = y   # positivo = esquerda
+        msg.w = w   # positivo = anti-horário
+        msg.posType = pb.protoPositionSSL.dock
+
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
+
 
     def sendTargetPosition(self, x, y, w):
         msg = pb.protoPositionSSL()
@@ -57,32 +89,16 @@ class SocketUDP():
 
         self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
-    def sendBallDocking(self, x, y, w):
+    def sendSourcePosition(self, x, y, w):
         msg = pb.protoPositionSSL()
 
         msg.x = x   # positivo = frente
         msg.y = y   # positivo = esquerda
         msg.w = w   # positivo = anti-horário
-        msg.posType = pb.protoPositionSSL.motionControl
+        msg.posType = pb.protoPositionSSL.source
 
         self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
-    
-    def sendSpeed(self, vx, vy, vw, front=False, chip=False, kick_strength=0, dribbler=False, dribbler_speed=0):
-        msg = pb.protoSpeedSSL()
-        msg.x = vx   # positivo = frente
-        msg.y = vy   # positivo = esquerda
-        msg.w = vw   # positivo = anti-horário
-        msg.front = front
-        msg.chip = chip
-        msg.kickStrength = kick_strength
-        msg.dribbler = dribbler
-        msg.dribSpeed = dribbler_speed
 
-        conn = socket(socket.AF_INET, socket.SOCK_DGRAM)
-        conn.sendto(
-            msg.SerializeToString(), 
-            (self.device_address, self.device_port)
-            )
 
     def recvOdometry(self):
         msg = pb.protoPositionSSL()

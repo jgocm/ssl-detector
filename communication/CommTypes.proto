@@ -20,9 +20,11 @@ message protoPositionSSL{
         unknown = 0;
         source = 1;
         target = 2;
-        motionControl = 3;
+        dock = 3;
         rotateControl = 4;
         rotateInPoint = 5;
+        rotateOnSelf = 6;
+        stop = 7;
     }
     PosType posType = 4;
 };
