@@ -27,4 +27,10 @@ message protoPositionSSL{
         stop = 7;
     }
     PosType posType = 4;
+    bool front  = 5;
+    bool chip  = 6;
+    bool charge  = 7;
+    double kickStrength = 8 ;
+    bool dribbler = 9;
+    double dribSpeed = 10;   
 };
