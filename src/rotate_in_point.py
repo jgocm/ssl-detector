@@ -107,7 +107,7 @@ def main():
     target_x, target_y, target_w = 0,0,0
 
     # INIT VISION BLACKOUT STATE MACHINE
-    state = "search"
+    state = "rotate"
 
     while cap.isOpened():
         TARGET = False
@@ -154,7 +154,7 @@ def main():
                 TARGET = True
 
         # STATE MACHINE
-        dist = math.sqrt(target_x**2+target_y**2)
+        '''    dist = math.sqrt(target_x**2+target_y**2)
         if state == "search":
             eth_comm.sendRotateSearch(x=target_x, y=target_y, w=target_w)
             if TARGET: 
@@ -170,8 +170,10 @@ def main():
         elif state == "rotate":
             eth_comm.sendRotateInPoint(x=target_x, y=target_y, w=target_w)
             if dist>0.3:
-                state = "drive"
-        
+                state = "drive"'''
+
+        eth_comm.sendRotateInPoint()
+
         print(state)
 
         # DISPLAY WINDOW

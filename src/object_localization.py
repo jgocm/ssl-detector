@@ -286,8 +286,8 @@ if __name__=="__main__":
                 # BACK PROJECT BALL POSITION TO CAMERA 3D COORDINATES
                 object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
                 x, y, z = (position[0] for position in object_position)
-                #caption = f"Position:{x:.2f},{y:.2f}"
-                #myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.35)
+                caption = f"Position:{x:.2f},{y:.2f}"
+                myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.35)
 
         # DISPLAY WINDOW
         key = cv2.waitKey(10) & 0xFF

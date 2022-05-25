@@ -15,6 +15,13 @@ import object_localization
 import communication_proto
 import interface
 
+def stopToRotateTarget(x, y, w, offset=0.3):
+    dist = math.sqrt(x**2+y**2) + 0.001
+    prop = (dist - offset)/dist
+    target_x, target_y, target_w = prop*x, prop*y, w
+    return target_x, target_y, target_w
+
+
 def main():
     cwd = os.getcwd()
 
@@ -109,6 +116,9 @@ def main():
     # INIT VISION BLACKOUT STATE MACHINE
     state = "search"
 
+    # INIT STATE MACHINE TIMER
+    state_time = time.time()
+
     while cap.isOpened():
         TARGET = False
         start_time = time.time()
@@ -147,29 +157,46 @@ def main():
                     myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
+                # TO-DO: create target point class
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
+               # if state == "drive" or "stop":
+               #     target_x, target_y, target_w = stopToRotateTarget(x-ssl_robot.camera_offset/1000, y, w, offset=0.3)
+               # elif state == "align":
                 target_x, target_y, target_w = x-ssl_robot.camera_offset/1000, y, w
                 
                 # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
                 TARGET = True
 
         # STATE MACHINE
-        dist = math.sqrt(target_x**2+target_y**2)
+        # TO-DO: create state machine class 
+        dist = math.sqrt(target_x**2+target_y**2)+0.001
+
         if state == "search":
             eth_comm.sendRotateSearch()
-            if TARGET: 
+            if TARGET:
+                state = "align"
+        elif state == "align":
+            eth_comm.sendRotateControl(x=target_x, y=target_y, w=target_w)
+            if np.abs(target_w)<0.15:
+                state = "stop"
+                state_time = time.time()
+        elif state == "stop":
+            eth_comm.sendStopMotion()
+            if np.abs(target_w)>0.15:
+                state = "align"
+            elif time.time()-state_time>1 and np.abs(target_w)<0.15:
                 state = "drive"
-                eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
         elif state == "drive":
             eth_comm.sendTargetPosition(x=target_x, y=target_y, w=target_w)
             if dist<0.270 and  not TARGET:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
                 state = "dock"
         elif state == "dock":
-            eth_comm.sendBallDocking(x=target_x*1.2, y=target_y*1.2, w=target_w)
-            if dist>0.270:
-                state = "drive"
+            eth_comm.sendBallDocking(x=target_x, y=target_y, w=target_w)
 
-        print(target_x, target_y, target_w)
+       
+                
+
+        print(f'State: {state} | Target: {target_x:.3f}, {target_y:.3f}, {target_w:.3f}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
@@ -183,9 +210,8 @@ def main():
             if quit:
                 eth_comm.sendTargetPosition(x=0, y=0, w=0)
                 break
-
         else:
-            if time.time()-config_time-start>10:
+            if time.time()-config_time-start>20:
                 print(f'Avg frame processing time:{avg_time}')
                 break
 
