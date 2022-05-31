@@ -9,7 +9,7 @@ import sys
 import os
 
 # LOCAL IMPORTS
-import robot
+from entities import robot
 import object_detection
 import object_localization
 import communication_proto

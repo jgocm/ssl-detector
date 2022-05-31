@@ -1,7 +1,5 @@
 import socket
 import sys
-
-from numpy import False_
 import CommTypes_pb2 as pb
 
 class SocketUDP():
