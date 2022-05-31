@@ -1,4 +1,4 @@
-from unittest import skip
+import os
 import interface
 import numpy as np
 import cv2
@@ -7,17 +7,23 @@ import object_localization
 if __name__=="__main__":
     WINDOW_TITLE = "Camera Calibration"
 
+    cwd = os.getcwd()
+
     # CAMERA PARAMETERS SETUP
-    PATH_TO_INTRINSIC_PARAMETERS = "/home/joao/ssl-detector/configs/camera_matrix_C922.txt"
-    PATH_TO_DISTORTION_PARAMETERS = "/home/joao/ssl-detector/configs/camera_distortion_C922.txt"
-    PATH_TO_2D_POINTS = "/home/joao/ssl-detector/configs/calibration_points2d.txt"
-    PATH_TO_3D_POINTS = "/home/joao/ssl-detector/configs/calibration_points3d.txt"
-    PATH_TO_FIELD_POINTS = "/home/joao/ssl-detector/configs/field_points3d.txt"
-    FIELD_POINTS = np.loadtxt(PATH_TO_FIELD_POINTS, dtype="float64")
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
+    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/dist.txt"
+    PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
+    PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
+    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
+    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
+    calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
-                camera_matrix_path=PATH_TO_INTRINSIC_PARAMETERS,
-                camera_distortion_path=PATH_TO_DISTORTION_PARAMETERS
+                camera_matrix=camera_matrix,
+                #camera_distortion=camera_distortion,
+                camera_initial_position=calibration_position
                 )
+    PATH_TO_FIELD_POINTS = cwd+"/configs/field_points3d.txt"
+    FIELD_POINTS = np.loadtxt(PATH_TO_FIELD_POINTS, dtype="float64")
 
     # VIDEO CAPTURE CONFIGS
     cap = cv2.VideoCapture("/dev/video0")
@@ -25,8 +31,8 @@ if __name__=="__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # IMAGE READ SETUP
-    #PATH_TO_IMG = r"/home/joao/ssl-detector/images/calibration_image_1.jpg"
-    #img = cv2.imread(PATH_TO_IMG)
+    PATH_TO_IMG = cwd+"/images/calibration_image-5.jpg"
+    img = cv2.imread(PATH_TO_IMG)
 
     # USER INTERFACE SETUP
     myGUI = interface.GUI(
@@ -59,6 +65,7 @@ if __name__=="__main__":
                 points3d = np.array(points3d,dtype="float64")
                 camera_position, euler_angles = ssl_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
 
+
         # DISPLAY WINDOW
         cv2.imshow(WINDOW_TITLE,myGUI.screen)
 
@@ -67,12 +74,14 @@ if __name__=="__main__":
         quit = myGUI.commandHandler(key=key)
         cv2.setMouseCallback(WINDOW_TITLE, myGUI.pointCrossMarker)
         if myGUI.save:
-            cv2.imwrite('configs/calibration_image.jpg', img)
+            #cv2.imwrite('configs/calibration_image_paper.jpg', myGUI.screen)
             np.savetxt(f'configs/calibration_position.txt', camera_position)
             np.savetxt(f'configs/calibration_rotation.txt', euler_angles)
             np.savetxt(f'configs/calibration_points2d.txt', points2d)
             np.savetxt(f'configs/calibration_points3d.txt', points3d)
             myGUI.save = False
+            print(f'Camera Position:\n{camera_position}')
+            print(f'Camera Rotation:\n{euler_angles}')
         if quit:
             break
         else:

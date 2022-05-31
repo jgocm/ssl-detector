@@ -19,11 +19,49 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='CommTypes.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x0f\x43ommTypes.proto\"\x9b\x01\n\rprotoSpeedSSL\x12\n\n\x02vx\x18\x01 \x01(\x01\x12\n\n\x02vy\x18\x02 \x01(\x01\x12\n\n\x02vw\x18\x03 \x01(\x01\x12\r\n\x05\x66ront\x18\x04 \x01(\x08\x12\x0c\n\x04\x63hip\x18\x05 \x01(\x08\x12\x0e\n\x06\x63harge\x18\x06 \x01(\x08\x12\x14\n\x0ckickStrength\x18\x07 \x01(\x01\x12\x10\n\x08\x64ribbler\x18\x08 \x01(\x08\x12\x11\n\tdribSpeed\x18\t \x01(\x01\"3\n\x10protoPositionSSL\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01w\x18\x03 \x01(\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x0f\x43ommTypes.proto\"\x9b\x01\n\rprotoSpeedSSL\x12\n\n\x02vx\x18\x01 \x01(\x01\x12\n\n\x02vy\x18\x02 \x01(\x01\x12\n\n\x02vw\x18\x03 \x01(\x01\x12\r\n\x05\x66ront\x18\x04 \x01(\x08\x12\x0c\n\x04\x63hip\x18\x05 \x01(\x08\x12\x0e\n\x06\x63harge\x18\x06 \x01(\x08\x12\x14\n\x0ckickStrength\x18\x07 \x01(\x01\x12\x10\n\x08\x64ribbler\x18\x08 \x01(\x08\x12\x11\n\tdribSpeed\x18\t \x01(\x01\"\xc8\x01\n\x10protoPositionSSL\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01w\x18\x03 \x01(\x01\x12*\n\x07posType\x18\x04 \x01(\x0e\x32\x19.protoPositionSSL.PosType\"g\n\x07PosType\x12\x0b\n\x07unknown\x10\x00\x12\n\n\x06source\x10\x01\x12\n\n\x06target\x10\x02\x12\x11\n\rmotionControl\x10\x03\x12\x11\n\rrotateControl\x10\x04\x12\x11\n\rrotateInPoint\x10\x05\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
+
+_PROTOPOSITIONSSL_POSTYPE = _descriptor.EnumDescriptor(
+  name='PosType',
+  full_name='protoPositionSSL.PosType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='unknown', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='source', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='target', index=2, number=2,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='motionControl', index=3, number=3,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='rotateControl', index=4, number=4,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='rotateInPoint', index=5, number=5,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=275,
+  serialized_end=378,
+)
+_sym_db.RegisterEnumDescriptor(_PROTOPOSITIONSSL_POSTYPE)
 
 
 _PROTOSPEEDSSL = _descriptor.Descriptor(
@@ -141,11 +179,19 @@ _PROTOPOSITIONSSL = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='posType', full_name='protoPositionSSL.posType', index=3,
+      number=4, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
+    _PROTOPOSITIONSSL_POSTYPE,
   ],
   options=None,
   is_extendable=False,
@@ -153,10 +199,12 @@ _PROTOPOSITIONSSL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=177,
-  serialized_end=228,
+  serialized_start=178,
+  serialized_end=378,
 )
 
+_PROTOPOSITIONSSL.fields_by_name['posType'].enum_type = _PROTOPOSITIONSSL_POSTYPE
+_PROTOPOSITIONSSL_POSTYPE.containing_type = _PROTOPOSITIONSSL
 DESCRIPTOR.message_types_by_name['protoSpeedSSL'] = _PROTOSPEEDSSL
 DESCRIPTOR.message_types_by_name['protoPositionSSL'] = _PROTOPOSITIONSSL
 

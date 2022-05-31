@@ -1,23 +1,18 @@
-from turtle import position
 import numpy as np
 import cv2
 import math
-import object_detection
-import tensorrt as trt
-import interface
 import time
 
 class Camera():
     def __init__(
                 self,
-                camera_matrix_path='',
-                camera_distortion_path='',
-                camera_initial_position=False,
+                camera_matrix=np.identity(3),
+                camera_distortion=np.zeros((4,1)),
+                camera_initial_position=np.zeros(3),
+                vision_offset=np.zeros(3)
                 ):
         super(Camera, self).__init__()
-        camera_matrix = np.loadtxt(camera_matrix_path, dtype="float64")
         self.intrinsic_parameters = camera_matrix
-        camera_distortion = np.loadtxt(camera_distortion_path, dtype="float64")
         self.distortion_parameters = camera_distortion
 
         self.rotation_vector = np.zeros((3,1))
@@ -30,13 +25,7 @@ class Camera():
 
         self.initial_position = camera_initial_position
         # apply XYW offset if calibration ground truth position is known
-        if self.initial_position:
-            self.apply_offset = True
-        else:
-            self.apply_offset = False
-
-        self.x_offset = 0
-        self.y_offset = 0
+        self.offset = vision_offset
 
     
     def setIntrinsicParameters(self, mtx):
@@ -59,6 +48,18 @@ class Camera():
             print(f"Camera distortion parameters must be of shape (4,1) and the inserted array has shape {np.shape(dist)}")
             return False
     
+    def setOffset(self, offset):
+        if np.shape(offset)==(3,):
+            self.offset = offset
+            print(f"Position offset is:")
+            print(offset)
+        else:
+            print(f"Position offset must be of shape (3,) and the inserted matrix has shape {np.shape(offset)}")
+
+    
+    def fixPoints3d(self, points3d):
+        return points3d-self.initial_position
+
     def computePoseFromPoints(self, points3d, points2d):
         """
         Compute camera pose to object from 2D-3D points correspondences
@@ -72,6 +73,7 @@ class Camera():
 
         points2d: pixel positions on image
         """
+        #points3d = self.fixPoints3d(points3d=points3d)
         _,rvec,tvec=cv2.solvePnP(
                                 points3d,
                                 points2d,
@@ -85,8 +87,9 @@ class Camera():
 
         _, _, _, _, _, _, euler_angles = cv2.decomposeProjectionMatrix(pose)
 
-        camera_position = -np.matrix(rmtx).T*np.matrix(tvec)
+        camera_position = -np.linalg.inv(rmtx)@tvec
         height = camera_position[2,0]
+        self.offset = (camera_position.T-self.initial_position).T
 
         self.rotation_vector = rvec
         self.rotation_matrix = rmtx
@@ -95,9 +98,6 @@ class Camera():
         self.position = camera_position
         self.rotation = euler_angles
         self.height = height
-
-        if self.apply_offset:
-            self.setCameraOffset()
 
         return camera_position, euler_angles
     
@@ -147,23 +147,18 @@ class Camera():
 
         return tvec, rmtx
 
-
-    def setCameraOffset(self):
-        self.x_offset = self.position[0]-self.initial_position[0]
-        self.y_offset = self.position[1]-self.initial_position[1]
-
     def pixelToCameraCoordinates(self, x, y, z_world=0):
         uvPoint = np.array([(x,y,1)])
         mtx = self.intrinsic_parameters
         rmtx = self.rotation_matrix
+        tvec = self.translation_vector
         height = self.height
         
-        leftsideMat = np.matmul(np.linalg.inv(rmtx),np.matmul(np.linalg.inv(mtx),np.transpose(uvPoint)))
-        s = (height-z_world)/leftsideMat[2]
+        leftsideMat = np.linalg.inv(rmtx)@(np.linalg.inv(mtx)@np.transpose(uvPoint))
+        s = -(height-z_world)/leftsideMat[2]
+        
+        p = s*leftsideMat
 
-        #offset = np.array([(self.x_offset,self.y_offset,height)])
-
-        p = -s*leftsideMat
         return p
 
     def ballAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.8):
@@ -171,21 +166,43 @@ class Camera():
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
     
+    def ballAsPointLinearRegression(self, left, top, right, bottom, weight_x, weight_y):
+        x = [left, right, top, bottom, 1]@weight_x
+        y = [left, right, top, bottom, 1]@weight_y
+        return x, y
+    
     def robotAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.9):
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
     
-    def goalAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.9):
+    def goalAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.1):
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
+    
+    def cameraToPixelCoordinates(self, x, y, z_world=0):
+        M = self.intrinsic_parameters
+        R = self.rotation_matrix
+        t = self.translation_vector
+        height = self.height
+        cameraPoint = np.array([(x,y,z_world-height)])
+
+        rightSideMat = M@(R@(cameraPoint).T)
+
+        s = rightSideMat[2]
+
+        uvPoint = rightSideMat/s
+
+        return uvPoint
 
 if __name__=="__main__":
-
-    # TEST FOR BALL LOCALIZATION ON IMAGE OR USB CAMERA CAPTURE
-    test_x = 315
-    test_y = 264
+    import object_detection
+    import tensorrt as trt
+    import interface
+    import os
+    
+    cwd = os.getcwd()
 
     # START TIME
     start = time.time()
@@ -199,7 +216,7 @@ if __name__=="__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # IMAGE READ SETUP
-    PATH_TO_IMG = r"/home/joao/ssl-detector/images/calibration_image_1.jpg"
+    PATH_TO_IMG = cwd+"/experiments/13abr/1.jpg"
     img = cv2.imread(PATH_TO_IMG)
 
     # OBJECT DETECTION MODEL
@@ -208,21 +225,25 @@ if __name__=="__main__":
                 labels_path="/home/joao/ssl-detector/models/ssl_labels.txt", 
                 input_width=300, 
                 input_height=300,
-                score_threshold = 0.32,
+                score_threshold = 0.5,
                 draw = False,
                 display_fps = False,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
                 )
     trt_net.loadModel()
+    regression_weights = np.loadtxt(cwd+f"/experiments/12abr/regression_weights.txt")
 
     # CAMERA PARAMETERS SETUP
-    PATH_TO_INTRINSIC_PARAMETERS = "/home/joao/ssl-detector/configs/camera_matrix_C922.txt"
-    PATH_TO_DISTORTION_PARAMETERS = "/home/joao/ssl-detector/configs/camera_distortion_C922.txt"
-    PATH_TO_2D_POINTS = "/home/joao/ssl-detector/configs/calibration_points2d.txt"
-    PATH_TO_3D_POINTS = "/home/joao/ssl-detector/configs/calibration_points3d.txt"
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
+    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/dist.txt"
+    PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
+    PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
+    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
+    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
+    calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = Camera(
-                camera_matrix_path=PATH_TO_INTRINSIC_PARAMETERS,
-                camera_distortion_path=PATH_TO_DISTORTION_PARAMETERS
+                camera_matrix=camera_matrix,
+                camera_initial_position=calibration_position
                 )
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
@@ -251,7 +272,13 @@ if __name__=="__main__":
             # BALL LOCALIZATION ON IMAGE
             if class_id==1:     # ball
                 # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = ssl_cam.ballAsPoint(left=xmin, top=ymin, right=xmax, bottom=ymax, weight_y = 0.25)
+                pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
+                                                                    left = xmin, 
+                                                                    top = ymin, 
+                                                                    right = xmax, 
+                                                                    bottom = ymax, 
+                                                                    weight_x = regression_weights[0],
+                                                                    weight_y = regression_weights[1])
 
                 # DRAW OBJECT POINT ON SCREEN
                 myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
@@ -266,9 +293,11 @@ if __name__=="__main__":
         key = cv2.waitKey(10) & 0xFF
         quit = myGUI.commandHandler(key=key)
         run_time = time.time()-start
-        myGUI.drawText(myGUI.screen, f"running time: {run_time:.2f}s", (8, 13), 0.5)
+        #myGUI.drawText(myGUI.screen, f"running time: {run_time:.2f}s", (8, 13), 0.5)
         cv2.imshow(WINDOW_NAME, myGUI.screen)
         
+        if key == ord('s'):
+            cv2.imwrite(cwd+"/experiments/13abr/point2d.jpg",myGUI.screen)
         if quit:
             break
         else: myGUI.updateGUI(img)
