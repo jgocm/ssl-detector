@@ -66,12 +66,12 @@ class Ball():
         x = 0,
         y = 0,
         diameter = 42.7,
-        radius = diameter/2
-    )
-    super(Ball, self).__init__()
-    self.x = x
-    self.y = y
-    self.radius = diameter/2
+        radius = 42.7/2
+        ):
+        super(Ball, self).__init__()
+        self.x = x
+        self.y = y
+        self.radius = diameter/2
 
     def updatePosition(self, x, y):
         self.x, self.y = x, y
@@ -80,7 +80,7 @@ class Ball():
         return math.sqrt(self.x**2 + self.y**2)
     
     def getDirection(self):
-        return atan2(self.y, self.x)
+        return math.atan2(self.y, self.x)
 
 class Goal():
     def __init__(
@@ -88,11 +88,11 @@ class Goal():
         width = 1000,
         depth = 180,
         height = 155
-    )
-    super(Goal, self).__init__()
-    self.width = width
-    self.depth = depth
-    self.height = height
+        ):
+        super(Goal, self).__init__()
+        self.width = width
+        self.depth = depth
+        self.height = height
 
 class Field():
     def __init__(
@@ -104,16 +104,16 @@ class Field():
         center_radius = 1000,
         boundary_width = 180,
         line_thickness = 20
-    )
-    super(Field, self).__init__()
-    self.width = field_width
-    self.length = field_length
-    self.penalty_area_width = penalty_area_width
-    self.penalty_area_depth = penalty_area_depth
-    self.boundary_width = boundary_width
-    self.line_thickness = line_thickness
-    self.center_radius = center_radius
-    self.goal = Goal()
+        ):
+        super(Field, self).__init__()
+        self.width = field_width
+        self.length = field_length
+        self.penalty_area_width = penalty_area_width
+        self.penalty_area_depth = penalty_area_depth
+        self.boundary_width = boundary_width
+        self.line_thickness = line_thickness
+        self.center_radius = center_radius
+        self.goal = Goal()
     
     def getGoalCoordinates(self):
         p1 = -self.goal.width/2, self.length/2

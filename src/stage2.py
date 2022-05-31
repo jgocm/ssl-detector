@@ -9,7 +9,7 @@ import sys
 import os
 
 # LOCAL IMPORTS
-from entities import robot
+from entities import Robot
 import object_detection
 import object_localization
 import communication_proto
@@ -52,7 +52,7 @@ def main():
     ROBOT_HEIGHT = 155
     ROBOT_DIAMETER = 180
     CAMERA_TO_CENTER_OFFSET = 90
-    ssl_robot = robot.SSLRobot(                
+    ssl_robot = Robot(                
                 id = ROBOT_ID,
                 height = ROBOT_HEIGHT,
                 diameter = ROBOT_DIAMETER,

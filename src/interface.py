@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import os
 
 class GUI():
     def __init__(
@@ -230,7 +231,7 @@ if __name__=="__main__":
     WINDOW_TITLE = "test"
     cwd = os.getcwd()
 
-    img = cv2.imread(cwd+"/configs/calibration_imag.jpg')
+    img = cv2.imread(cwd+"/configs/calibration_image.jpg")
     img = cv2.resize(img, (640, 480))
 
     myGUI = GUI(
