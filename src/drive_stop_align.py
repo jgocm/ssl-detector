@@ -161,7 +161,7 @@ def main():
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
                 if state == "drive" or "stop":
                     target_x, target_y, target_w = stopToRotateTarget(x-ssl_robot.camera_offset/1000, y, w, offset=0.3)
-                elif state == "align":
+                else:
                     target_x, target_y, target_w = x-ssl_robot.camera_offset/1000, y, w
                 # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
                 TARGET = True

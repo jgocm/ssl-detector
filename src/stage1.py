@@ -123,15 +123,6 @@ def main():
         detections = trt_net.inference(frame).detections
 
         for detection in detections:
-            '''
-            Detection ID's:
-            0: background
-            1: ball
-            2: goal
-            3: robot
-
-            Labels are available at: ssl-detector/models/ssl_labels.txt
-            '''
             class_id, score, xmin, xmax, ymin, ymax = detection
             if class_id==1:     # ball
                 # COMPUTE PIXEL FOR BALL POSITION

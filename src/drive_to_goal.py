@@ -15,6 +15,12 @@ import object_localization
 import communication_proto
 import interface
 
+def offsetTarget(x, y, w, offset=1):
+    dist = math.sqrt(x**2+y**2) + 0.001
+    prop = (dist - offset)/dist
+    target_x, target_y, target_w = prop*x, prop*y, w
+    return target_x, target_y, target_w
+
 def main():
     cwd = os.getcwd()
 
@@ -22,11 +28,11 @@ def main():
     start = time.time()
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = False
+    DRAW = True
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = False
+    SHOW_DISPLAY = True
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -109,6 +115,9 @@ def main():
     # INIT VISION BLACKOUT STATE MACHINE
     state = "rotate"
 
+    # INIT STATE MACHINE TIMER
+    state_time = time.time()
+
     while cap.isOpened():
         TARGET = False
         start_time = time.time()
@@ -123,39 +132,75 @@ def main():
         detections = trt_net.inference(frame).detections
 
         for detection in detections:
-            class_id, score, xmin, xmax, ymin, ymax = detection
-            if class_id==1:     # ball
-                # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
-                                                                    left=xmin, 
-                                                                    top=ymin, 
-                                                                    right=xmax, 
-                                                                    bottom=ymax, 
-                                                                    weight_x=regression_weights[0],
-                                                                    weight_y=regression_weights[1])
-            
+            """
+            Detection ID's:
+            0: background
+            1: ball
+            2: goal
+            3: robot
+
+            Labels are available at: ssl-detector/models/ssl_labels.txt
+            """
+            class_id, score, xmin, xmax, ymin, ymax = detection         
+            if class_id==2:
+                # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
+                pixel_x, pixel_y = ssl_cam.goalAsPoint(
+                                                    left=xmin,
+                                                    top=ymin,
+                                                    right=xmax,
+                                                    bottom=ymax)
                 # DRAW OBJECT POINT ON SCREEN
                 if DRAW:
                     myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
-
-                # BACK PROJECT BALL POSITION TO CAMERA 3D COORDINATES
+                
+                # BACK PROJECT GOAL CENTER POSITION TO CAMERA 3D COORDINATES
                 object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
                 x, y = object_position[0], object_position[1]
 
                 if DRAW:
                     caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
                     myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
-
+                
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
                 target_x, target_y, target_w = x-ssl_robot.camera_offset/1000, y, w
-                
-                # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
+
                 TARGET = True
 
-        eth_comm.sendRotateInPoint()
+        # STATE MACHINE
+        # TO-DO: create state machine class
+        if state == "rotate":
+            eth_comm.sendRotateInPoint()
+            if TARGET:
+                state = "drive"
+                eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
+                state_time = time.time()
+            elif time.time()-state_time>20:
+                state = "stop"
+        elif state == "stop":
+            eth_comm.sendStopMotion()
+            print("Goal not found")
+            break
+        elif state == "drive":
+            target_x, target_y, target_w = offsetTarget(target_x, target_y, target_w, 1.5)
+            dist = math.sqrt(target_x**2+target_y**2)+0.001
+            eth_comm.sendTargetPosition(target_x, target_y, target_w)
+            if dist<0.07:
+                state = "finish"
+                state_time = time.time()
+            elif time.time()-state_time>5:
+                eth_comm.sendStopMotion()
+        elif state == "finish":
+            eth_comm.sendStopMotion()
+            if dist>0.07:
+                state = "drive"
+                eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
+                state_time = time.time()
+            elif time.time()-state_time>0.5:        
+                print("Target arrived")
+                break
 
-        print(state)
+        print(f'State: {state} | Target: {target_x:.3f}, {target_y:.3f}, {target_w:.3f}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
@@ -169,17 +214,14 @@ def main():
             if quit:
                 eth_comm.sendTargetPosition(x=0, y=0, w=0)
                 break
-
         else:
-            if time.time()-config_time-start>30:
+            if time.time()-config_time-start>20:
                 print(f'Avg frame processing time:{avg_time}')
                 break
 
-        
     # RELEASE WINDOW AND DESTROY
     cap.release()
     cv2.destroyAllWindows()
-
 
 
 if __name__=="__main__":
