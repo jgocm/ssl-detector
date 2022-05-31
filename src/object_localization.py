@@ -239,7 +239,6 @@ if __name__=="__main__":
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
-    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = Camera(
                 camera_matrix=camera_matrix,

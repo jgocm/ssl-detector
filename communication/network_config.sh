@@ -1,7 +1,7 @@
 sudo apt install net-tools -y
 sudo apt install ifupdown
 sudo service network-manager stop
-# BaseStation Adapter Jetson Nano
+# Static IP Adapter Jetson Nano
 echo "auto eth0
 iface eth0 inet static
 address 199.0.1.2

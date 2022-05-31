@@ -206,12 +206,12 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    PATH_TO_IMG = r"/home/joao/ssl-detector/experiments/13abr/1.jpg"
+    PATH_TO_IMG = cwd+"/experiments/13abr/1.jpg"
     im = cv2.imread(PATH_TO_IMG)
 
     trt_net = DetectNet(
-                model_path="/home/joao/ssl-detector/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt", 
-                labels_path="/home/joao/ssl-detector/models/ssl_labels.txt", 
+                model_path=cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt", 
+                labels_path=cwd+"/models/ssl_labels.txt", 
                 input_width=300, 
                 input_height=300,
                 score_threshold = 0.5,
@@ -240,7 +240,7 @@ if __name__ == "__main__":
         if key == ord("q"):
             break
         elif key == ord('s'):
-            cv2.imwrite("/home/joao/ssl-detector/experiments/13abr/bbox.jpg", frame)
+            cv2.imwrite(cwd+"/experiments/13abr/bbox.jpg", frame)
         
     # RELEASE WINDOW AND DESTROY
     cap.release()

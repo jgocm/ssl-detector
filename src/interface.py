@@ -228,8 +228,9 @@ class GUI():
 
 if __name__=="__main__":
     WINDOW_TITLE = "test"
+    cwd = os.getcwd()
 
-    img = cv2.imread('/home/joao/ssl-detector/images/calibration_image_1.jpg')
+    img = cv2.imread(cwd+"/configs/calibration_imag.jpg')
     img = cv2.resize(img, (640, 480))
 
     myGUI = GUI(

@@ -98,8 +98,8 @@ def main():
     ssl_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
 
     # OBJECT DETECTION MODEL
-    PATH_TO_MODEL = "/home/joao/ssl-detector/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt"
-    PATH_TO_LABELS = "/home/joao/ssl-detector/models/ssl_labels.txt"
+    PATH_TO_MODEL = cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt"
+    PATH_TO_LABELS = cwd+"/models/ssl_labels.txt"
     trt_net = object_detection.DetectNet(
                 model_path = PATH_TO_MODEL, 
                 labels_path = PATH_TO_LABELS, 
@@ -112,7 +112,7 @@ def main():
     trt_net.loadModel()
 
     # BALL TO PIXEL REGRESSION WEIGHTS
-    regression_weights = np.loadtxt(cwd+f"/models/regression_weights.txt")
+    regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
     config_time = time.time() - start

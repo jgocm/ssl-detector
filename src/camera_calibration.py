@@ -15,11 +15,9 @@ if __name__=="__main__":
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
-    camera_distortion = np.loadtxt(PATH_TO_DISTORTION_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
                 camera_matrix=camera_matrix,
-                #camera_distortion=camera_distortion,
                 camera_initial_position=calibration_position
                 )
     PATH_TO_FIELD_POINTS = cwd+"/configs/field_points3d.txt"
@@ -31,12 +29,11 @@ if __name__=="__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # IMAGE READ SETUP
-    PATH_TO_IMG = cwd+"/images/calibration_image-5.jpg"
+    PATH_TO_IMG = cwd+"/configs/calibration_image.jpg"
     img = cv2.imread(PATH_TO_IMG)
 
     # USER INTERFACE SETUP
     myGUI = interface.GUI(
-                        #screen=img.copy(),
                         play = True,
                         mode = "calibration"
                         )
@@ -74,7 +71,7 @@ if __name__=="__main__":
         quit = myGUI.commandHandler(key=key)
         cv2.setMouseCallback(WINDOW_TITLE, myGUI.pointCrossMarker)
         if myGUI.save:
-            #cv2.imwrite('configs/calibration_image_paper.jpg', myGUI.screen)
+            cv2.imwrite('configs/calibration_image.jpg', img)
             np.savetxt(f'configs/calibration_position.txt', camera_position)
             np.savetxt(f'configs/calibration_rotation.txt', euler_angles)
             np.savetxt(f'configs/calibration_points2d.txt', points2d)
