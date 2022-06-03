@@ -1,6 +1,6 @@
-import cv2
 import numpy as np
 import math
+import CommTypes_pb2 as pb
 
 class Robot():
     def __init__(
@@ -15,10 +15,14 @@ class Robot():
         self.height = height
         self.diameter = diameter
 
-        self.position = None
+        self.x = 0
+        self.y = 0
+        self.w = 0
+        self.position = [self.x, self.y, self.w]
         self.rotation = None
+
         self.pose_confidence = 0
-        self.camera_offset = self.diameter/2
+        self.camera_offset = camera_offset
 
         self.front = False
         self.chip = False
@@ -62,49 +66,51 @@ class Robot():
 
 class Ball():
     def __init__(
-        self,
-        x = 0,
-        y = 0,
-        diameter = 42.7,
-        radius = 42.7/2
-        ):
+                self,
+                diameter = 42.7,
+                radius = 42.7/2
+                ):
         super(Ball, self).__init__()
-        self.x = x
-        self.y = y
+        self.x = 0
+        self.y = 0
+        self.w = 0
         self.radius = diameter/2
 
     def updatePosition(self, x, y):
-        self.x, self.y = x, y
+        self.x, self.y, self.w = x, y, math.atan2(y, x)
     
     def getDistance(self):
         return math.sqrt(self.x**2 + self.y**2)
     
     def getDirection(self):
-        return math.atan2(self.y, self.x)
+        self.w = math.atan2(self.y, self.x)
+        return self.w
 
 class Goal():
     def __init__(
-        self,
-        width = 1000,
-        depth = 180,
-        height = 155
-        ):
+                self,
+                width = 1000,
+                depth = 180,
+                height = 155
+                ):
         super(Goal, self).__init__()
         self.width = width
         self.depth = depth
         self.height = height
+        self.center_x = 0
+        self.center_y = 0
 
 class Field():
     def __init__(
-        self,
-        field_width = 3760,
-        field_length = 5640,
-        penalty_area_width = 2000,
-        penalty_area_depth = 1000,
-        center_radius = 1000,
-        boundary_width = 180,
-        line_thickness = 20
-        ):
+                self,
+                field_width = 3760,
+                field_length = 5640,
+                penalty_area_width = 2000,
+                penalty_area_depth = 1000,
+                center_radius = 1000,
+                boundary_width = 180,
+                line_thickness = 20
+                ):
         super(Field, self).__init__()
         self.width = field_width
         self.length = field_length
@@ -120,6 +126,72 @@ class Field():
         p2 = self.goal.width/2, self.length/2
         return p1, p2
     
+class Frame():
+    def __init__(self):
+        super(Frame, self).__init__()
+        self.input = None
+        self.ball = Ball()
+        self.goal = Goal()
+        self.robot = Robot()
+        self.has_ball = False
+        self.has_goal = False
+        self.has_robot = False
+        self.has_target = False
     
+    def updateBall(self, x, y):
+        self.ball.updatePosition(x, y)
+        self.has_ball = True
+        return self.ball
 
+    def updateGoalCenter(self, x, y):
+        self.goal.center_x = x
+        self.goal.center_y = y
+        self.has_goal = True
+        return self.goal
 
+    def updateRobot(self, x, y):
+        self.robot.x = x
+        self.robot.y = y
+        self.has_robot = True
+        return self.robot
+
+class GroundPoint():
+    def __init__(
+                self,
+                x0 = 0,
+                y0 = 0
+                ):
+        super(GroundPoint, self).__init__()
+        self.x = x0
+        self.y = y0
+        self.type = pb.protoPositionSSL.unknown
+    
+    def setPosition(self, x, y):
+        self.x = x
+        self.y = y
+
+    def getDistance(self):
+        return math.sqrt(self.x**2 + self.y**2)
+    
+    def getDirection(self):
+        self.w = math.atan2(self.y, self.x)
+        return self.w
+
+    def offsetTarget(self, x, y, w, offset=1):
+        dist = math.sqrt(x**2+y**2) + 0.001
+        prop = (dist - offset)/dist
+        target_x, target_y, target_w = prop*x, prop*y, w
+        return target_x, target_y, target_w
+
+    def directionVector(self, x1, y1, x2, y2):
+        vy = y2-y1
+        vx = x2-x1
+        w = math.atan2(-vy, -vx)
+        return -vx, -vy
+
+    def alignedTarget(self, vx, vy, bx, by, offset):
+        v_norm = math.sqrt(vx**2+vy**2)
+        target_x = vx*offset/v_norm + bx
+        target_y = vy*offset/v_norm + by
+        target_w = math.atan2(target_y, target_x)
+        return target_x, target_y, target_w
