@@ -3,17 +3,15 @@ import cv2
 import numpy as np
 import tensorrt as trt
 import time
-import socket
-import argparse
-import sys
 import os
 
 # LOCAL IMPORTS
-from entities import Robot
+from entities import Robot, Goal, Ball, Frame, GroundPoint
 import object_detection
 import object_localization
 import communication_proto
 import interface
+from fsm import FSM, State
 
 def main():
     cwd = os.getcwd()
@@ -26,8 +24,8 @@ def main():
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = False
-
+    SHOW_DISPLAY = DRAW
+    
     # ROBOT SETUP
     ROBOT_ID = 0
     ROBOT_HEIGHT = 155
@@ -37,8 +35,12 @@ def main():
                 id = ROBOT_ID,
                 height = ROBOT_HEIGHT,
                 diameter = ROBOT_DIAMETER,
-                camera_offset = CAMERA_TO_CENTER_OFFSET
-                )
+                camera_offset = CAMERA_TO_CENTER_OFFSET)
+    
+    # INIT ENTITIES
+    ssl_ball = Ball()
+    ssl_goal = Goal()
+    target = GroundPoint(x0 = 0, y0 = 0)
 
     # UDP COMMUNICATION SETUP
     HOST_ADDRES = "199.0.1.2"
@@ -49,8 +51,7 @@ def main():
         host_address=HOST_ADDRES,
         host_port=HOST_PORT,
         device_address=DEVICE_ADRESS,
-        device_port=DEVICE_PORT
-    )
+        device_port=DEVICE_PORT)
 
     # VIDEO CAPTURE CONFIGS
     cap = cv2.VideoCapture("/dev/video0")
@@ -60,20 +61,17 @@ def main():
     # USER INTERFACE SETUP
     myGUI = interface.GUI(
                         play = True,
-                        mode = "detection"
-                        )
+                        mode = "detection")
 
    # CAMERA PARAMETERS SETUP
     PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
-    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/dist.txt"
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
                 camera_matrix=camera_matrix,
-                camera_initial_position=calibration_position
-                )
+                camera_initial_position=calibration_position)
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
     ssl_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
@@ -88,52 +86,60 @@ def main():
                 input_height = 300,
                 score_threshold = 0.5,
                 draw = False,
-                TRT_LOGGER = trt.Logger(trt.Logger.INFO)
-                )
+                TRT_LOGGER = trt.Logger(trt.Logger.INFO))
     trt_net.loadModel()
 
     # BALL TO PIXEL REGRESSION WEIGHTS
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
+
+    # INIT VISION BLACKOUT STATE MACHINE
+    INITIAL_STATE = State.stop
+    state_machine = FSM(
+        initial_state = INITIAL_STATE,
+        init_time = start)
 
     # CONFIGURING AND LOAD DURATION
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
 
-    # START ROBOT INITIAL POSITION
-    eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
-
-    # INIT TARGET
-    target_x, target_y, target_w = 0,0,0
-
-    # INIT VISION BLACKOUT STATE MACHINE
-    state = "search"
-
     while cap.isOpened():
-        TARGET = False
         start_time = time.time()
 
+        if state_machine.current_state != State.dock:
+            eth_comm.resetRobotPosition()
+
+        frame = Frame()
         if myGUI.play:
-            ret, frame = cap.read()
+            ret, frame.input = cap.read()
             if not ret:
                 print("Check video capture path")
                 break
-            else: myGUI.updateGUI(frame)
+            else: myGUI.updateGUI(frame.input)
 
-        detections = trt_net.inference(frame).detections
+        detections = trt_net.inference(frame.input).detections
 
         for detection in detections:
+            """
+            Detection ID's:
+            0: background
+            1: ball
+            2: goal
+            3: robot
+
+            Labels are available at: ssl-detector/models/ssl_labels.txt
+            """
             class_id, score, xmin, xmax, ymin, ymax = detection
             if class_id==1:     # ball
                 # COMPUTE PIXEL FOR BALL POSITION
                 pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
-                                                                    left=xmin, 
-                                                                    top=ymin, 
-                                                                    right=xmax, 
-                                                                    bottom=ymax, 
-                                                                    weight_x=regression_weights[0],
-                                                                    weight_y=regression_weights[1])
-            
+                    left=xmin, 
+                    top=ymin, 
+                    right=xmax, 
+                    bottom=ymax, 
+                    weight_x=regression_weights[0],
+                    weight_y=regression_weights[1])
+
                 # DRAW OBJECT POINT ON SCREEN
                 if DRAW:
                     myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
@@ -148,26 +154,57 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                target_x, target_y, target_w = x-ssl_robot.camera_offset/1000, y, w
-                
-                # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
-                TARGET = True
+                ssl_ball = frame.updateBall(x-ssl_robot.camera_offset/1000, y)
 
         # STATE MACHINE
-        dist = math.sqrt(target_x**2+target_y**2)
-        if state == "search":
-            eth_comm.sendRotateSearch()
-            if TARGET: 
-                state = "drive"
-                eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
-        elif state == "drive":
-            eth_comm.sendTargetPosition(x=target_x, y=target_y, w=target_w)
-            if dist<0.270 and not TARGET:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-                state = "dock"
-        elif state == "dock":
-            eth_comm.sendBallDocking(x=target_x, y=target_y, w=target_w)
-            if dist>0.270:
-                state = "drive"
+        while True:
+            INITIAL_STOP_TIME = 0.5
+            MIN_DOCK_DISTANCE = 0.27
+            
+            if state_machine.current_state == State.stop:
+                target.type = communication_proto.pb.protoPositionSSL.stop
+                state_machine.condition1 = (state_machine.state_time > INITIAL_STOP_TIME)
+
+            elif state_machine.current_state == State.search:
+                target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
+                state_machine.condition1 = frame.has_ball
+
+            elif state_machine.current_state == State.drive:
+                target.setPosition(ssl_ball.x, ssl_ball.y)
+                target.type = communication_proto.pb.protoPositionSSL.target
+                state_machine.condition1 = frame.has_ball
+                state_machine.condition2 = (frame.ball.getDistance() < MIN_DOCK_DISTANCE)
+
+            elif state_machine.current_state == State.dock:
+                target.setPosition(ssl_ball.x, ssl_ball.y)
+                target.type = communication_proto.pb.protoPositionSSL.dock
+                state_machine.condition1 = frame.has_ball
+
+            no_transition = state_machine.updateState1()
+            if no_transition:
+                state_machine.state_time = time.time() - state_machine.state_init_time
+                break
+            else:
+                state_machine.state_init_time = time.time()
+        
+        # UPDATE PROTO MESSAGE
+        eth_comm.setPositionMessage(
+                                x = target.x, 
+                                y = target.y,
+                                w = target.getDirection(),
+                                posType = target.type)
+
+        eth_comm.setKickMessage(
+                            front = ssl_robot.front,
+                            chip = ssl_robot.chip,
+                            charge = ssl_robot.charge,
+                            kickStrength = ssl_robot.kick_strength,
+                            dribbler = ssl_robot.dribbler,
+                            dribSpeed = ssl_robot.dribbler_speed)
+        
+        # ACTION
+        eth_comm.sendSSLMessage()
+        print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
@@ -179,20 +216,18 @@ def main():
                 myGUI.drawText(myGUI.screen, f"AVG FPS: {1/avg_time:.2f}s", (8, 13), 0.5)
             cv2.imshow(WINDOW_NAME, myGUI.screen)
             if quit:
-                eth_comm.sendTargetPosition(x=0, y=0, w=0)
+                eth_comm.sendStopMotion()
                 break
 
         else:
-            if time.time()-config_time-start>10:
+            if time.time()-config_time-start>20:
                 print(f'Avg frame processing time:{avg_time}')
+                eth_comm.sendStopMotion()
                 break
 
-        
     # RELEASE WINDOW AND DESTROY
     cap.release()
     cv2.destroyAllWindows()
-
-
 
 if __name__=="__main__":
     main()
