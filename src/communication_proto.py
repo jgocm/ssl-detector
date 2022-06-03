@@ -1,5 +1,4 @@
 import socket
-import sys
 import CommTypes_pb2 as pb
 
 class SocketUDP():
@@ -27,69 +26,76 @@ class SocketUDP():
         self.device_port=port
 
     def sendStopMotion(self):
-        self.msg.x = 0   # positivo = frente
-        self.msg.y = 0   # positivo = esquerda
-        self.msg.w = 0   # positivo = anti-horário
-        self.msg.posType = pb.protoPositionSSL.stop
+        msg = self.setKickMessage()
+        msg.x = 0
+        msg.y = 0
+        msg.w = 0
+        msg.posType = pb.protoPositionSSL.stop
 
-        self.sendPosition()
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
     def sendRotateSearch(self):
-        self.msg.x = 0   # positivo = frente
-        self.msg.y = 0   # positivo = esquerda
-        self.msg.w = 0   # positivo = anti-horário
-        self.msg.posType = pb.protoPositionSSL.rotateOnSelf
+        msg = self.setKickMessage()
+        msg.x = 0
+        msg.y = 0
+        msg.w = 0
+        msg.posType = pb.protoPositionSSL.rotateOnSelf
 
-        self.sendPosition()
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
     def sendRotateInPoint(self):
-        self.msg.x = 0.29   # positivo = frente
-        self.msg.y = 0.29*2.9   # positivo = esquerda
-        self.msg.w = 0   # positivo = anti-horário
-        self.msg.posType = pb.protoPositionSSL.rotateInPoint
+        msg = self.setKickMessage()
+        msg.x = 0.29
+        msg.y = 0.29*2.9
+        msg.w = 0
+        msg.posType = pb.protoPositionSSL.rotateInPoint
 
-        self.sendPosition()
-
-    def sendRotateInPointWithRadius(self):
-        self.msg.x = 0.5   # positivo = frente x=radius
-        self.msg.y = 0   # positivo = esquerda
-        self.msg.w = 0   # positivo = anti-horário
-        self.msg.posType = pb.protoPositionSSL.rotateInPoint
-
-        self.sendPosition()
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
     def sendRotateControl(self, x, y, w):
-        self.msg.x = x   # positivo = frente
-        self.msg.y = y   # positivo = esquerda
-        self.msg.w = w   # positivo = anti-horário
-        self.msg.posType = pb.protoPositionSSL.rotateControl
+        msg = self.setKickMessage()
+        msg.x = x
+        msg.y = y
+        msg.w = w
+        msg.posType = pb.protoPositionSSL.rotateControl
 
-        self.sendPosition()
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
     def sendBallDocking(self, x, y, w):
-        self.msg.x = x   # positivo = frente
-        self.msg.y = y   # positivo = esquerda
-        self.msg.w = w   # positivo = anti-horário
-        self.msg.posType = pb.protoPositionSSL.dock
+        msg = self.setKickMessage()
+        msg.x = x
+        msg.y = y
+        msg.w = w
+        msg.posType = pb.protoPositionSSL.dock
 
-        self.sendPosition()
-
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
     def sendTargetPosition(self, x, y, w):
-        self.msg.x = x   # positivo = frente
-        self.msg.y = y   # positivo = esquerda
-        self.msg.w = w   # positivo = anti-horário
-        self.msg.posType = pb.protoPositionSSL.target
+        msg = self.setKickMessage()
+        msg.x = x
+        msg.y = y
+        msg.w = w
+        msg.posType = pb.protoPositionSSL.target
 
-        self.sendPosition()
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
     def sendSourcePosition(self, x, y, w):
-        self.msg.x = x   # positivo = frente
-        self.msg.y = y   # positivo = esquerda
-        self.msg.w = w   # positivo = anti-horário
-        self.msg.posType = pb.protoPositionSSL.source
+        msg = self.setKickMessage()
+        msg.x = x   # positivo = frente
+        msg.y = y   # positivo = esquerda
+        msg.w = w   # positivo = anti-horário
+        msg.posType = pb.protoPositionSSL.source
 
-        self.sendPosition()
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
+
+    def resetRobotPosition(self):
+        msg = self.setKickMessage()
+        msg.x = 0
+        msg.y = 0
+        msg.w = 0
+        msg.posType = pb.protoPositionSSL.source
+
+        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
     def setKickMessage(self, front=False, chip=False, charge=False, kickStrength=0, dribbler=False, dribSpeed=0):
         self.msg.front = front
@@ -109,9 +115,8 @@ class SocketUDP():
 
         return self.msg
 
-    def sendPosition(self):
+    def sendSSLMessage(self):
         self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
-
 
 if __name__ == "__main__":
     host_address = "199.0.1.2"
