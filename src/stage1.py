@@ -106,18 +106,16 @@ def main():
     while cap.isOpened():
         start_time = time.time()
 
-        if state_machine.current_state != State.dock:
-            eth_comm.resetRobotPosition()
-
-        frame = Frame()
+        current_frame = Frame(timestamp = time.time())
         if myGUI.play:
-            ret, frame.input = cap.read()
+            ret, current_frame.input = cap.read()
             if not ret:
                 print("Check video capture path")
                 break
-            else: myGUI.updateGUI(frame.input)
+            elif SHOW_DISPLAY: 
+                myGUI.updateGUI(current_frame.input)
 
-        detections = trt_net.inference(frame.input).detections
+        detections = trt_net.inference(current_frame.input).detections
 
         for detection in detections:
             """
@@ -130,7 +128,7 @@ def main():
             Labels are available at: ssl-detector/models/ssl_labels.txt
             """
             class_id, score, xmin, xmax, ymin, ymax = detection
-            if class_id==1:     # ball
+            if class_id==1:
                 # COMPUTE PIXEL FOR BALL POSITION
                 pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
                     left=xmin, 
@@ -154,44 +152,19 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_ball = frame.updateBall(x-ssl_robot.camera_offset/1000, y)
+                ssl_ball = current_frame.updateBall(x-ssl_robot.camera_offset/1000, y)
 
         # STATE MACHINE
-        while True:
-            INITIAL_STOP_TIME = 0.5
-            MIN_DOCK_DISTANCE = 0.27
-            
-            if state_machine.current_state == State.stop:
-                target.type = communication_proto.pb.protoPositionSSL.stop
-                state_machine.condition1 = (state_machine.state_time > INITIAL_STOP_TIME)
-
-            elif state_machine.current_state == State.search:
-                target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
-                state_machine.condition1 = frame.has_ball
-
-            elif state_machine.current_state == State.drive:
-                target.setPosition(ssl_ball.x, ssl_ball.y)
-                target.type = communication_proto.pb.protoPositionSSL.target
-                state_machine.condition1 = frame.has_ball
-                state_machine.condition2 = (frame.ball.getDistance() < MIN_DOCK_DISTANCE)
-
-            elif state_machine.current_state == State.dock:
-                target.setPosition(ssl_ball.x, ssl_ball.y)
-                target.type = communication_proto.pb.protoPositionSSL.dock
-                state_machine.condition1 = frame.has_ball
-
-            no_transition = state_machine.updateState1()
-            if no_transition:
-                state_machine.state_time = time.time() - state_machine.state_init_time
-                break
-            else:
-                state_machine.state_init_time = time.time()
-        
+        target = state_machine.stage1(
+                                frame = current_frame, 
+                                ball = ssl_ball, 
+                                robot = ssl_robot)
+    
         # UPDATE PROTO MESSAGE
         eth_comm.setPositionMessage(
                                 x = target.x, 
                                 y = target.y,
-                                w = target.getDirection(),
+                                w = target.w,
                                 posType = target.type)
 
         eth_comm.setKickMessage(
@@ -204,6 +177,9 @@ def main():
         
         # ACTION
         eth_comm.sendSSLMessage()
+        if state_machine.current_state != State.dock:
+            eth_comm.resetRobotPosition()
+
         print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}')
 
         # DISPLAY WINDOW
@@ -218,7 +194,6 @@ def main():
             if quit:
                 eth_comm.sendStopMotion()
                 break
-
         else:
             if time.time()-config_time-start>20:
                 print(f'Avg frame processing time:{avg_time}')
