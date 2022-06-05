@@ -161,7 +161,7 @@ class TargetPoint(GroundPoint):
         returns:
         target_x: target x coordinate
         target_y: target y coordinate
-        target_w: target direction pointing to p2
+        target_w: target direction pointing to p1p2 line
         """
         _, direction_vector, _ = self.get2PointsVector(p1, p2)
         v_rotated = self.rotateVector(direction_vector, relative_angle)
@@ -183,7 +183,7 @@ class TargetPoint(GroundPoint):
         relative_distance: distance of target point from p2
         -------------------
         returns:
-        target: (target x coordinate, target y coordinate, target direction pointing to p2)
+        target: (target x coordinate, target y coordinate, target direction pointing to p1p2 line)
         """
         p1 = np.array([x1, y1])
         p2 = np.array([x2, y2])
