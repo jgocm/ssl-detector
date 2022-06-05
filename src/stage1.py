@@ -6,12 +6,14 @@ import time
 import os
 
 # LOCAL IMPORTS
-from entities import Robot, Goal, Ball, Frame, GroundPoint
+from entities import Robot, Goal, Ball, Frame
 import object_detection
 import object_localization
 import communication_proto
 import interface
-from fsm import FSM, State
+from fsm import FSM, Stage1States
+import navigation
+from navigation import TargetPoint
 
 def main():
     cwd = os.getcwd()
@@ -40,7 +42,7 @@ def main():
     # INIT ENTITIES
     ssl_ball = Ball()
     ssl_goal = Goal()
-    target = GroundPoint(x0 = 0, y0 = 0)
+    target = TargetPoint(x = 0, y = 0, w = 0)
 
     # UDP COMMUNICATION SETUP
     HOST_ADDRES = "199.0.1.2"
@@ -93,7 +95,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # INIT VISION BLACKOUT STATE MACHINE
-    INITIAL_STATE = State.stop
+    INITIAL_STATE = 1
     state_machine = FSM(
         initial_state = INITIAL_STATE,
         init_time = start)
@@ -152,7 +154,7 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_ball = current_frame.updateBall(x-ssl_robot.camera_offset/1000, y)
+                ssl_ball = current_frame.updateBall(x, y)
 
         # STATE MACHINE
         target = state_machine.stage1(
@@ -177,7 +179,7 @@ def main():
         
         # ACTION
         eth_comm.sendSSLMessage()
-        if state_machine.current_state != State.dock:
+        if state_machine.current_state != Stage1States.dock:
             eth_comm.resetRobotPosition()
 
         print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}')
