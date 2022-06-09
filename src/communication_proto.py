@@ -42,10 +42,10 @@ class SocketUDP():
 
         self.sendPosition()
 
-    def sendRotateInPoint(self):
-        self.msg.x = 0.29   # positivo = frente
-        self.msg.y = 0.29*2.9   # positivo = esquerda
-        self.msg.w = 0   # positivo = anti-horário
+    def sendRotateInPoint(self, x, y, w):
+        self.msg.x = x   # positivo = frente
+        self.msg.y = y   # positivo = esquerda
+        self.msg.w = w   # positivo = anti-horário
         self.msg.posType = pb.protoPositionSSL.rotateInPoint
 
         self.sendPosition()

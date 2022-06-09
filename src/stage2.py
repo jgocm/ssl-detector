@@ -239,14 +239,18 @@ def main():
                 state = "rotate"
                 state_time = time.time()
         elif state == "rotate":
-            eth_comm.sendRotateInPoint()
+            target_x, target_y, target_w = ball_x, ball_y, ball_w
             if HAS_BALL and HAS_GOAL:
-                target_x, target_y, target_w = directionVector(goal_x, goal_y, ball_x, ball_y)
+                _, _, target_w = directionVector(goal_x, goal_y, ball_x, ball_y)
                 print(f"w = {target_w:.3f}")
-                if np.abs(target_w) < 0.3:
+                if np.abs(target_w) < 0.1:
                     state = "stop2"
                     state_time = time.time()
                     eth_comm.sendStopMotion()
+                else:
+                    eth_comm.sendRotateInPoint(target_x, target_y, target_w)
+            else:
+                eth_comm.sendRotateInPoint(target_x, target_y, target_w)
         elif state == "stop2":
             eth_comm.sendStopMotion()
             if time.time()-state_time > 0.5:
