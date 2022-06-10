@@ -239,11 +239,11 @@ def main():
                 state = "rotate"
                 state_time = time.time()
         elif state == "rotate":
-            target_x, target_y, target_w = ball_x, ball_y, ball_w
+            target_x, target_y, target_w = ball_x, ball_y, math.pi
             if HAS_BALL and HAS_GOAL:
                 _, _, target_w = directionVector(goal_x, goal_y, ball_x, ball_y)
                 print(f"w = {target_w:.3f}")
-                if np.abs(target_w) < 0.1:
+                if np.abs(target_w) < 0.2:
                     state = "stop2"
                     state_time = time.time()
                     eth_comm.sendStopMotion()
@@ -265,7 +265,7 @@ def main():
             if np.abs(target_w)<0.05 and dist<0.07:
                 state = "stop3"
                 state_time = time.time()
-                eth_comm.sendStopMotion() 
+                eth_comm.sendStopMotion()
         elif state == "stop3":
             eth_comm.sendStopMotion() 
             if time.time()-state_time > 0.5:
@@ -292,7 +292,7 @@ def main():
             if time.time()-state_time > 3:
                 charge = True
             if time.time()-state_time > 3.1:
-                eth_comm.sendStopMotion() 
+                eth_comm.sendStopMotion()
                 break
             eth_comm.setKickMessage(front=front, charge=charge, kickStrength=kickStrength)
             eth_comm.sendBallDocking(x=target_x, y=target_y, w=target_w)
@@ -312,7 +312,7 @@ def main():
                 eth_comm.sendTargetPosition(x=0, y=0, w=0)
                 break
         else:
-            if time.time()-config_time-start>60:
+            if time.time()-config_time-start>40:
                 print(f'Avg frame processing time:{avg_time}')
                 break
 
