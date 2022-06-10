@@ -242,8 +242,7 @@ def main():
             target_x, target_y, target_w = ball_x, ball_y, math.pi
             if HAS_BALL and HAS_GOAL:
                 _, _, target_w = directionVector(goal_x, goal_y, ball_x, ball_y)
-                print(f"w = {target_w:.3f}")
-                if np.abs(target_w) < 0.2:
+                if np.abs(target_w) < 0.05:
                     state = "stop2"
                     state_time = time.time()
                     eth_comm.sendStopMotion()

@@ -15,6 +15,25 @@ import object_localization
 import communication_proto
 import interface
 
+def offsetTarget(x, y, w, offset=1):
+    dist = math.sqrt(x**2+y**2) + 0.001
+    prop = (dist - offset)/dist
+    target_x, target_y, target_w = prop*x, prop*y, w
+    return target_x, target_y, target_w
+
+def directionVector(x1, y1, x2, y2):
+    vy = y2-y1
+    vx = x2-x1
+    w = math.atan2(-vy, -vx)
+    return vx, vy, w
+
+def alignedTarget(vx, vy, bx, by, offset):
+    v_norm = math.sqrt(vx**2+vy**2)
+    target_x = vx*offset/v_norm + bx
+    target_y = vy*offset/v_norm + by
+    target_w = math.atan2(target_y, target_x)
+    return target_x, target_y, target_w
+
 def main():
     cwd = os.getcwd()
 
@@ -93,7 +112,7 @@ def main():
     trt_net.loadModel()
 
     # BALL TO PIXEL REGRESSION WEIGHTS
-    regression_weights = np.loadtxt(cwd+f"/models/regression_weights.txt")
+    regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
     config_time = time.time() - start
@@ -103,14 +122,21 @@ def main():
     # START ROBOT INITIAL POSITION
     eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
 
-    # INIT TARGET
+    # INIT MSG
     target_x, target_y, target_w = 0,0,0
+    front, charge, kickStrength = False, True, 40
+
+    goal_x, goal_y, goal_w = 0, 0, -math.pi
 
     # INIT VISION BLACKOUT STATE MACHINE
     state = "search"
 
+    # INIT STATE MACHINE TIMER
+    state_time = time.time()
+
     while cap.isOpened():
-        TARGET = False
+        HAS_BALL = False
+        HAS_GOAL = False
         start_time = time.time()
 
         if myGUI.play:
@@ -123,7 +149,7 @@ def main():
         detections = trt_net.inference(frame).detections
 
         for detection in detections:
-            '''
+            """
             Detection ID's:
             0: background
             1: ball
@@ -131,8 +157,8 @@ def main():
             3: robot
 
             Labels are available at: ssl-detector/models/ssl_labels.txt
-            '''
-            class_id, score, xmin, xmax, ymin, ymax = detection
+            """
+            class_id, score, xmin, xmax, ymin, ymax = detection  
             if class_id==1:     # ball
                 # COMPUTE PIXEL FOR BALL POSITION
                 pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
@@ -157,28 +183,105 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                target_x, target_y, target_w = x-ssl_robot.camera_offset/1000, y, w
+                ball_x, ball_y, ball_w = x, y, w
+
+                HAS_BALL = True
+              
+            if class_id==2:
+                # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
+                pixel_x, pixel_y = ssl_cam.goalAsPoint(
+                                                    left=xmin,
+                                                    top=ymin,
+                                                    right=xmax,
+                                                    bottom=ymax)
+                # DRAW OBJECT POINT ON SCREEN
+                if DRAW:
+                    myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
                 
-                # SEND OBJECT RELATIVE POSITION TO ROBOT THROUGH ETHERNET CABLE w/ SOCKET UDP
-                TARGET = True
+                # BACK PROJECT GOAL CENTER POSITION TO CAMERA 3D COORDINATES
+                object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
+                x, y = object_position[0], object_position[1]
+
+                if DRAW:
+                    caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
+                    myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
+                
+                # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
+                x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
+                goal_x, goal_y = x, y
+
+                HAS_GOAL = True
 
         # STATE MACHINE
-        dist = math.sqrt(target_x**2+target_y**2)
+        # TO-DO: create state machine class
         if state == "search":
             eth_comm.sendRotateSearch()
-            if TARGET: 
-                state = "drive"
+            if HAS_BALL: 
+                state = "drive1"
                 eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
-        elif state == "drive":
+        elif state == "drive1":
+            target_x, target_y, target_w = offsetTarget(ball_x, ball_y, ball_w, 0.5)
             eth_comm.sendTargetPosition(x=target_x, y=target_y, w=target_w)
-            if dist<0.270 and not TARGET:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-                state = "dock"
+            dist = math.sqrt(target_x**2+target_y**2)+0.001
+            if dist<0.05:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                state = "stop1"
+                state_time = time.time()
+                eth_comm.sendStopMotion()
+        elif state == "stop1":
+            eth_comm.sendStopMotion()
+            if dist>0.05:
+                state = "drive1"
+                eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
+            elif time.time()-state_time>0.5:
+                state = "align1"
+        elif state ==  "align1":
+            target_x, target_y, target_w = ball_x, ball_y, ball_w
+            eth_comm.sendRotateControl(x=target_x, y=target_y, w=target_w)
+            if np.abs(target_w)<0.125:
+                state = "rotate"
+                state_time = time.time()
+        elif state == "rotate":
+            target_x, target_y, target_w = ball_x, ball_y, goal_w
+            if HAS_BALL and HAS_GOAL:
+                _, _, goal_w = directionVector(goal_x, goal_y, ball_x, ball_y)
+                target_w = goal_w
+                if np.abs(target_w) < 0.03:
+                    state = "stop2"
+                    state_time = time.time()
+                    eth_comm.sendStopMotion()
+                else:
+                    eth_comm.sendRotateInPoint(target_x, target_y, target_w)
+            else:
+                eth_comm.sendRotateInPoint(target_x, target_y, target_w)
+        elif state == "stop2":
+            eth_comm.sendStopMotion()
+            if time.time()-state_time > 0.2:
+                state = "drive2"
+                eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
+        elif state == "drive2":
+            #_, _, target_w = directionVector(goal_x, goal_y, ball_x, ball_y)
+            target_w = goal_w
+            target_x, target_y = ball_x-ssl_robot.camera_offset/1000, ball_y
+            eth_comm.sendTargetPosition(x=target_x, y=target_y, w=target_w)
+            dist = math.sqrt(target_x**2+target_y**2)+0.001
+            if dist<0.270 and not HAS_BALL:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                    state = "dock"
+                    state_time = time.time()
+                    eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
+                    target_x, target_y = 1.2*target_x, 1.2*target_y
         elif state == "dock":
-            eth_comm.sendBallDocking(x=target_x*1.2, y=target_y*1.2, w=target_w)
-            if dist>0.270:
-                state = "drive"
-
-        print(target_x, target_y, target_w)
+            target_w = goal_w
+            front, charge, kickStrength = True, False, 40
+            if time.time()-state_time > 5:
+                charge = True
+            if time.time()-state_time > 5.1:
+                eth_comm.sendStopMotion()
+            if time.time()-state_time > 5.2:
+                break
+            eth_comm.setKickMessage(front=front, charge=charge, kickStrength=kickStrength)
+            eth_comm.sendBallDocking(x=target_x, y=target_y, w=target_w)
+        
+        print(f'State: {state} | Target: {target_x:.3f}, {target_y:.3f}, {target_w:.3f}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
@@ -192,17 +295,14 @@ def main():
             if quit:
                 eth_comm.sendTargetPosition(x=0, y=0, w=0)
                 break
-
         else:
-            if time.time()-config_time-start>10:
+            if time.time()-config_time-start>40:
                 print(f'Avg frame processing time:{avg_time}')
                 break
 
-        
     # RELEASE WINDOW AND DESTROY
     cap.release()
     cv2.destroyAllWindows()
-
 
 
 if __name__=="__main__":
