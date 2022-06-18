@@ -109,7 +109,7 @@ class TargetPoint(GroundPoint):
     def get2DPointRelativeToLinePoint(self, p1 = np.array([0,0]), p2 = np.array([0,0]), relative_angle = 0, relative_distance = 0):
         """
         Computes x,y coordinates relative to the line p1->p2 with a given distance to p2:
-        XY = R(relative_angle)@(p2-p1)*realtive_distance/norm(p2-p1) + p2
+        XY = R(relative_angle)@(p2-p1)*relative_distance/norm(p2-p1) + p2
 
         p1: initial point of the line
         p2: final point of line and reference point
@@ -129,7 +129,7 @@ class TargetPoint(GroundPoint):
     def get2DPointRelativeToLine2DCoordinates(self, x1 = 0, y1 = 0, x2 = 0, y2 = 0, relative_angle = 0, relative_distance = 0):
         """
         Computes x,y coordinates relative to the line p1->p2 with a given distance to p2:
-        XY = R(relative_angle)@(p2-p1)*realtive_distance/norm(p2-p1) + p2
+        XY = R(relative_angle)@(p2-p1)*relative_distance/norm(p2-p1) + p2
 
         x1: x coordinate from initial point of the line
         y1: y coordinate from initial point of the line
@@ -151,7 +151,7 @@ class TargetPoint(GroundPoint):
     def getTargetCoordinatesRelativeToLinePoint(self, p1 = np.array([0,0]), p2 = np.array([0,0]), relative_angle = 0, relative_distance = 0):
         """
         Computes x,y coordinates and direction relative to the line p1->p2 with a given distance to p2:
-        XY = R(relative_angle)@(p2-p1)*realtive_distance/norm(p2-p1) + p2
+        XY = R(relative_angle)@(p2-p1)*relative_distance/norm(p2-p1) + p2
 
         p1: initial point of the line
         p2: final point of line and reference point
@@ -173,7 +173,7 @@ class TargetPoint(GroundPoint):
     def getTargetRelativeToLine2DCoordinates(self, x1 = 0, y1 = 0, x2 = 0, y2 = 0, relative_angle = 0, relative_distance = 0):
         """
         Computes x,y coordinates and direction relative to the line p1->p2 with a given distance to p2:
-        XY = R(relative_angle)@(p2-p1)*realtive_distance/norm(p2-p1) + p2
+        XY = R(relative_angle)@(p2-p1)*relative_distance/norm(p2-p1) + p2
 
         x1: x coordinate from initial point of the line
         y1: y coordinate from initial point of the line
