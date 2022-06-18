@@ -43,14 +43,13 @@ class SocketUDP():
 
         self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
-    def sendRotateInPoint(self):
-        msg = self.setKickMessage()
-        msg.x = 0.29
-        msg.y = 0.29*2.9
-        msg.w = 0
-        msg.posType = pb.protoPositionSSL.rotateInPoint
+    def sendRotateInPoint(self, x, y, w):
+        self.msg.x = x   # positivo = frente
+        self.msg.y = y   # positivo = esquerda
+        self.msg.w = w   # positivo = anti-horário
+        self.msg.posType = pb.protoPositionSSL.rotateInPoint
 
-        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
+        self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
 
     def sendRotateControl(self, x, y, w):
         msg = self.setKickMessage()
