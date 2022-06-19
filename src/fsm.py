@@ -215,15 +215,14 @@ class FSM():
             elif self.current_state.value == 7:
                 # stop2: breaks when ball and goal are aligned
                 target.type = communication_proto.pb.protoPositionSSL.stop
-                if frame.has_ball and frame.has_goal:
-                    _, _, w = target.get2XYCoordinatesVector(
+                _, _, w = target.get2XYCoordinatesVector(
                         x1 = ball.x,
                         y1 = ball.y,
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                    if np.abs(w) > 0.04:
-                        final_state = self.moveNStates(-1)
+                if np.abs(w) > 0.035:
+                    final_state = self.moveNStates(-1)
                 elif self.getStateDuration(frame.timestamp) > 0.2:
                     final_state = self.moveNStates(1)
             
