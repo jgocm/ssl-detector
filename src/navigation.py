@@ -14,6 +14,9 @@ class GroundPoint():
     def setPosition(self, x, y):
         self.x = x
         self.y = y
+    
+    def setDirection(self, w):
+        self.w = w
 
     def getDistance(self):
         return math.sqrt(self.x**2 + self.y**2)

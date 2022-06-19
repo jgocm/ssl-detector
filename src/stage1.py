@@ -12,7 +12,6 @@ import object_localization
 import communication_proto
 import interface
 from fsm import FSM, Stage1States
-import navigation
 from navigation import TargetPoint
 
 def main():
@@ -97,10 +96,12 @@ def main():
     # INIT VISION BLACKOUT STATE MACHINE
     INITIAL_STATE = 1
     state_machine = FSM(
+        stage = 1,
         initial_state = INITIAL_STATE,
         init_time = start)
 
     # CONFIGURING AND LOAD DURATION
+    EXECUTION_TIME = 20
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -197,7 +198,7 @@ def main():
                 eth_comm.sendStopMotion()
                 break
         else:
-            if time.time()-config_time-start>20:
+            if time.time()-config_time-start>EXECUTION_TIME:
                 print(f'Avg frame processing time:{avg_time}')
                 eth_comm.sendStopMotion()
                 break
