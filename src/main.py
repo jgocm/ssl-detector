@@ -26,8 +26,8 @@ def rotationSign(x, y):
 def offsetTarget(x, y, offset=1):
     dist = math.sqrt(x**2+y**2) + 0.001
     prop = (dist - offset)/dist
-    target.x, target.y = prop*x, prop*y
-    return target.x, target.y
+    target_x, target_y = prop*x, prop*y
+    return target_x, target_y
 
 def directionVector(x1, y1, x2, y2):
     vy = y2-y1
@@ -37,10 +37,10 @@ def directionVector(x1, y1, x2, y2):
 
 def alignedTarget(vx, vy, bx, by, offset):
     v_norm = math.sqrt(vx**2+vy**2)
-    target.x = vx*offset/v_norm + bx
-    target.y = vy*offset/v_norm + by
-    target.w = math.atan2(target.y, target.x)
-    return target.x, target.y, target.w
+    target_x = vx*offset/v_norm + bx
+    target_y = vy*offset/v_norm + by
+    target_w = math.atan2(target_y, target_x)
+    return target_x, target_y, target_w
 
 def main():
     cwd = os.getcwd()
