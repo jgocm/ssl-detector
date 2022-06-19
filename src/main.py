@@ -143,8 +143,6 @@ def main():
     state_time = time.time()
 
     while cap.isOpened():
-        HAS_BALL = False
-        HAS_GOAL = False
         start_time = time.time()
         
         current_frame = Frame(timestamp = time.time())
@@ -170,7 +168,7 @@ def main():
             class_id, score, xmin, xmax, ymin, ymax = detection  
             if class_id==1:     # ball
                 # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
+                pixel_x, pixel_y = object_localization.KeypointRegression.ballAsPointLinearRegression(
                                                                     left=xmin, 
                                                                     top=ymin, 
                                                                     right=xmax, 
@@ -196,101 +194,63 @@ def main():
               
             if class_id==2:
                 # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
-                pixel_x, pixel_y = ssl_cam.goalAsPoint(
+                left_corner, right_corner = object_localization.KeypointRegression.goalAsCorners(
+                                                    src=frame,
                                                     left=xmin,
                                                     top=ymin,
                                                     right=xmax,
                                                     bottom=ymax)
-                # DRAW OBJECT POINT ON SCREEN
+
+                # DRAW OBJECT POINTS ON SCREEN
                 if DRAW:
-                    myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
+                    myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
+                    myGUI.drawCrossMarker(myGUI.screen, int(right_corner[0]), int(right_corner[1]))
                 
-                # BACK PROJECT GOAL CENTER POSITION TO CAMERA 3D COORDINATES
-                object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
-                x, y = object_position[0], object_position[1]
+                # BACK PROJECT GOAL LEFT CORNER POSITION TO CAMERA 3D COORDINATES
+                left_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0], y=left_corner[1], z_world=0)
+                left_corner_x, left_corner_y = left_corner_position[0], left_corner_position[1]
 
                 if DRAW:
-                    caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
-                    myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
+                    caption = f"Position:{left_corner_x[0]:.2f},{left_corner_y[0]:.2f}"
+                    myGUI.drawText(myGUI.screen, caption, (int(left_corner[0]-25), int(left_corner[1]+25)), 0.4)
+
+                # BACK PROJECT GOAL RIGHT CORNER POSITION TO CAMERA 3D COORDINATES
+                right_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0], y=left_corner[1], z_world=0)
+                right_corner_x, right_corner_y = right_corner_position[0], right_corner_position[1]
+
+                if DRAW:
+                    caption = f"Position:{right_corner_x[0]:.2f},{right_corner_y[0]:.2f}"
+                    myGUI.drawText(myGUI.screen, caption, (int(right_corner[0]-25), int(right_corner[1]+25)), 0.4)
                 
+                # COMPUTE ROBOT RELOCALIZATION FROM GOAL CORNERS DETECTION
+                tx, ty, w = ssl_cam.selfLocalizationFromGoalCorners(
+                        left_corner_x[0], 
+                        left_corner_y[0], 
+                        right_corner_x[0], 
+                        right_corner_y[0])
+
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-                x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
+                tx, ty, _ = ssl_robot.cameraToRobotCoordinates(tx, ty)
+                ssl_robot.x, ssl_robot.y, ssl_robot.w = tx, ty, w
+
+                # UPDATE GOAL CENTER RELATIVE POSITION
+                x, y, w = ssl_robot.cameraToRobotCoordinates(
+                        (left_corner_x[0]+right_corner_x[0])/2, 
+                        (left_corner_y[0]+right_corner_y[0])/2)
                 ssl_goal = current_frame.updateGoalCenter(x, y)
 
         # STATE MACHINE
-        # TO-DO: create state machine class
+        # TO-DO: move to state machine class
         if state == "search":
             target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
-            if HAS_BALL: 
+            if current_frame.has_goal: 
                 state = "drive1"
 
         elif state == "drive1":
             target.type = communication_proto.pb.protoPositionSSL.target
-            target.x, target.y = offsetTarget(ssl_ball.x, ssl_ball.y, 0.5)
-            target.w = ssl_ball.w
-            dist = math.sqrt(target.x**2+target.y**2)+0.001
-            if dist<0.05:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-                state = "stop1"
-                state_time = time.time()
-                target.type = communication_proto.pb.protoPositionSSL.stop
-
-        elif state == "stop1":
-            target.type = communication_proto.pb.protoPositionSSL.stop
-            if dist>0.05:
-                state = "drive1"
-            elif time.time()-state_time>0.5:
-                state = "align1"
-
-        elif state ==  "align1":
-            target.type = communication_proto.pb.protoPositionSSL.rotateControl
-            target.x, target.y, target.w = ssl_ball.x, ssl_ball.y, ssl_ball.w
-            if np.abs(target.w)<0.125:
-                state = "rotate"
-                state_time = time.time()
-
-        elif state == "rotate":
-            target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
-            target.x, target.y = ssl_ball.x, ssl_ball.y
-            if HAS_BALL and HAS_GOAL:
-                _, _, target.w = directionVector(ssl_goal.center_x, ssl_goal.center_y, ssl_ball.x, ssl_ball.y)
-                if np.abs(target.w) < 0.03:
-                    state = "stop2"
-                    state_time = time.time()
-                    target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
-            else:
-                target.w = rotationSign(ssl_goal.center_x, ssl_goal.center_y)*math.pi
-        
-        elif state == "stop2":
-            target.type = communication_proto.pb.protoPositionSSL.stop
-            _, _, target.w = directionVector(ssl_goal.center_x, ssl_goal.center_y, ssl_ball.x, ssl_ball.y)
-            if np.abs(target.w) > 0.035:
-                state = "rotate"
-                state_time = time.time()
-            elif time.time()-state_time > 0.2:
-                state = "drive2"
-        
-        elif state == "drive2":
-            target.type = communication_proto.pb.protoPositionSSL.target
-            _, _, target.w = directionVector(ssl_goal.center_x, ssl_goal.center_y, ssl_ball.x, ssl_ball.y)
-            target.x, target.y = ssl_ball.x-ssl_robot.camera_offset/1000, ssl_ball.y
-            dist = math.sqrt(target.x**2+target.y**2)+0.001
-            ssl_robot.charge = True
-            if dist<0.270 and not HAS_BALL:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-                    state = "dock"
-                    state_time = time.time()
-                    target.x, target.y = 1.2*target.x, 1.2*target.y
-        
-        elif state == "dock":
-            target.type = communication_proto.pb.protoPositionSSL.dock
-            _, _, target.w = directionVector(ssl_goal.center_x, ssl_goal.center_y, ssl_ball.x, ssl_ball.y)
-            ssl_robot.front, ssl_robot.charge, ssl_robot.kickStrength = True, False, 40
-            if time.time()-state_time > 5:
-                ssl_robot.charge = True
-            if time.time()-state_time > 5.1:
-                ssl_robot.charge = False
-                target.type = communication_proto.pb.protoPositionSSL.stop
-            if time.time()-state_time > 5.2:
-                break
+            target.x = 0 - ssl_robot.x
+            target.y = 0 - ssl_robot.y
+            target.w = 0 - ssl_robot.w
 
         eth_comm.setPositionMessage(
                                 x = target.x, 

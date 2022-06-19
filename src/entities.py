@@ -95,6 +95,10 @@ class Goal():
         self.height = height
         self.center_x = 0
         self.center_y = 0
+        self.left_x = 0
+        self.left_y = 0
+        self.right_x = 0
+        self.right_y = 0
 
 class Field():
     def __init__(
@@ -144,6 +148,13 @@ class Frame():
         self.goal.center_x = x
         self.goal.center_y = y
         self.has_goal = True
+        return self.goal
+
+    def updateGoalCorners(self, left_corner_x, left_corner_y, right_corner_x, right_corner_y):
+        self.goal.left_x = left_corner_x
+        self.goal.left_y = left_corner_y
+        self.goal.right_x = right_corner_x
+        self.goal.right_y = right_corner_y
         return self.goal
 
     def updateRobot(self, x, y):

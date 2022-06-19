@@ -2,6 +2,372 @@ import numpy as np
 import cv2
 import math
 import time
+import pandas as pd
+from sklearn import linear_model
+
+class KeypointRegression():
+    def __init__(
+            self,
+
+            ):
+        # DEFINE COLORS:
+        self.BLACK = [0, 0, 0]
+        self.BLUE = [255, 0, 0]
+        self.GREEN = [0, 255, 0]
+        self.RED = [0, 0, 255]
+        self.WHITE = [255, 255, 255]
+
+    def ballAsPoint(left, top, right, bottom, weight_x = 0.5, weight_y=0.2):
+        x = weight_x*left+(1-weight_x)*right
+        y = weight_y*top+(1-weight_y)*bottom
+        return x, y
+    
+    def ballAsPointLinearRegression(left, top, right, bottom, weight_x, weight_y):
+        x = [left, right, top, bottom, 1]@weight_x
+        y = [left, right, top, bottom, 1]@weight_y
+        return x, y
+    
+    def robotAsPoint(left, top, right, bottom, weight_x = 0.5, weight_y=0.1):
+        x = weight_x*left+(1-weight_x)*right
+        y = weight_y*top+(1-weight_y)*bottom
+        return x, y
+    
+    def goalCenterAsPoint(left, top, right, bottom, weight_x = 0.5, weight_y=0.1):
+        x = weight_x*left+(1-weight_x)*right
+        y = weight_y*top+(1-weight_y)*bottom
+        return x, y
+    
+    def makeLinearRegressionModel(line_regression_points):
+        df = pd.DataFrame(line_regression_points)
+        X = df.as_matrix([0])
+        y = df.as_matrix([1])
+        model = linear_model.LinearRegression().fit(X=X, y=y)
+
+        return model.coef_, model.intercept_
+
+    def makeRANSACRegressionModel(line_regression_points):
+        df = pd.DataFrame(line_regression_points)
+        X = df.as_matrix([0])
+        y = df.as_matrix([1])
+        model = linear_model.RANSACRegressor().fit(X=X, y=y)
+
+        return model.estimator_.coef_, model.estimator_.intercept_
+
+    def goalLineDetection(self, src, left, top, right, bottom):
+        """
+        Make descripition here
+        """
+        # make copy from source image for segmentation
+        segmented_img = src.copy()
+
+        # compute bounding box width and height
+        height, width = bottom-top, right-left
+
+        # line scans offset
+        vertical_lines_offset = int(0.05 * width)
+
+        # points used for linear regression
+        goal_line_points = []
+
+        for line_x in range(left, right, vertical_lines_offset):
+            # segment vertical lines
+            for pixel_y in range(top, bottom):
+                blue, green, red = src[pixel_y, line_x]
+                if green > 120 and red < 110:
+                    color = self.GREEN
+                elif green < 50 and red < 50 and blue < 50:
+                    color = self.BLACK
+                else:
+                    color = self.WHITE
+                segmented_img[pixel_y, line_x] = color
+            
+            # detect line points from edges
+            goal_line = False
+            kernel = [-1, 1]
+            line_points = []
+            for pixel_y in range(bottom, int((top+bottom)/2), -1):
+                blue = segmented_img[pixel_y-1:pixel_y+1, line_x][:,0]
+                blue_gradient = blue@kernel
+                if blue_gradient < -200 and goal_line == False:
+                    goal_line = True
+                elif blue_gradient > 200 and goal_line == True:
+                    goal_line = False
+                    # if more than 3 consecutive points are detected, it is probably not the goal line
+                    if len(line_points)<3:
+                        for point in line_points:
+                            goal_line_points.append(point)
+                    break
+                if goal_line == True:
+                    line_points.append([line_x, pixel_y])
+
+        return goal_line_points
+    
+    def goalLineRegression(self, src, left, top, right, bottom):
+        goal_line_points = self.goalLineDetection(src, left, top, right, bottom)
+        goal_line_model = self.makeLinearRegressionModel(goal_line_points)
+        return goal_line_model
+
+    def goalLeftPostDetectionGrayScale(self, src, left, top, right, bottom):
+        """
+        Make descripition here
+        """
+        # compute bounding box width and height
+        height, width = bottom-top, right-left
+
+        # line scans offset
+        horizontal_lines_offset = int(0.05 * height)
+
+        # convert img to gray scale
+        posts_img = cv2.cvtColor(src, cv2.COLOR_RGB2GRAY)
+
+        # points used for line regression
+        goal_post_points = []
+
+        for line_y in range(top, bottom, int(horizontal_lines_offset)):
+            kernel = [-0.75, -1, 0, 1, 0.75]
+            left_x = left
+            for pixel_x in range(left, right):
+                pixel_color = posts_img[line_y, pixel_x]
+                if pixel_color>180:
+                    gradient = posts_img[line_y, pixel_x-2:pixel_x+3]@kernel
+                    if np.abs(gradient)>20 and np.abs(gradient)<70:
+                        if pixel_x>left_x:
+                            left_x = pixel_x
+            if left_x != left:
+                # x coordinate will be regressed from y coordinate
+                # so data should be in the form (y, x) for linear regression
+                goal_post_points.append([line_y, left_x])
+        
+        return goal_post_points
+    
+    def goalRightPostDetectionGrayScale(self, src, left, top, right, bottom):
+        """
+        Make descripition here
+        """
+        # compute bounding box width and height
+        height, width = bottom-top, right-left
+
+        # line scans offset
+        horizontal_lines_offset = int(0.05 * height)
+
+        # convert img to gray scale
+        posts_img = cv2.cvtColor(src, cv2.COLOR_RGB2GRAY)
+
+        # points used for line regression
+        goal_post_points = []
+
+        for line_y in range(top, bottom, int(horizontal_lines_offset)):
+            kernel = [-0.75, -1, 0, 1, 0.75]
+            right_x = right
+            for pixel_x in range(left, right):
+                pixel_color = posts_img[line_y, pixel_x]
+                if pixel_color>180:
+                    gradient = posts_img[line_y, pixel_x-2:pixel_x+3]@kernel
+                    if np.abs(gradient)>20 and np.abs(gradient)<70:
+                        if pixel_x<right_x:
+                            right_x = pixel_x
+            if right_x != right:
+                # x coordinate will be regressed from y coordinate
+                # so data should be in the form (y, x) for linear regression
+                goal_post_points.append([line_y, right_x])
+        
+        return goal_post_points
+
+    def goalLeftPostRegressionFromLeft(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
+        right = int(left_to_right_proportion*(left+right))
+        goal_post_points = self.goalLeftPostDetectionGrayScale(src, left, top, right, bottom)
+        goal_post_model = self.makeRANSACRegressionModel(goal_post_points)
+        return goal_post_model
+    
+    def goalRightPostRegressionFromRight(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
+        left = int((1-left_to_right_proportion)*(left+right))
+        goal_post_points = self.goalRightPostDetectionGrayScale(src, left, top, right, bottom)
+        goal_post_model = self.makeRANSACRegressionModel(goal_post_points)
+        return goal_post_model
+
+    def goalLeftPostDetectionBGR(self, src, left, top, right, bottom):
+        """
+        Make descripition here
+        """
+        # make copy from source image for segmentation
+        segmented_img = src.copy()
+
+        # compute bounding box width and height
+        height, width = bottom-top, right-left
+
+        # line scans offset
+        horizontal_lines_offset = int(0.05 * height)
+
+        # points used for line regression
+        goal_post_points = []
+
+        for line_y in range(top, bottom, horizontal_lines_offset):
+            # segment image horizontal line
+            for pixel_x in range(left, right):
+                blue, green, red = img[line_y, pixel_x]
+                # paint strong white pixels with white -> probably not a post
+                if blue > 170 and green > 170 and red > 170:
+                    color = self.WHITE
+                # paint darker pixels with black
+                elif blue < 50 and green < 50 and red < 50:
+                    color = self.BLACK
+                else:
+                    color = self.RED
+                segmented_img[line_y, pixel_x] = color
+
+            # find post from edge detection
+            goal_post = False
+            kernel = [1, -1]
+            post_points = []
+            for pixel_x in range(right, left, -1):
+                red = segmented_img[line_y, pixel_x-1:pixel_x+1][:,2]
+                red_gradient = red@kernel
+                blue = segmented_img[line_y, pixel_x-1:pixel_x+1][:,0]
+                blue_gradient = blue@kernel
+                if red[-1] == 255 and blue_gradient < -200 and goal_post == False:
+                    goal_post = True
+                elif red_gradient < -200 and goal_post == True:
+                    goal_post = False
+                    if len(post_points)<5:
+                        for pixel in post_points:
+                            goal_post_points.append(pixel)
+                    break
+                if goal_post == True:
+                    # x coordinate will be regressed from y coordinate
+                    # so data should be in the form (y, x) for linear regression
+                    post_points.append([line_y, pixel_x])
+            
+        return goal_post_points
+
+    def goalRightPostDetectionBGR(self, src, left, top, right, bottom):
+        """
+        Make descripition here
+        """
+        # make copy from source image for segmentation
+        segmented_img = src.copy()
+
+        # compute bounding box width and height
+        height, width = bottom-top, right-left
+
+        # line scans offset
+        horizontal_lines_offset = int(0.05 * height)
+
+        # points used for line regression
+        goal_post_points = []
+
+        for line_y in range(top, bottom, horizontal_lines_offset):
+            # segment image horizontal line
+            for pixel_x in range(left, right):
+                blue, green, red = img[line_y, pixel_x]
+                # paint strong white pixels with white -> probably not a post
+                if blue > 170 and green > 170 and red > 170:
+                    color = self.WHITE
+                # paint darker pixels with black
+                elif blue < 50 and green < 50 and red < 50:
+                    color = self.BLACK
+                else:
+                    color = self.RED
+                segmented_img[line_y, pixel_x] = color
+
+            # find post from edge detection
+            goal_post = False
+            kernel = [-1, 1]
+            post_points = []
+            for pixel_x in range(left, right, 1):
+                red = segmented_img[line_y, pixel_x-1:pixel_x+1][:,2]
+                red_gradient = red@kernel
+                blue = segmented_img[line_y, pixel_x-1:pixel_x+1][:,0]
+                blue_gradient = blue@kernel
+                if red[-1] == 255 and blue_gradient < -200 and goal_post == False:
+                    goal_post = True
+                elif red_gradient < -200 and goal_post == True:
+                    goal_post = False
+                    if len(post_points)<5:
+                        for pixel in post_points:
+                            goal_post_points.append(pixel)
+                    break
+                if goal_post == True:
+                    # x coordinate will be regressed from y coordinate
+                    # so data should be in the form (y, x) for linear regression
+                    post_points.append([line_y, pixel_x])
+            
+        return goal_post_points
+
+    def goalLeftPostRegressionFromRight(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
+        right = int(left_to_right_proportion*(left+right))
+        goal_post_points = self.goalLeftPostDetectionBGR(src, left, top, right, bottom)
+        goal_post_model = self.makeLinearRegressionModel(goal_post_points)
+        return goal_post_model
+    
+    def goalRightPostRegressionFromLeft(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
+        left = int((1-left_to_right_proportion)*(left+right))
+        goal_post_points = self.goalRightPostDetectionBGR(src, left, top, right, bottom)
+        goal_post_model = self.makeLinearRegressionModel(goal_post_points)
+        return goal_post_model
+
+    def goalLeftPostRegressionFromMiddle(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
+        return self.goalLeftPostRegressionFromRight(src, left, top, right, bottom, left_to_right_proportion)
+
+    def goalRightPostRegressionFromMiddle(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
+        return self.goalRightPostRegressionFromLeft(src, left, top, right, bottom, left_to_right_proportion)
+    
+    def getGoalSide(angular_coef):
+        # decides wether the robot is on the right or the left of the goal from goal line angular coefficient
+        if np.abs(angular_coef) < 0.01:
+            side = "middle"
+        elif angular_coef < 0:
+            side = "left"
+        else:
+            side = "right"
+        
+        return side
+
+    def goalPostsRegresion(self, src, left, top, right, bottom, left_to_right_proportion = 0.5, side = "middle"):
+        if side == "middle":
+            goal_left_post = self.goalLeftPostRegressionFromMiddle(src, left, top, right, bottom, left_to_right_proportion)
+            goal_right_post = self.goalRightPostRegressionFromMiddle(src, left, top, right, bottom, left_to_right_proportion)
+
+        elif side == "left":
+            goal_left_post = self.goalLeftPostRegressionFromLeft(src, left, top, right, bottom, left_to_right_proportion)
+            goal_right_post = self.goalRightPostRegressionFromRight(src, left, top, right, bottom, left_to_right_proportion)
+
+        elif side == "right":
+            goal_left_post = self.goalLeftPostRegressionFromRight(src, left, top, right, bottom, left_to_right_proportion)
+            goal_right_post = self.goalRightPostRegressionFromLeft(src, left, top, right, bottom, left_to_right_proportion)
+        
+        return goal_left_post, goal_right_post
+
+    def linesIntersection(a1, b1, a2, b2):
+        x = (b2-b1)/(a1-a2)
+        y = a1*x+b1
+        return x, y
+
+    def goalCornersRegression(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
+        goal_line_coef, goal_line_intercept = self.goalLineRegression(src, left, top, right, bottom)
+
+        side = self.getGoalSide(goal_line_coef)
+        goal_left_post, goal_right_post = self.goalPostsRegresion(src, left, top, right, bottom, left_to_right_proportion, side)
+
+        height, width = int(src.shape[0]), int(src.shape[1])
+
+        left_corner = self.linesIntersection(
+                                goal_line_coef, 
+                                goal_line_intercept,
+                                1/(goal_left_post[0]+0.001),
+                                -goal_left_post[1]/(goal_left_post[0]+0.001))
+
+        right_corner = self.linesIntersection(
+                                goal_line_coef, 
+                                goal_line_intercept,
+                                1/(goal_right_post[0]+0.001),
+                                -goal_right_post[1](goal_right_post[0]+0.001))
+        
+        return left_corner, right_corner
+    
+    def goalAsCorners(self, src, left, top, right, bottom):
+        left_to_right_proportion = 0.4
+        left_corner, right_corner = self.goalCornersRegression(src, left, top, right, bottom, left_to_right_proportion)
+        return left_corner, right_corner
 
 class Camera():
     def __init__(
@@ -27,7 +393,6 @@ class Camera():
         # apply XYW offset if calibration ground truth position is known
         self.offset = vision_offset
 
-    
     def setIntrinsicParameters(self, mtx):
         if np.shape(mtx)==(3,3): 
             self.intrinsic_parameters = mtx
@@ -55,7 +420,6 @@ class Camera():
             print(offset)
         else:
             print(f"Position offset must be of shape (3,) and the inserted matrix has shape {np.shape(offset)}")
-
     
     def fixPoints3d(self, points3d):
         return points3d-self.initial_position
@@ -180,7 +544,7 @@ class Camera():
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
-    
+
     def cameraToPixelCoordinates(self, x, y, z_world=0):
         M = self.intrinsic_parameters
         R = self.rotation_matrix
@@ -195,6 +559,33 @@ class Camera():
         uvPoint = rightSideMat/s
 
         return uvPoint
+    
+    def selfLocalizationFromGoalCorners(self, left_corner_x, left_corner_y, right_corner_x, right_corner_y):
+        goal_width = 1000
+        w_sin = (np.abs(left_corner_x)+np.abs(right_corner_x))/goal_width
+        
+        if w_sin > 1:
+            w_sin = 1
+            w_cos = 0
+        elif w_sin < -1:
+            w_sin = -1
+            w_cos = 0
+        else:
+            w_cos = math.sqrt(1-w_sin**2)
+
+        x1_real = -500
+        y1_real = 2820
+
+        x2_real = 500
+        y2_real = 2820
+
+        tx = x2_real - right_corner_x*w_sin - right_corner_y*w_cos
+        ty = y2_real + right_corner_x*w_cos - right_corner_y*w_sin
+
+        w = math.atan(w_sin/w_cos)
+
+        return tx, ty, w
+
 
 if __name__=="__main__":
     import object_detection
