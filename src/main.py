@@ -287,7 +287,8 @@ def main():
             if time.time()-state_time > 5:
                 ssl_robot.charge = True
             if time.time()-state_time > 5.1:
-                eth_comm.sendStopMotion()
+                ssl_robot.charge = False
+                target.type = communication_proto.pb.protoPositionSSL.stop
             if time.time()-state_time > 5.2:
                 break
 
@@ -300,6 +301,7 @@ def main():
                             front=ssl_robot.front, 
                             charge=ssl_robot.charge, 
                             kickStrength=ssl_robot.kickStrength)
+        eth_comm.sendSSLMessage()
         
         if state != "dock":
             eth_comm.resetRobotPosition()
