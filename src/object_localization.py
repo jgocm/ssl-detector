@@ -215,14 +215,10 @@ if __name__=="__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    # IMAGE READ SETUP
-    PATH_TO_IMG = cwd+"/experiments/13abr/1.jpg"
-    img = cv2.imread(PATH_TO_IMG)
-
     # OBJECT DETECTION MODEL
     trt_net = object_detection.DetectNet(
-                model_path="/home/joao/ssl-detector/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt", 
-                labels_path="/home/joao/ssl-detector/models/ssl_labels.txt", 
+                model_path=cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt", 
+                labels_path=cwd+"/models/ssl_labels.txt", 
                 input_width=300, 
                 input_height=300,
                 score_threshold = 0.5,
@@ -250,7 +246,6 @@ if __name__=="__main__":
 
     # USER INTERFACE SETUP
     myGUI = interface.GUI(
-                        screen = img.copy(),
                         play = True,
                         mode = "detection"
                         )
