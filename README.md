@@ -56,7 +56,7 @@ sudo ./installVSCode.sh
 ```
 
 ### Add CUDA Directory
-Jetpack images already have CUDA Toolkit installed, you may check under `/usr/local/cuda to verify that it’s there, but its [bashrc script may not contain CUDA directory](https://forums.developer.nvidia.com/t/cuda-nvcc-not-found/118068).
+Jetpack images already have CUDA Toolkit installed, you may check under `/usr/local/cuda` to verify that it’s there, but its [bashrc script may not contain CUDA directory](https://forums.developer.nvidia.com/t/cuda-nvcc-not-found/118068).
 
 Check that your ~/.bashrc file has these lines at the end, and if not, add them and restart your terminal:
 ```
