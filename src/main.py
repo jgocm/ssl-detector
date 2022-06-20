@@ -48,12 +48,12 @@ def main():
     # START TIME
     start = time.time()
 
-    # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = False
-
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = False
+    SHOW_DISPLAY = True
+
+    # DISPLAYS POSITIONS AND MARKERS ON SCREEN
+    DRAW = SHOW_DISPLAY
 
     # ROBOT SETUP
     ROBOT_ID = 0

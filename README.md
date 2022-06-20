@@ -29,7 +29,7 @@ You can also pull up the System Monitor, however this is only temporary. If you 
 Add the line `/swapfile none swap 0 0` to `/etc/fstab` file. Now you can reboot and your Swap will be activated.
 
 ### Install Fan Controller
-[Pyrestone fan controller](https://github.com/Pyrestone/jetson-fan-ctl.git) will automatically run at boot time. 
+[Pyrestone fan controller](https://github.com/Pyrestone/jetson-fan-ctl.git) will automatically start the fan at boot time. 
 
 Install dependencies:
 ```
@@ -86,10 +86,16 @@ sudo ln -s /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0 /usr/lib/aarch6
 3. Check the model
 ```
 cd ..
-/usr/src/tensorrt/bin/trtexec --onnx=/home/$USER/models/ssdlite_mobiletnet_v2_300x300_ssl/onnx/model_gs.onnx --workspace=2048
+/usr/src/tensorrt/bin/trtexec --onnx=/home/$USER/ssl-detector/models/ssdlite_mobiletnet_v2_300x300_ssl/onnx/model_gs.onnx --workspace=2048
 ```
-4. Install pycuda
+4. Install pip and [pycuda](https://forums.developer.nvidia.com/t/pycuda-installation-failure-on-jetson-nano/77152/22)
 ```
+sudo apt install python3-pip
+sudo apt install python3-dev
+pip3 install --global-option=build_ext --global-option="-I/usr/local/cuda/include" --global-option="-L/usr/local/cuda/lib64" pycuda
 ```
-6. 
+5. Convert ONNX model to TRT:
+```
+
+```
 

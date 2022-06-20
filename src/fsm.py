@@ -207,7 +207,7 @@ class FSM():
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                    if np.abs(w) < 0.03:
+                    if np.abs(target.w) < 0.03:
                         final_state = self.moveNStates(1)
                 else:
                     target.w = math.pi

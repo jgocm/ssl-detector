@@ -72,6 +72,7 @@ if __name__=="__main__":
         cv2.setMouseCallback(WINDOW_TITLE, myGUI.pointCrossMarker)
         if myGUI.save:
             cv2.imwrite('configs/calibration_image.jpg', img)
+            cv2.imwrite('configs/calibration_image.jpg', myGUI.screen)
             np.savetxt(f'configs/calibration_position.txt', camera_position)
             np.savetxt(f'configs/calibration_rotation.txt', euler_angles)
             np.savetxt(f'configs/calibration_points2d.txt', points2d)
