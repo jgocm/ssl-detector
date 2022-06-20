@@ -35,7 +35,8 @@ class TargetPoint(GroundPoint):
                 y = 0,
                 w = 0
                 ):
-        super().__init__(self, x, y)
+        self.x = x
+        self.y = y
         self.w = w
         self.type = pb.protoPositionSSL.unknown
 

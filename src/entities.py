@@ -133,7 +133,7 @@ class Frame():
         self.has_goal = False
         self.has_robot = False
         self.has_target = False
-        self.timestamp = 0
+        self.timestamp = timestamp
     
     def updateBall(self, x, y):
         self.ball.updatePosition(x, y)

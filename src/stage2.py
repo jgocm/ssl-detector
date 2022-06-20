@@ -24,12 +24,12 @@ def main():
     # START TIME
     start = time.time()
 
-    # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = False
-
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = DRAW
+    SHOW_DISPLAY = False
+
+    # DISPLAYS POSITIONS AND MARKERS ON SCREEN
+    DRAW = SHOW_DISPLAY
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -110,7 +110,7 @@ def main():
         init_time = start)
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 30
+    EXECUTION_TIME = 20
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -120,14 +120,14 @@ def main():
 
         current_frame = Frame(timestamp = time.time())
         if myGUI.play:
-            ret, current_frame = cap.read()
+            ret, current_frame.input = cap.read()
             if not ret:
                 print("Check video capture path")
                 break
             elif SHOW_DISPLAY: 
                 myGUI.updateGUI(current_frame.input)
 
-        detections = trt_net.inference(current_frame).detections
+        detections = trt_net.inference(current_frame.input).detections
 
         for detection in detections:
             """
@@ -190,34 +190,21 @@ def main():
                 ssl_goal = current_frame.updateGoalCenter(x, y)
 
         # STATE MACHINE
-        target = state_machine.stage2(
+        target, ssl_robot = state_machine.stage2(
                                 frame = current_frame, 
                                 ball = ssl_ball,
                                 goal = ssl_goal,
                                 robot = ssl_robot)
     
         # UPDATE PROTO MESSAGE
-        eth_comm.setPositionMessage(
-                                x = target.x, 
-                                y = target.y,
-                                w = target.w,
-                                posType = target.type)
-
-        eth_comm.setKickMessage(
-                            front = ssl_robot.front,
-                            chip = ssl_robot.chip,
-                            charge = ssl_robot.charge,
-                            kickStrength = ssl_robot.kick_strength,
-                            dribbler = ssl_robot.dribbler,
-                            dribSpeed = ssl_robot.dribbler_speed)
-
+        eth_comm.setSSLMessage(target = target, robot = ssl_robot)
         
         # ACTION
-        eth_comm.sendSSLMessage()        
-        if state_machine.current_state != Stage2States.dock:
+        eth_comm.sendSSLMessage()
+        print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}')
+ 
+        if state_machine.current_state != Stage2States.dockAndShoot:
             eth_comm.resetRobotPosition()
-
-        print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time

@@ -70,7 +70,7 @@ def main():
     # INIT ENTITIES
     ssl_ball = Ball()
     ssl_goal = Goal()
-    target = TargetPoint(x = 0, y = 0, w = 0, )
+    target = TargetPoint(x = 0, y = 0, w = 0)
 
     # UDP COMMUNICATION SETUP
     HOST_ADDRES = "199.0.1.2"
@@ -298,7 +298,7 @@ def main():
         eth_comm.setKickMessage(
                             front=ssl_robot.front, 
                             charge=ssl_robot.charge, 
-                            kickStrength=ssl_robot.kickStrength)
+                            kickStrength=ssl_robot.kick_strength)
         eth_comm.sendSSLMessage()
         
         if state != "dock":

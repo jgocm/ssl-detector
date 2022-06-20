@@ -1,5 +1,7 @@
 import socket
 import CommTypes_pb2 as pb
+from navigation import TargetPoint
+from entities import Robot
 
 class SocketUDP():
     def __init__(
@@ -88,7 +90,7 @@ class SocketUDP():
         self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
     def resetRobotPosition(self):
-        msg = self.setKickMessage()
+        msg = pb.protoPositionSSL()
         msg.x = 0
         msg.y = 0
         msg.w = 0
@@ -111,6 +113,22 @@ class SocketUDP():
         self.msg.y = y
         self.msg.w = w
         self.msg.posType = posType
+
+        return self.msg
+
+    def setSSLMessage(self, target=TargetPoint(), robot=Robot()):
+        self.msg = pb.protoPositionSSL()
+        self.msg.x = target.x
+        self.msg.y = target.y
+        self.msg.w = target.w
+        self.msg.posType = target.type
+
+        self.msg.front = robot.front
+        self.msg.chip = robot.chip
+        self.msg.charge = robot.charge
+        self.msg.kickStrength = robot.kick_strength
+        self.msg.dribbler = robot.dribbler
+        self.msg.dribSpeed = robot.dribbler_speed
 
         return self.msg
 

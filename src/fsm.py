@@ -98,12 +98,12 @@ class FSM():
                 if self.getStateDuration(frame.timestamp) > 0.3:
                     final_state = self.moveNStates(1)
 
-            elif self.current_state == Stage1States.search:
+            elif self.current_state == Stage1States.searchBall:
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
-            elif self.current_state == Stage1States.drive:
+            elif self.current_state == Stage1States.driveToBall:
                 target = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
@@ -116,7 +116,7 @@ class FSM():
                 if not frame.has_ball and target.getDistance() < 0.270:
                     final_state = self.moveNStates(1)
 
-            elif self.current_state == Stage1States.dock:
+            elif self.current_state == Stage1States.dockBall:
                 target = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
