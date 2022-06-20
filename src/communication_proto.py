@@ -155,4 +155,5 @@ if __name__ == "__main__":
     print(f"Sending X, Y,  W Position")
     print(f"x = {x}, y = {y}, w = {w}")
     
-    UDP.sendPosition(x, y, w)
+    while(1):
+        UDP.sendStopMotion()
