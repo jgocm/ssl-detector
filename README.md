@@ -86,7 +86,7 @@ sudo ln -s /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0 /usr/lib/aarch6
 3. Check the model
 ```
 cd ..
-/usr/src/tensorrt/bin/trtexec --onnx=/home/$USER/models/ssdlite_mobiletnet_v2_300x300_ssl/onnx/model_gs.onnx --workspace=2048
+/usr/src/tensorrt/bin/trtexec --onnx=/home/$USER/ssl-detector/models/ssdlite_mobiletnet_v2_300x300_ssl/onnx/model_gs.onnx --workspace=2048
 ```
 4. Install pycuda
 ```
