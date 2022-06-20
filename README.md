@@ -11,8 +11,24 @@ sudo apt autoremove
 sudo apt-get update
 ```
 
+### Add Swap Memory
+Some applications require more than 4GB of memory to execute, so we [creating a swap file](https://forums.developer.nvidia.com/t/creating-a-swap-file/65385)
+
+Execute following steps to add 4G of swap space:
+```
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+```
+
+`free -m` will show you the swap file is on. You can also pull up the System Monitor, however this is only temporary. If you reboot, swap file is gone.
+ 
+ Add the line `/swapfile none swap 0 0` to `/etc/fstab` file. Now you can reboot and your Swap will be activated.
+
 ### Install Fan Controller
-[Pyrestone fan controller](https://github.com/Pyrestone/jetson-fan-ctl.git) will automatically run at boot time.
+[Pyrestone fan controller](https://github.com/Pyrestone/jetson-fan-ctl.git) will automatically run at boot time. 
 
 Install dependencies:
 ```
