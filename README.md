@@ -62,14 +62,14 @@ git clone https://github.com/jgocm/ssl-detector.git
 2. Copy the plugin from TensorRT directory
 ```
 cd ssl-detector/TensorRT/
-sudo cp out/libnvinfer_plugin.so.8.2.0 /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0
+sudo cp libnvinfer_plugin.so.8.2.0 /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0
 sudo rm /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8
 sudo ln -s /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0 /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8
 ```
 3. Check the model
 ```
 cd ..
-/usr/src/tensorrt/bin/trtexec --onnx=/models/ssdlite_mobiletnet_v2_300x300_ssl/onnx/model_gs.onnx
+/usr/src/tensorrt/bin/trtexec --onnx=/home/$USER/models/ssdlite_mobiletnet_v2_300x300_ssl/onnx/model_gs.onnx --workspace=2048
 ```
 4. Install pycuda
 ```
