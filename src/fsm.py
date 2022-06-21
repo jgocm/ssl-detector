@@ -1,5 +1,6 @@
 from enum import Enum
 import math
+from threading import currentThread
 from entities import Robot, Goal, Ball, Frame
 from navigation import TargetPoint
 import communication_proto
@@ -18,6 +19,7 @@ class Stage1States(Enum):
     searchBall = 2
     driveToBall = 3
     dockBall = 4
+    finish = 5
 
 class Stage2States(Enum):
     unkown = 0
@@ -30,7 +32,7 @@ class Stage2States(Enum):
     stopToShoot = 7
     driveToBall = 8
     dockAndShoot = 9
-    stopToEnd = 10
+    finish = 10
 
 # STILL NOT IMPLEMENTED
 class Stage3States(Enum):
@@ -98,36 +100,39 @@ class FSM():
                 if self.getStateDuration(frame.timestamp) > 0.3:
                     final_state = self.moveNStates(1)
 
-            elif self.current_state == Stage1States.search:
+            elif self.current_state == Stage1States.searchBall:
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
-            elif self.current_state == Stage1States.drive:
-                target = target.getTargetRelativeToLine2DCoordinates(
+            elif self.current_state == Stage1States.driveToBall:
+                target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
                     x2 = ball.x,
                     y2 = ball.y,
                     relative_angle = 0,
-                    relative_distance = -robot.camera_offset/1000
+                    relative_distance = 0
                     )
                 target.type = communication_proto.pb.protoPositionSSL.target
-                if not frame.has_ball and target.getDistance() < 0.270:
+                if not frame.has_ball and target.getDistance() < 0.400:
                     final_state = self.moveNStates(1)
 
-            elif self.current_state == Stage1States.dock:
-                target = target.getTargetRelativeToLine2DCoordinates(
+            elif self.current_state == Stage1States.dockBall:
+                target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
                     x2 = ball.x,
                     y2 = ball.y,
                     relative_angle = 0,
-                    relative_distance = -robot.camera_offset/1000
+                    relative_distance = 0
                     )
                 target.type = communication_proto.pb.protoPositionSSL.dock
-                if frame.has_ball:
-                    final_state = self.moveNStates(-1)
+                if self.getStateDuration(current_timestamp=frame.timestamp) > 3:
+                    final_state = self.moveNStates(1)
+            
+            elif self.current_state == Stage1States.finish:
+                target.type = communication_proto.pb.protoPositionSSL.stop
 
             final_state = Stage1States(final_state)
             transition = (final_state != self.current_state)
@@ -142,7 +147,7 @@ class FSM():
 
     def stage2(self, frame = Frame(), ball = Ball(), goal = Goal(), robot = Robot()):
         target = TargetPoint(x = 0, y = 0, w = 0)
-    
+
         while True:
             final_state = self.current_state
 
@@ -161,13 +166,13 @@ class FSM():
             elif self.current_state.value == 3:
                 # drive1: goes in ball direction preparing to rotate in point
                 target.type = communication_proto.pb.protoPositionSSL.target
-                target = target.getTargetRelativeToLine2DCoordinates(
+                target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
                     x2 = ball.x,
                     y2 = ball.y,
                     relative_angle = 0,
-                    relative_distance = -0.5-robot.camera_offset/1000
+                    relative_distance = -0.5
                     )
                 if target.getDistance() < 0.05:
                     final_state = self.moveNStates(1)
@@ -175,13 +180,13 @@ class FSM():
             elif self.current_state.value == 4:
                 # stop1: breaks for align with ball center
                 target.type = communication_proto.pb.protoPositionSSL.stop
-                target = target.getTargetRelativeToLine2DCoordinates(
+                target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
                     x2 = ball.x,
                     y2 = ball.y,
                     relative_angle = 0,
-                    relative_distance = -0.5-robot.camera_offset/1000
+                    relative_distance = -0.5
                     )
                 if target.getDistance() > 0.05:
                     final_state = self.moveNStates(-1)
@@ -207,7 +212,7 @@ class FSM():
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                    if np.abs(w) < 0.03:
+                    if np.abs(target.w) < 0.05:
                         final_state = self.moveNStates(1)
                 else:
                     target.w = math.pi
@@ -215,13 +220,14 @@ class FSM():
             elif self.current_state.value == 7:
                 # stop2: breaks when ball and goal are aligned
                 target.type = communication_proto.pb.protoPositionSSL.stop
-                _, _, w = target.get2XYCoordinatesVector(
+                _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = ball.x,
                         y1 = ball.y,
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                if np.abs(w) > 0.035:
+                robot.charge = True
+                if np.abs(target.w) > 0.055:
                     final_state = self.moveNStates(-1)
                 elif self.getStateDuration(frame.timestamp) > 0.2:
                     final_state = self.moveNStates(1)
@@ -229,33 +235,38 @@ class FSM():
             elif self.current_state.value == 8:
                 # drive3: drives to ball position towards goal direction
                 target.type = communication_proto.pb.protoPositionSSL.target
-                target.setPosition(x = ball.x-robot.camera_offset/1000, y = ball.y)
+                target.setPosition(x = ball.x, y = ball.y)
                 _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = 0,
                         y1 = 0,
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                if not frame.has_ball and target.getDistance()<0.270:
+                robot.charge = True
+                if not frame.has_ball and target.getDistance()<0.400:
                     final_state = self.moveNStates(1)
             
             elif self.current_state.value == 9:
                 # dock: drives to last target ball using inertial odometry and shoots to goal
                 target.type = communication_proto.pb.protoPositionSSL.dock
-                target.setPosition(x = ball.x-robot.camera_offset/1000, y = ball.y)
+                target.setPosition(x = ball.x, y = ball.y)
                 _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = 0,
                         y1 = 0,
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                robot.front = True
-                robot.charge = False
-                robot.kick_strength = 40
-                if self.getStateDuration(frame.timestamp)>3:
-                    robot.charge = True
-                if self.getStateDuration(frame.timestamp)>3.1:
+                robot.charge = True
+                if robot.front:
+                    robot.front = False
                     robot.charge = False
+                    final_state = self.moveNStates(1)
+                elif self.getStateDuration(frame.timestamp) > 3:
+                    robot.front = True
+                    robot.kick_strength = 40
+                
+            elif self.current_state.value == 10:
+                target.type = communication_proto.pb.protoPositionSSL.stop
 
             final_state = Stage2States(final_state)
             transition = (final_state != self.current_state)

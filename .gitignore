@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# TensorRT models
+.trt
+models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt

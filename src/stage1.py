@@ -20,12 +20,12 @@ def main():
     # START TIME
     start = time.time()
 
-    # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = False
-
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = DRAW
+    SHOW_DISPLAY = False
+
+    # DISPLAYS POSITIONS AND MARKERS ON SCREEN
+    DRAW = SHOW_DISPLAY
     
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -41,7 +41,7 @@ def main():
     # INIT ENTITIES
     ssl_ball = Ball()
     ssl_goal = Goal()
-    target = TargetPoint(x = 0, y = 0, w = 0)
+    target = TargetPoint()
 
     # UDP COMMUNICATION SETUP
     HOST_ADDRES = "199.0.1.2"
@@ -101,7 +101,7 @@ def main():
         init_time = start)
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 20
+    EXECUTION_TIME = 15
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -133,13 +133,13 @@ def main():
             class_id, score, xmin, xmax, ymin, ymax = detection
             if class_id==1:
                 # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
-                    left=xmin, 
-                    top=ymin, 
-                    right=xmax, 
-                    bottom=ymax, 
-                    weight_x=regression_weights[0],
-                    weight_y=regression_weights[1])
+                pixel_x, pixel_y = ssl_cam.ballAsPoint(
+                                                left=xmin, 
+                                                top=ymin, 
+                                                right=xmax, 
+                                                bottom=ymax, 
+                                                weight_x=0.5,
+                                                weight_y=0.2)
 
                 # DRAW OBJECT POINT ON SCREEN
                 if DRAW:
@@ -155,7 +155,7 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_ball = current_frame.updateBall(x, y)
+                ssl_ball = current_frame.updateBall(x, y, score)
 
         # STATE MACHINE
         target = state_machine.stage1(
@@ -164,26 +164,16 @@ def main():
                                 robot = ssl_robot)
     
         # UPDATE PROTO MESSAGE
-        eth_comm.setPositionMessage(
-                                x = target.x, 
-                                y = target.y,
-                                w = target.w,
-                                posType = target.type)
-
-        eth_comm.setKickMessage(
-                            front = ssl_robot.front,
-                            chip = ssl_robot.chip,
-                            charge = ssl_robot.charge,
-                            kickStrength = ssl_robot.kick_strength,
-                            dribbler = ssl_robot.dribbler,
-                            dribSpeed = ssl_robot.dribbler_speed)
+        eth_comm.setSSLMessage(target = target, robot = ssl_robot)
         
         # ACTION
         eth_comm.sendSSLMessage()
-        if state_machine.current_state != Stage1States.dock:
+        print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
+        
+        if state_machine.current_state != Stage1States.dockBall:
             eth_comm.resetRobotPosition()
-
-        print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}, {eth_comm.msg.x:.3f}')
+        if state_machine.current_state == Stage1States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
+            break
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time

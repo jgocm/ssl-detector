@@ -48,12 +48,12 @@ def main():
     # START TIME
     start = time.time()
 
-    # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = False
-
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
     SHOW_DISPLAY = False
+
+    # DISPLAYS POSITIONS AND MARKERS ON SCREEN
+    DRAW = SHOW_DISPLAY
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -66,11 +66,12 @@ def main():
                 diameter = ROBOT_DIAMETER,
                 camera_offset = CAMERA_TO_CENTER_OFFSET
                 )
+    ssl_robot.charge = True
 
     # INIT ENTITIES
     ssl_ball = Ball()
     ssl_goal = Goal()
-    target = TargetPoint(x = 0, y = 0, w = 0, )
+    target = TargetPoint()
 
     # UDP COMMUNICATION SETUP
     HOST_ADDRES = "199.0.1.2"
@@ -128,7 +129,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 20
+    EXECUTION_TIME = 60
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -147,13 +148,13 @@ def main():
         
         current_frame = Frame(timestamp = time.time())
         if myGUI.play:
-            ret, frame = cap.read()
+            ret, current_frame.input = cap.read()
             if not ret:
                 print("Check video capture path")
                 break
-            else: myGUI.updateGUI(frame)
+            else: myGUI.updateGUI(current_frame.input)
 
-        detections = trt_net.inference(frame).detections
+        detections = trt_net.inference(current_frame.input).detections
 
         for detection in detections:
             """
@@ -190,12 +191,12 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_ball = current_frame.updateBall(x, y)
+                ssl_ball = current_frame.updateBall(x, y, score)
               
             if class_id==2:
                 # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
                 left_corner, right_corner = object_localization.KeypointRegression.goalAsCorners(
-                                                    src=frame,
+                                                    src=current_frame.input,
                                                     left=xmin,
                                                     top=ymin,
                                                     right=xmax,
@@ -227,17 +228,12 @@ def main():
                         left_corner_x[0], 
                         left_corner_y[0], 
                         right_corner_x[0], 
-                        right_corner_y[0])
+                        right_corner_y[0],
+                        score)
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-                tx, ty, _ = ssl_robot.cameraToRobotCoordinates(tx, ty)
-                ssl_robot.x, ssl_robot.y, ssl_robot.w = tx, ty, w
-
-                # UPDATE GOAL CENTER RELATIVE POSITION
-                x, y, w = ssl_robot.cameraToRobotCoordinates(
-                        (left_corner_x[0]+right_corner_x[0])/2, 
-                        (left_corner_y[0]+right_corner_y[0])/2)
-                ssl_goal = current_frame.updateGoalCenter(x, y)
+                x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
+                ssl_goal = current_frame.updateGoalCenter(x, y, score)
 
         # STATE MACHINE
         # TO-DO: move to state machine class
@@ -260,13 +256,13 @@ def main():
         eth_comm.setKickMessage(
                             front=ssl_robot.front, 
                             charge=ssl_robot.charge, 
-                            kickStrength=ssl_robot.kickStrength)
+                            kickStrength=ssl_robot.kick_strength)
         eth_comm.sendSSLMessage()
         
         if state != "dock":
             eth_comm.resetRobotPosition()
 
-        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}')
+        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time

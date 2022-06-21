@@ -525,7 +525,7 @@ class Camera():
 
         return p
 
-    def ballAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.8):
+    def ballAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.2):
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
@@ -535,7 +535,7 @@ class Camera():
         y = [left, right, top, bottom, 1]@weight_y
         return x, y
     
-    def robotAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.9):
+    def robotAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.1):
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
@@ -606,23 +606,19 @@ if __name__=="__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    # IMAGE READ SETUP
-    PATH_TO_IMG = cwd+"/experiments/13abr/1.jpg"
-    img = cv2.imread(PATH_TO_IMG)
-
     # OBJECT DETECTION MODEL
     trt_net = object_detection.DetectNet(
-                model_path="/home/joao/ssl-detector/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt", 
-                labels_path="/home/joao/ssl-detector/models/ssl_labels.txt", 
+                model_path=cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt", 
+                labels_path=cwd+"/models/ssl_labels.txt", 
                 input_width=300, 
                 input_height=300,
                 score_threshold = 0.5,
-                draw = False,
+                draw = True,
                 display_fps = False,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
                 )
     trt_net.loadModel()
-    regression_weights = np.loadtxt(cwd+f"/experiments/12abr/regression_weights.txt")
+    regression_weights = np.loadtxt(cwd+f"/models/regression_weights.txt")
 
     # CAMERA PARAMETERS SETUP
     PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
@@ -641,7 +637,6 @@ if __name__=="__main__":
 
     # USER INTERFACE SETUP
     myGUI = interface.GUI(
-                        screen = img.copy(),
                         play = True,
                         mode = "detection"
                         )
@@ -669,6 +664,14 @@ if __name__=="__main__":
                                                                     bottom = ymax, 
                                                                     weight_x = regression_weights[0],
                                                                     weight_y = regression_weights[1])
+                                                            
+                pixel_x, pixel_y = ssl_cam.ballAsPoint(
+                                                    left = xmin, 
+                                                    top = ymin, 
+                                                    right = xmax, 
+                                                    bottom = ymax,
+                                                    weight_x = 0.5,
+                                                    weight_y = 0.2)
 
                 # DRAW OBJECT POINT ON SCREEN
                 myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))

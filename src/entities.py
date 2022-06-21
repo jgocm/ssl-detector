@@ -12,6 +12,7 @@ class Robot():
         self.id = id
         self.height = height
         self.diameter = diameter
+        self.score = 0
 
         self.x = 0
         self.y = 0
@@ -68,6 +69,7 @@ class Ball():
                 diameter = 42.7,
                 radius = 42.7/2
                 ):
+        self.score = 0
         self.x = 0
         self.y = 0
         self.w = 0
@@ -99,6 +101,7 @@ class Goal():
         self.left_y = 0
         self.right_x = 0
         self.right_y = 0
+        self.score = 0
 
 class Field():
     def __init__(
@@ -137,28 +140,35 @@ class Frame():
         self.has_goal = False
         self.has_robot = False
         self.has_target = False
-        self.timestamp = 0
+        self.timestamp = timestamp
     
-    def updateBall(self, x, y):
-        self.ball.updatePosition(x, y)
-        self.has_ball = True
+    def updateBall(self, x, y, score):
+        if score >= self.ball.score:
+            self.ball.updatePosition(x, y)
+            self.has_ball = True
+            self.ball.score = score
         return self.ball
 
-    def updateGoalCenter(self, x, y):
-        self.goal.center_x = x
-        self.goal.center_y = y
-        self.has_goal = True
+    def updateGoalCenter(self, x, y, score):
+        if score >= self.goal.score: 
+            self.goal.center_x = x
+            self.goal.center_y = y
+            self.has_goal = True
+            self.goal.score = score
         return self.goal
 
-    def updateGoalCorners(self, left_corner_x, left_corner_y, right_corner_x, right_corner_y):
-        self.goal.left_x = left_corner_x
-        self.goal.left_y = left_corner_y
-        self.goal.right_x = right_corner_x
-        self.goal.right_y = right_corner_y
+    def updateGoalCorners(self, left_corner_x, left_corner_y, right_corner_x, right_corner_y, score):
+        if score >= self.goal.score:
+            self.goal.left_x = left_corner_x
+            self.goal.left_y = left_corner_y
+            self.goal.right_x = right_corner_x
+            self.goal.right_y = right_corner_y
         return self.goal
 
-    def updateRobot(self, x, y):
-        self.robot.x = x
-        self.robot.y = y
-        self.has_robot = True
+    def updateRobot(self, x, y, score):
+        if score >= self.robot.score:
+            self.robot.x = x
+            self.robot.y = y
+            self.has_robot = True
+            self.robot.score = score
         return self.robot
