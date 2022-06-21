@@ -1,0 +1,119 @@
+/*
+ * Copyright (c) 2021 Nobuo Tsukamoto
+ * Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include "bboxUtils.h"
+#include "cuda_runtime_api.h"
+#include "gatherNMSOutputs.h"
+#include "kernel.h"
+#include "nmsUtils.h"
+
+pluginStatus_t tfliteNMSInference(cudaStream_t stream, const int N,    // batch_size
+                                  const int perBatchBoxesSize, const int perBatchScoresSize, const int anchorsSize,
+                                  const int numPredsPerClass, const int numClasses, const int keepTopK, const int backgroundLabelId,
+                                  const float scoreThreshold, const float iouThreshold,
+                                  const float scaleY, const float scaleX, const float scaleH, const float scaleW,
+                                  const DataType DT_BBOX,const void* locData,
+                                  const DataType DT_SCORE, const void* confData,
+                                  const DataType DT_ANCHORS, const void* anchorData,
+                                  void* keepCount, void* nmsedBoxes, void* nmsedScores, void* nmsedClasses, void* workspace,
+                                  bool confSigmoid, bool clipBoxes, int scoreBits)
+{
+    const bool shareLocation = true;
+    bool isNormalized = true;
+    // https://github.com/NVIDIA/TensorRT/issues/893
+    const int topK = (numPredsPerClass > 4096) ? 4096 : numPredsPerClass;
+    pluginStatus_t status;
+
+    // locCount = batch_size * number_boxes_per_sample
+    const int locCount = N * perBatchBoxesSize;
+    // Bounding box are shared among all classes, i.e., a bounding box could be classified as any candidate class.
+    const int numLocClasses = 0;
+
+    /*
+     * bboxData format:
+     * [batch size, numPriors (per sample), numLocClasses, 4]
+     */
+    size_t bboxDataSize = detectionForwardBBoxDataSize(N, perBatchBoxesSize, DT_BBOX);
+    void* bboxData = workspace;
+
+    // cudaMemcpyAsync(bboxData, locData, bboxDataSize, cudaMemcpyDeviceToDevice, stream);
+    status = decodeTFLiteBBoxes(stream, locCount / 4, numPredsPerClass, numLocClasses, DT_BBOX, locData, anchorData,
+                                scaleY, scaleX, scaleH, scaleW, bboxData);
+    ASSERT_FAILURE(status == STATUS_SUCCESS);
+
+    // float for now
+    size_t bboxPermuteSize = detectionForwardBBoxPermuteSize(shareLocation, N, perBatchBoxesSize, DT_BBOX);
+    void* bboxPermute = nextWorkspacePtr((int8_t*) bboxData, bboxDataSize);
+
+    /*
+     * Conf data format
+     * [batch size, numPriors * param.numClasses, 1, 1]
+     */
+    const int numScores = N * perBatchScoresSize;
+    size_t totalScoresSize = detectionForwardPreNMSSize(N, perBatchScoresSize);
+    if(DT_SCORE == DataType::kHALF) totalScoresSize /= 2; // detectionForwardPreNMSSize is implemented in terms of kFLOAT
+    void* scores = nextWorkspacePtr((int8_t*) bboxPermute, bboxPermuteSize);
+
+    // need a conf_scores
+    /*
+     * After permutation, bboxData format:
+     * [batch_size, numClasses, numPredsPerClass, 1]
+     */
+    status = permuteData(
+        stream, numScores, numClasses, numPredsPerClass, 1, DT_SCORE, confSigmoid, confData, scores);
+    ASSERT_FAILURE(status == STATUS_SUCCESS);
+
+    size_t indicesSize = detectionForwardPreNMSSize(N, perBatchScoresSize);
+    void* indices = nextWorkspacePtr((int8_t*) scores, totalScoresSize);
+
+    size_t postNMSScoresSize = detectionForwardPostNMSSize(N, numClasses, topK);
+    if(DT_SCORE == DataType::kHALF) postNMSScoresSize /= 2; // detectionForwardPostNMSSize is implemented in terms of kFLOAT
+    size_t postNMSIndicesSize = detectionForwardPostNMSSize(N, numClasses, topK); // indices are full int32
+    void* postNMSScores = nextWorkspacePtr((int8_t*) indices, indicesSize);
+    void* postNMSIndices = nextWorkspacePtr((int8_t*) postNMSScores, postNMSScoresSize);
+    void* sortingWorkspace = nextWorkspacePtr((int8_t*) postNMSIndices, postNMSIndicesSize);
+
+    // Sort the scores so that the following NMS could be applied.
+    float scoreShift = 0.f;
+    if(DT_SCORE == DataType::kHALF && scoreBits > 0 && scoreBits <= 10)
+        scoreShift = 1.f;
+
+    status = sortScoresPerClass(stream, N, numClasses, numPredsPerClass, backgroundLabelId, scoreThreshold,
+        DT_SCORE, scores, indices, sortingWorkspace, scoreBits, scoreShift);
+
+    ASSERT_FAILURE(status == STATUS_SUCCESS);
+
+    // This is set to true as the input bounding boxes are of the format [ymin,
+    // xmin, ymax, xmax]. The default implementation assumes [xmin, ymin, xmax, ymax]
+    bool flipXY = false;
+    // NMS
+    status = allClassNMS(stream, N, numClasses, numPredsPerClass, topK, iouThreshold, shareLocation, isNormalized,
+        DT_SCORE, DT_BBOX, bboxData, scores, indices, postNMSScores, postNMSIndices, flipXY, scoreShift);
+    ASSERT_FAILURE(status == STATUS_SUCCESS);
+
+    // Sort the bounding boxes after NMS using scores
+    status = sortScoresPerImage(stream, N, numClasses * topK, DT_SCORE, postNMSScores, postNMSIndices, scores,
+        indices, sortingWorkspace, scoreBits);
+
+    ASSERT_FAILURE(status == STATUS_SUCCESS);
+
+    // Gather data from the sorted bounding boxes after NMS
+    status = gatherNMSOutputs(stream, shareLocation, N, numPredsPerClass, numClasses, topK, keepTopK, DT_BBOX,
+        DT_SCORE, indices, scores, bboxData, keepCount, nmsedBoxes, nmsedScores, nmsedClasses, clipBoxes, scoreShift);
+    ASSERT_FAILURE(status == STATUS_SUCCESS);
+
+    return STATUS_SUCCESS;
+}

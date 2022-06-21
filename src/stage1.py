@@ -41,7 +41,7 @@ def main():
     # INIT ENTITIES
     ssl_ball = Ball()
     ssl_goal = Goal()
-    target = TargetPoint(x = 0, y = 0, w = 0)
+    target = TargetPoint()
 
     # UDP COMMUNICATION SETUP
     HOST_ADDRES = "199.0.1.2"
