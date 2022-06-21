@@ -191,6 +191,5 @@ class TargetPoint(GroundPoint):
         p1 = np.array([x1, y1])
         p2 = np.array([x2, y2])
         target_x, target_y, target_w = self.getTargetCoordinatesRelativeToLinePoint(p1, p2, relative_angle, relative_distance)
-        target = TargetPoint(target_x, target_y, target_w)
         
-        return target
+        return target_x, target_y, target_w

@@ -50,7 +50,7 @@ def main():
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = True
+    SHOW_DISPLAY = False
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
     DRAW = SHOW_DISPLAY
@@ -66,6 +66,7 @@ def main():
                 diameter = ROBOT_DIAMETER,
                 camera_offset = CAMERA_TO_CENTER_OFFSET
                 )
+    ssl_robot.charge = True
 
     # INIT ENTITIES
     ssl_ball = Ball()
@@ -128,7 +129,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 20
+    EXECUTION_TIME = 60
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -168,14 +169,14 @@ def main():
             class_id, score, xmin, xmax, ymin, ymax = detection  
             if class_id==1:     # ball
                 # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
-                                                                    left=xmin, 
-                                                                    top=ymin, 
-                                                                    right=xmax, 
-                                                                    bottom=ymax, 
-                                                                    weight_x=regression_weights[0],
-                                                                    weight_y=regression_weights[1])
-            
+                pixel_x, pixel_y = ssl_cam.ballAsPoint(
+                                                    left=xmin, 
+                                                    top=ymin, 
+                                                    right=xmax, 
+                                                    bottom=ymax, 
+                                                    weight_x=0.5,
+                                                    weight_y=0.2)
+
                 # DRAW OBJECT POINT ON SCREEN
                 if DRAW:
                     myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
@@ -270,25 +271,25 @@ def main():
         elif state == "drive2":
             target.type = communication_proto.pb.protoPositionSSL.target
             _, _, target.w = directionVector(ssl_goal.center_x, ssl_goal.center_y, ssl_ball.x, ssl_ball.y)
-            target.x, target.y = ssl_ball.x-ssl_robot.camera_offset/1000, ssl_ball.y
+            target.x, target.y = ssl_ball.x, ssl_ball.y
             dist = math.sqrt(target.x**2+target.y**2)+0.001
-            ssl_robot.charge = True
-            if dist<0.270 and not current_frame.has_ball:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+            if dist<0.400 and not current_frame.has_ball:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
                     state = "dock"
                     state_time = time.time()
-                    target.x, target.y = 1.2*target.x, 1.2*target.y
+                    target.x, target.y = target.x, target.y
         
         elif state == "dock":
             target.type = communication_proto.pb.protoPositionSSL.dock
             _, _, target.w = directionVector(ssl_goal.center_x, ssl_goal.center_y, ssl_ball.x, ssl_ball.y)
-            ssl_robot.front, ssl_robot.charge, ssl_robot.kickStrength = True, False, 40
-            if time.time()-state_time > 5:
-                ssl_robot.charge = True
-            if time.time()-state_time > 5.1:
+            if ssl_robot.front or not ssl_robot.charge:
+                ssl_robot.front = False
                 ssl_robot.charge = False
                 target.type = communication_proto.pb.protoPositionSSL.stop
-            if time.time()-state_time > 5.2:
-                break
+                if time.time()-state_time > 3.2:
+                    break            
+            elif time.time()-state_time > 3:
+                ssl_robot.front = True
+                ssl_robot.kick_strength = 40
 
         eth_comm.setPositionMessage(
                                 x = target.x, 
@@ -304,7 +305,7 @@ def main():
         if state != "dock":
             eth_comm.resetRobotPosition()
 
-        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}')
+        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
