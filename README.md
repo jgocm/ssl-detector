@@ -34,6 +34,7 @@ Add the line `/swapfile none swap 0 0` to `/etc/fstab` file. Now you can reboot 
 Install dependencies:
 ```
 sudo apt install python3-dev
+sudo apt install python3-pip
 ```
 
 Clone Repo and run installation script:
@@ -72,30 +73,52 @@ Reference: [TensorRT (TensorFlow 1 TensorFlow Lite Detection Model)](https://git
 
 The built TensorRT plugins are available at the [TensorRT](https://github.com/jgocm/ssl-detector/tree/main/TensorRT) folder and should replace the already installed packages with the following steps:
 
-1. Clone this repo:
+1. Jetson's pre-installed CMake is 3.10.2, but TensorRT requires 3.13 or higher, so install cmake it from snap:
+```
+sudo apt remove cmake
+sudo snap install cmake --classic
+sudo reboot
+```
+
+2. Clone this repo:
 ```
 git clone https://github.com/jgocm/ssl-detector.git
+cd ssl-detector/
 ```
-2. Copy the plugin from TensorRT directory
+
+3. Build TensorRT:
 ```
-cd ssl-detector/TensorRT/
-sudo cp libnvinfer_plugin.so.8.2.0 /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0
+export TRT_LIBPATH=`pwd`/TensorRT
+export PATH=${PATH}:/usr/local/cuda/bin
+cd $TRT_LIBPATH
+mkdir -p build && cd build
+cmake .. -DTRT_LIB_DIR=$TRT_LIBPATH -DTRT_OUT_DIR=`pwd`/out -DTRT_PLATFORM_ID=aarch64 -DCUDA_VERSION=10.2 -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/gcc
+make -j3
+```
+
+4. Copy the plugin from TensorRT (for Jetpack 4.6.1 TensorRT version is 8.2.0):
+```
+sudo cp out/libnvinfer_plugin.so.8.2.0 /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0
 sudo rm /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8
 sudo ln -s /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0 /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8
 ```
-3. Check the model
+
+5. Check the model
 ```
-cd ..
-/usr/src/tensorrt/bin/trtexec --onnx=/home/$USER/ssl-detector/models/ssdlite_mobiletnet_v2_300x300_ssl/onnx/model_gs.onnx --workspace=2048
-```
-4. Install pip and [pycuda](https://forums.developer.nvidia.com/t/pycuda-installation-failure-on-jetson-nano/77152/22)
-```
-sudo apt install python3-pip
-sudo apt install python3-dev
-pip3 install --global-option=build_ext --global-option="-I/usr/local/cuda/include" --global-option="-L/usr/local/cuda/lib64" pycuda
-```
-5. Convert ONNX model to TRT:
+/usr/src/tensorrt/bin/trtexec --onnx=~/ssl-detector/models/ssdlite_mobiletnet_v2_300x300_ssl/onnx/model_gs.onnx
 ```
 
+6. Install [pycuda](https://forums.developer.nvidia.com/t/pycuda-installation-failure-on-jetson-nano/77152/22)
+```
+pip3 install --global-option=build_ext --global-option="-I/usr/local/cuda/include" --global-option="-L/usr/local/cuda/lib64" pycuda
+```
+
+7. Convert ONNX model to TRT:
+```
+cd ~/tensorrt-examples/python/detection/
+python3 convert_onnxgs2trt.py \
+    --model ~/ssl-detector/models/ssdlite_mobilenet_v2_300x300_gs.onnx \
+    --output ~/ssl-detector/models/ssdlite_mobilenet_v2_300x300_fp16.trt \
+    --fp16
 ```
 
