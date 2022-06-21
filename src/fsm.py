@@ -1,5 +1,6 @@
 from enum import Enum
 import math
+from threading import currentThread
 from entities import Robot, Goal, Ball, Frame
 from navigation import TargetPoint
 import communication_proto
@@ -18,6 +19,7 @@ class Stage1States(Enum):
     searchBall = 2
     driveToBall = 3
     dockBall = 4
+    finish = 5
 
 class Stage2States(Enum):
     unkown = 0
@@ -30,7 +32,7 @@ class Stage2States(Enum):
     stopToShoot = 7
     driveToBall = 8
     dockAndShoot = 9
-    stopToEnd = 10
+    finish = 10
 
 # STILL NOT IMPLEMENTED
 class Stage3States(Enum):
@@ -126,6 +128,11 @@ class FSM():
                     relative_distance = 0
                     )
                 target.type = communication_proto.pb.protoPositionSSL.dock
+                if self.getStateDuration(current_timestamp=frame.timestamp) > 3:
+                    final_state = self.moveNStates(1)
+            
+            elif self.current_state == Stage1States.finish:
+                target.type = communication_proto.pb.protoPositionSSL.stop
 
             final_state = Stage1States(final_state)
             transition = (final_state != self.current_state)
@@ -205,7 +212,7 @@ class FSM():
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                    if np.abs(target.w) < 0.04:
+                    if np.abs(target.w) < 0.05:
                         final_state = self.moveNStates(1)
                 else:
                     target.w = math.pi
@@ -220,9 +227,9 @@ class FSM():
                         y2 = goal.center_y
                         )
                 robot.charge = True
-                if np.abs(target.w) > 0.045:
+                if np.abs(target.w) > 0.055:
                     final_state = self.moveNStates(-1)
-                elif self.getStateDuration(frame.timestamp) > 0.1:
+                elif self.getStateDuration(frame.timestamp) > 0.2:
                     final_state = self.moveNStates(1)
             
             elif self.current_state.value == 8:
@@ -249,13 +256,17 @@ class FSM():
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                if robot.front or not robot.charge:
+                robot.charge = True
+                if robot.front:
                     robot.front = False
                     robot.charge = False
-                    target.type = communication_proto.pb.protoPositionSSL.stop
+                    final_state = self.moveNStates(1)
                 elif self.getStateDuration(frame.timestamp) > 3:
                     robot.front = True
                     robot.kick_strength = 40
+                
+            elif self.current_state.value == 10:
+                target.type = communication_proto.pb.protoPositionSSL.stop
 
             final_state = Stage2States(final_state)
             transition = (final_state != self.current_state)

@@ -172,6 +172,8 @@ def main():
         
         if state_machine.current_state != Stage1States.dockBall:
             eth_comm.resetRobotPosition()
+        if state_machine.current_state == Stage1States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
+            break
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
