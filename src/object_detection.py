@@ -5,6 +5,7 @@ import random
 import trt_common
 import colorsys
 import cv2
+import os
 
 class Model():
     def __init__(
@@ -201,13 +202,13 @@ class DetectNet():
 
 if __name__ == "__main__":
 
+    DISPLAY_WINDOW = True
     WINDOW_NAME = 'Object Detection'
     cap = cv2.VideoCapture("/dev/video0")
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    PATH_TO_IMG = cwd+"/experiments/13abr/1.jpg"
-    im = cv2.imread(PATH_TO_IMG)
+    cwd = os.getcwd()
 
     trt_net = DetectNet(
                 model_path=cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt", 
@@ -222,26 +223,34 @@ if __name__ == "__main__":
     
     trt_net.loadModel()
 
+    start_time = time.time()
+
     while True:
         if cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                print("Check video capture path")
-                break
-        else: 
-            frame=im.copy()
+           ret, frame = cap.read()
+           if not ret:
+               print("Check video capture path")
+               break
+           else: img = frame
 
-        trt_net.inference(frame)
+        detections = trt_net.inference(img).detections
+
+        for detection in detections:
+            class_id, score, xmin, xmax, ymin, ymax = detection
+            print(f"Class ID: {class_id} | Score: {score} | Bounding Box: {xmin}, {ymin}, {xmax}, {ymax}")
 
         # DISPLAY WINDOW
-        cv2.moveWindow(WINDOW_NAME, 100, 50)
-        cv2.imshow(WINDOW_NAME, frame)
-        key = cv2.waitKey(10) & 0xFF
-        if key == ord("q"):
+        if DISPLAY_WINDOW:
+            cv2.moveWindow(WINDOW_NAME, 100, 50)
+            cv2.imshow(WINDOW_NAME, frame)
+
+            key = cv2.waitKey(10) & 0xFF
+            if key == ord("q"):
+                break
+            
+        elif time.time() - start_time > 10:
             break
-        elif key == ord('s'):
-            cv2.imwrite(cwd+"/experiments/13abr/bbox.jpg", frame)
-        
+
     # RELEASE WINDOW AND DESTROY
     cap.release()
     cv2.destroyAllWindows()
