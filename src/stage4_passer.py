@@ -131,7 +131,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 60
+    EXECUTION_TIME = 20
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -281,7 +281,7 @@ def main():
             target.x, target.y = ssl_ball.x, ssl_ball.y
             if current_frame.has_ball and current_frame.has_robot:
                 _, _, target.w = directionVector(ssl_robot_allie.x, ssl_robot_allie.y, ssl_ball.x, ssl_ball.y)
-                if np.abs(target.w) < 0.05:
+                if np.abs(target.w) < 0.03:
                     state = "stop2"
                     state_time = time.time()
                     target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
@@ -291,7 +291,7 @@ def main():
         elif state == "stop2":
             target.type = communication_proto.pb.protoPositionSSL.stop
             _, _, target.w = directionVector(ssl_robot_allie.x, ssl_robot_allie.y, ssl_ball.x, ssl_ball.y)
-            if np.abs(target.w) > 0.055:
+            if np.abs(target.w) > 0.035:
                 state = "rotate"
                 state_time = time.time()
             elif time.time()-state_time > 0.2:
@@ -318,7 +318,7 @@ def main():
                     break            
             elif time.time()-state_time > 3:
                 ssl_robot.front = True
-                ssl_robot.kick_strength = 40
+                ssl_robot.kick_strength = 10
 
         eth_comm.setPositionMessage(
                                 x = target.x, 
