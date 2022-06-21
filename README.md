@@ -59,7 +59,7 @@ sudo ./installVSCode.sh
 ```
 
 ### Add CUDA Directory
-Jetpack images already have CUDA Toolkit installed, you may check under `/usr/local/cuda` to verify that it’s there, but its [bashrc script may not contain CUDA directory](https://forums.developer.nvidia.com/t/cuda-nvcc-not-found/118068).
+Jetpack images already comes with CUDA Toolkit installed, you may check under `/usr/local/cuda` to verify that it’s there, but its [bashrc script may not contain CUDA directory](https://forums.developer.nvidia.com/t/cuda-nvcc-not-found/118068).
 
 Check that your ~/.bashrc file has these lines at the end, and if not, add them and restart your terminal:
 ```
@@ -98,7 +98,7 @@ cmake .. -DTRT_LIB_DIR=$TRT_LIBPATH -DTRT_OUT_DIR=`pwd`/out -DTRT_PLATFORM_ID=aa
 make -j3
 ```
 
-4. Copy the plugin from TensorRT (for Jetpack 4.6.1 TensorRT version is 8.2.0):
+4. Copy the plugin from TensorRT folder and replace the existing one (for Jetpack 4.6.1 TensorRT version is 8.2.0):
 ```
 sudo cp out/libnvinfer_plugin.so.8.2.0 /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0
 sudo rm /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8
@@ -118,4 +118,3 @@ python3 convert_onnxgs2trt.py \
     --output ../models/ssdlite_mobilenet_v2_300x300_fp16.trt \
     --fp16
 ```
-
