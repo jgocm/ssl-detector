@@ -1,5 +1,7 @@
 # SSL-Detector
-Object Detection and Localization for RoboCup SSL using Jetson Nano and TensorRT
+Object Detection and Localization for RoboCup SSL
+
+This project was developed and tested on a 4GB NVIDIA Jetson Nano using [Jetpack 4.6.1](https://developer.nvidia.com/embedded/jetpack-sdk-4610)
 
 ## Setup From Fresh Jetpack 4.6.1 Installation
 
@@ -23,13 +25,13 @@ sudo swapon /swapfile
 
 ```
 
-`free -m` will show you the swap file is on. Jetson Nano usually comes with 2GB of swap, so after adding 4GB it should be around 6GB. 
+`free -m` will show the swap file is on. Jetson Nano usually comes with 2GB of swap, so after adding 4GB it should be around 6GB.
 You can also pull up the System Monitor, however this is only temporary. If you reboot, swap file is gone.
- 
+
 Add the line `/swapfile none swap 0 0` to `/etc/fstab` file. Now you can reboot and your Swap will be activated.
 
-### Install Fan Controller
-[Pyrestone fan controller](https://github.com/Pyrestone/jetson-fan-ctl.git) will automatically start the fan at boot time. 
+### Install Fan Controller (Optional)
+If you have a PWM controlled fan, [Pyrestone fan controller](https://github.com/Pyrestone/jetson-fan-ctl.git) will automatically start the fan at boot time. 
 
 Install dependencies:
 ```
@@ -44,7 +46,7 @@ cd jetson-fan-ctl/
 sudo ./install.sh
 ```
 
-### Install VSCode
+### Install VSCode (Optional)
 VS Code can be download and installed directly from VS Code website.
 
 [Jetson Hacks repo](https://github.com/JetsonHacksNano/installVSCode.git) contains a script for acquiring the latest compatible version.
