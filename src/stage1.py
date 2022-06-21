@@ -155,7 +155,7 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_ball = current_frame.updateBall(x, y)
+                ssl_ball = current_frame.updateBall(x, y, score)
 
         # STATE MACHINE
         target = state_machine.stage1(

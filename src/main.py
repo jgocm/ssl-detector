@@ -191,7 +191,7 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_ball = current_frame.updateBall(x, y)
+                ssl_ball = current_frame.updateBall(x, y, score)
               
             if class_id==2:
                 # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
@@ -214,7 +214,7 @@ def main():
                 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_goal = current_frame.updateGoalCenter(x, y)
+                ssl_goal = current_frame.updateGoalCenter(x, y, score)
 
         # STATE MACHINE
         # TO-DO: create state machine class
