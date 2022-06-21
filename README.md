@@ -67,11 +67,11 @@ export LD_LIBRARY_PATH=/usr/local/cuda/lib64\
 ```
 
 ### TensorRT Setup
-We generate TensorRT models from a ONNX file converted from TensorFlow Lite. However, [NonMaxSuppression operation is still in tests on TensorRT 8](https://github.com/onnx/onnx-tensorrt/blob/8.2-GA/docs/operators.md), so it is not possible to run the detection model. TensorRT's batchedNMSPlugin and nmsPlugin are not compatible with TensorFlow Lite's TFLite_Detection_PostProcess. Therefore, create a plugin TFLiteNMS_TRT to run the TensorFlow Lite detection model.
+We generate TensorRT models from a ONNX file converted from TensorFlow Lite. However, [NonMaxSuppression operation is still in tests in TensorRT 8.2](https://github.com/onnx/onnx-tensorrt/blob/8.2-GA/docs/operators.md), so it is not possible to run the detection model. TensorRT's batchedNMSPlugin and nmsPlugin are not compatible with TensorFlow Lite's TFLite_Detection_PostProcess. Therefore, create a plugin TFLiteNMS_TRT to run the TensorFlow Lite detection model.
 
 Reference: [TensorRT (TensorFlow 1 TensorFlow Lite Detection Model)](https://github.com/NobuoTsukamoto/tensorrt-examples/blob/main/python/detection/README.md)
 
-The built TensorRT plugins are available at the [TensorRT](https://github.com/jgocm/ssl-detector/tree/main/TensorRT) folder and should replace the already installed packages with the following steps:
+To build TensorRT with the plugin, follow these steps:
 
 1. Jetson's pre-installed CMake is 3.10.2, but TensorRT requires 3.13 or higher, so install cmake it from snap:
 ```
