@@ -103,22 +103,17 @@ sudo rm /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8
 sudo ln -s /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8.2.0 /usr/lib/aarch64-linux-gnu/libnvinfer_plugin.so.8
 ```
 
-5. Check the model
-```
-/usr/src/tensorrt/bin/trtexec --onnx=~/ssl-detector/models/ssdlite_mobiletnet_v2_300x300_ssl/onnx/model_gs.onnx
-```
-
-6. Install [pycuda](https://forums.developer.nvidia.com/t/pycuda-installation-failure-on-jetson-nano/77152/22)
+5. Install [pycuda](https://forums.developer.nvidia.com/t/pycuda-installation-failure-on-jetson-nano/77152/22)
 ```
 pip3 install --global-option=build_ext --global-option="-I/usr/local/cuda/include" --global-option="-L/usr/local/cuda/lib64" pycuda
 ```
 
-7. Convert ONNX model to TRT:
+6. Convert ONNX model to TRT:
 ```
-cd ~/tensorrt-examples/python/detection/
+cd /home/$USER/ssl-detector/src/
 python3 convert_onnxgs2trt.py \
-    --model ~/ssl-detector/models/ssdlite_mobilenet_v2_300x300_gs.onnx \
-    --output ~/ssl-detector/models/ssdlite_mobilenet_v2_300x300_fp16.trt \
+    --model ../models/ssdlite_mobilenet_v2_300x300_ssl/onnx/model_gs.onnx \
+    --output ../models/ssdlite_mobilenet_v2_300x300_fp16.trt \
     --fp16
 ```
 
