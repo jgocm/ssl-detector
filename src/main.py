@@ -111,6 +111,9 @@ def main():
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
     ssl_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
 
+    # GOAL POST DETECTION
+    keypoint_regressor = object_localization.KeypointRegression()
+
     # OBJECT DETECTION MODEL
     PATH_TO_MODEL = cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt"
     PATH_TO_LABELS = cwd+"/models/ssl_labels.txt"
@@ -129,7 +132,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 60
+    EXECUTION_TIME = 20
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -169,13 +172,13 @@ def main():
             class_id, score, xmin, xmax, ymin, ymax = detection  
             if class_id==1:     # ball
                 # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = object_localization.KeypointRegression.ballAsPointLinearRegression(
-                                                                    left=xmin, 
-                                                                    top=ymin, 
-                                                                    right=xmax, 
-                                                                    bottom=ymax, 
-                                                                    weight_x=regression_weights[0],
-                                                                    weight_y=regression_weights[1])
+                pixel_x, pixel_y = keypoint_regressor.ballAsPoint(
+                                                            left=xmin, 
+                                                            top=ymin, 
+                                                            right=xmax, 
+                                                            bottom=ymax, 
+                                                            weight_x=0.5,
+                                                            weight_y=0.2)
             
                 # DRAW OBJECT POINT ON SCREEN
                 if DRAW:
@@ -195,20 +198,19 @@ def main():
               
             if class_id==2:
                 # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
-                left_corner, right_corner = object_localization.KeypointRegression.goalAsCorners(
+                left_corner, right_corner = keypoint_regressor.goalAsCorners(
                                                     src=current_frame.input,
                                                     left=xmin,
                                                     top=ymin,
                                                     right=xmax,
                                                     bottom=ymax)
-
                 # DRAW OBJECT POINTS ON SCREEN
                 if DRAW:
                     myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
                     myGUI.drawCrossMarker(myGUI.screen, int(right_corner[0]), int(right_corner[1]))
                 
                 # BACK PROJECT GOAL LEFT CORNER POSITION TO CAMERA 3D COORDINATES
-                left_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0], y=left_corner[1], z_world=0)
+                left_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0][0][0], y=left_corner[1][0][0], z_world=0)
                 left_corner_x, left_corner_y = left_corner_position[0], left_corner_position[1]
 
                 if DRAW:
@@ -216,7 +218,7 @@ def main():
                     myGUI.drawText(myGUI.screen, caption, (int(left_corner[0]-25), int(left_corner[1]+25)), 0.4)
 
                 # BACK PROJECT GOAL RIGHT CORNER POSITION TO CAMERA 3D COORDINATES
-                right_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0], y=left_corner[1], z_world=0)
+                right_corner_position = ssl_cam.pixelToCameraCoordinates(x=right_corner[0][0][0], y=right_corner[1][0][0], z_world=0)
                 right_corner_x, right_corner_y = right_corner_position[0], right_corner_position[1]
 
                 if DRAW:
@@ -228,12 +230,12 @@ def main():
                         left_corner_x[0], 
                         left_corner_y[0], 
                         right_corner_x[0], 
-                        right_corner_y[0],
-                        score)
+                        right_corner_y[0])
 
+                print(tx, ty, w)
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-                x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_goal = current_frame.updateGoalCenter(x, y, score)
+                #x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
+                #ssl_goal = current_frame.updateGoalCenter(x, y, score)
 
         # STATE MACHINE
         # TO-DO: move to state machine class
@@ -262,7 +264,7 @@ def main():
         if state != "dock":
             eth_comm.resetRobotPosition()
 
-        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
+        #print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time

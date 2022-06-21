@@ -7,8 +7,7 @@ from sklearn import linear_model
 
 class KeypointRegression():
     def __init__(
-            self,
-
+            self
             ):
         # DEFINE COLORS:
         self.BLACK = [0, 0, 0]
@@ -16,28 +15,30 @@ class KeypointRegression():
         self.GREEN = [0, 255, 0]
         self.RED = [0, 0, 255]
         self.WHITE = [255, 255, 255]
+        self.min_line_length = 3
+        self.skip_frame = False
 
-    def ballAsPoint(left, top, right, bottom, weight_x = 0.5, weight_y=0.2):
+    def ballAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.2):
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
     
-    def ballAsPointLinearRegression(left, top, right, bottom, weight_x, weight_y):
+    def ballAsPointLinearRegression(self, left, top, right, bottom, weight_x, weight_y):
         x = [left, right, top, bottom, 1]@weight_x
         y = [left, right, top, bottom, 1]@weight_y
         return x, y
     
-    def robotAsPoint(left, top, right, bottom, weight_x = 0.5, weight_y=0.1):
+    def robotAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.1):
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
     
-    def goalCenterAsPoint(left, top, right, bottom, weight_x = 0.5, weight_y=0.1):
+    def goalCenterAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.1):
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
     
-    def makeLinearRegressionModel(line_regression_points):
+    def makeLinearRegressionModel(self, line_regression_points):
         df = pd.DataFrame(line_regression_points)
         X = df.as_matrix([0])
         y = df.as_matrix([1])
@@ -45,7 +46,7 @@ class KeypointRegression():
 
         return model.coef_, model.intercept_
 
-    def makeRANSACRegressionModel(line_regression_points):
+    def makeRANSACRegressionModel(self, line_regression_points):
         df = pd.DataFrame(line_regression_points)
         X = df.as_matrix([0])
         y = df.as_matrix([1])
@@ -106,6 +107,7 @@ class KeypointRegression():
         goal_line_points = self.goalLineDetection(src, left, top, right, bottom)
         goal_line_model = self.makeLinearRegressionModel(goal_line_points)
         return goal_line_model
+     
 
     def goalLeftPostDetectionGrayScale(self, src, left, top, right, bottom):
         """
@@ -204,7 +206,7 @@ class KeypointRegression():
         for line_y in range(top, bottom, horizontal_lines_offset):
             # segment image horizontal line
             for pixel_x in range(left, right):
-                blue, green, red = img[line_y, pixel_x]
+                blue, green, red = src[line_y, pixel_x]
                 # paint strong white pixels with white -> probably not a post
                 if blue > 170 and green > 170 and red > 170:
                     color = self.WHITE
@@ -258,7 +260,7 @@ class KeypointRegression():
         for line_y in range(top, bottom, horizontal_lines_offset):
             # segment image horizontal line
             for pixel_x in range(left, right):
-                blue, green, red = img[line_y, pixel_x]
+                blue, green, red = src[line_y, pixel_x]
                 # paint strong white pixels with white -> probably not a post
                 if blue > 170 and green > 170 and red > 170:
                     color = self.WHITE
@@ -311,7 +313,7 @@ class KeypointRegression():
     def goalRightPostRegressionFromMiddle(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
         return self.goalRightPostRegressionFromLeft(src, left, top, right, bottom, left_to_right_proportion)
     
-    def getGoalSide(angular_coef):
+    def getGoalSide(self, angular_coef):
         # decides wether the robot is on the right or the left of the goal from goal line angular coefficient
         if np.abs(angular_coef) < 0.01:
             side = "middle"
@@ -337,7 +339,7 @@ class KeypointRegression():
         
         return goal_left_post, goal_right_post
 
-    def linesIntersection(a1, b1, a2, b2):
+    def linesIntersection(self, a1, b1, a2, b2):
         x = (b2-b1)/(a1-a2)
         y = a1*x+b1
         return x, y
@@ -347,7 +349,7 @@ class KeypointRegression():
 
         side = self.getGoalSide(goal_line_coef)
         goal_left_post, goal_right_post = self.goalPostsRegresion(src, left, top, right, bottom, left_to_right_proportion, side)
-
+    
         height, width = int(src.shape[0]), int(src.shape[1])
 
         left_corner = self.linesIntersection(
@@ -360,7 +362,7 @@ class KeypointRegression():
                                 goal_line_coef, 
                                 goal_line_intercept,
                                 1/(goal_right_post[0]+0.001),
-                                -goal_right_post[1](goal_right_post[0]+0.001))
+                                -goal_right_post[1]/(goal_right_post[0]+0.001))
         
         return left_corner, right_corner
     
@@ -582,7 +584,7 @@ class Camera():
         tx = x2_real - right_corner_x*w_sin - right_corner_y*w_cos
         ty = y2_real + right_corner_x*w_cos - right_corner_y*w_sin
 
-        w = math.atan(w_sin/w_cos)
+        w = math.atan2(w_sin, w_cos)
 
         return tx, ty, w
 
