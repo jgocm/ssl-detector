@@ -71,7 +71,7 @@ def main():
     # INIT ENTITIES
     ssl_ball = Ball()
     ssl_goal = Goal()
-    target = TargetPoint(x = 0, y = 0, w = 0)
+    target = TargetPoint()
 
     # UDP COMMUNICATION SETUP
     HOST_ADDRES = "199.0.1.2"
@@ -148,13 +148,13 @@ def main():
         
         current_frame = Frame(timestamp = time.time())
         if myGUI.play:
-            ret, frame = cap.read()
+            ret, current_frame.input = cap.read()
             if not ret:
                 print("Check video capture path")
                 break
-            else: myGUI.updateGUI(frame)
+            else: myGUI.updateGUI(current_frame.input)
 
-        detections = trt_net.inference(frame).detections
+        detections = trt_net.inference(current_frame.input).detections
 
         for detection in detections:
             """
