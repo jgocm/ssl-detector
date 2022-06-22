@@ -584,14 +584,14 @@ class Camera():
         else:
             w_cos = math.sqrt(1-w_sin**2)
 
-        x1_real = -500
-        y1_real = 2820
+        center_x = 0
+        center_y = 2820
 
-        x2_real = 500
-        y2_real = 2820
+        cam_center_x = (left_corner_x+right_corner_x)/2
+        cam_center_y = (left_corner_y+right_corner_y)/2
 
-        tx = x2_real - right_corner_x*w_sin - right_corner_y*w_cos
-        ty = y2_real + right_corner_x*w_cos - right_corner_y*w_sin
+        tx = center_x - cam_center_x*w_sin - cam_center_y*w_cos
+        ty = center_y + cam_center_x*w_cos - cam_center_y*w_sin
 
         w = math.atan2(w_sin, w_cos)
 
