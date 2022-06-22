@@ -60,11 +60,13 @@ def main():
     ROBOT_HEIGHT = 155
     ROBOT_DIAMETER = 180
     CAMERA_TO_CENTER_OFFSET = 90
+    INITIAL_POSE = 0, 0, 0
     ssl_robot = Robot(                
                 id = ROBOT_ID,
                 height = ROBOT_HEIGHT,
                 diameter = ROBOT_DIAMETER,
-                camera_offset = CAMERA_TO_CENTER_OFFSET
+                camera_offset = CAMERA_TO_CENTER_OFFSET,
+                initial_pose = INITIAL_POSE
                 )
     ssl_robot.charge = True
 
@@ -172,14 +174,36 @@ def main():
             class_id, score, xmin, xmax, ymin, ymax = detection               
             if class_id==2:
                 # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
-                left_corner, right_corner = keypoint_regressor.goalAsCorners(
-                                                    src=current_frame.input,
+                if keypoint_regressor.skip_frame == True:
+                    pixel_x, pixel_y = ssl_cam.goalAsPoint(
                                                     left=xmin,
                                                     top=ymin,
                                                     right=xmax,
                                                     bottom=ymax)
+                    # DRAW OBJECT POINT ON SCREEN
+                    if DRAW:
+                        myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
+                    
+                    # BACK PROJECT GOAL CENTER POSITION TO CAMERA 3D COORDINATES
+                    object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
+                    x, y = object_position[0], object_position[1]
 
-                if keypoint_regressor.skip_frame == False:
+                    if DRAW:
+                        caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
+                        myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
+                    
+                    # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
+                    x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
+                    ssl_goal = current_frame.updateGoalCenter(x, y, score)
+                
+                else:
+                    left_corner, right_corner = keypoint_regressor.goalAsCorners(
+                                    src=current_frame.input,
+                                    left=xmin,
+                                    top=ymin,
+                                    right=xmax,
+                                    bottom=ymax)
+
                     # DRAW OBJECT POINTS ON SCREEN
                     if DRAW:
                         myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
@@ -207,11 +231,11 @@ def main():
                             left_corner_y[0], 
                             right_corner_x[0], 
                             right_corner_y[0])
-                    cv2.imwrite("Goal Localization Test.jpg",myGUI.screen)
-                    print(tx, ty, w)
+
                     # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
+                    w = ssl_robot.cameraToRobotRotation(w)
                     tx, ty, _ = ssl_robot.cameraToRobotCoordinates(tx, ty)
-                    #ssl_goal = current_frame.updateGoalCenter(x, y, score)
+                    ssl_robot.updateSelfPose(tx, ty, w)
 
         # STATE MACHINE
         # TO-DO: move to state machine class
@@ -219,6 +243,7 @@ def main():
             target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
             if current_frame.has_goal: 
                 state = "drive1"
+                keypoint_regressor.skip_frame == False
 
         elif state == "drive1":
             target.type = communication_proto.pb.protoPositionSSL.target

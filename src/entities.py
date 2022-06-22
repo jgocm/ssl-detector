@@ -7,7 +7,8 @@ class Robot():
                 id = 0,
                 height = 155,
                 diameter = 180,
-                camera_offset = 90
+                camera_offset = 90,
+                initial_pose = [0, 0, 0]
                 ):
         self.id = id
         self.height = height
@@ -16,52 +17,36 @@ class Robot():
 
         self.x = 0
         self.y = 0
-        self.w = 0
-        self.position = [self.x, self.y, self.w]
-        self.rotation = None
+        
+        self.tx = initial_pose[0]
+        self.ty = initial_pose[1]
+        self.w = initial_pose[2]
 
-        self.pose_confidence = 0
         self.camera_offset = camera_offset
 
         self.front = False
         self.chip = False
         self.charge = False
         self.kick_strength = 0
-
         self.dribbler = False
         self.dribbler_speed = 0
     
-    def isLocated(self):
-        if self.pose_confidence > 0.7:
-            return True
-        else:
-            return False
+    def updateSelfPose(self, x, y, w):
+        self.tx = x
+        self.ty = y
+        self.w = w
 
-    def getPose(self):
-        if self.isLocated():
-            print(f"Pose confidence is {self.pose_confidence}")
-            return self.position, self.pose_confidence
-        else:
-            print(f"Robot pose is not known")
-            return self.pose_confidence
-
-    def getId(self):
-        return self.id
-
-    def updatePoseConfidence(self, confidence):
-        self.pose_confidence = confidence
-    
-    def setPose(self, position, euler_angles):
-        self.position = position
-        self.rotation = euler_angles[2][0]
-        self.updatePoseConfidence(confidence=1)
-    
     def cameraToRobotCoordinates(self, x, y):
         robot_x = (y + self.camera_offset)/1000
         robot_y = -x/1000
         robot_w = math.atan2(robot_y, robot_x)
 
         return robot_x, robot_y, robot_w
+    
+    def cameraToRobotRotation(self, w):
+        robot_w = w - math.pi/2
+
+        return robot_w
 
 class Ball():
     def __init__(
