@@ -42,17 +42,23 @@ class KeypointRegression():
         df = pd.DataFrame(line_regression_points)
         X = df.as_matrix([0])
         y = df.as_matrix([1])
-        model = linear_model.LinearRegression().fit(X=X, y=y)
-
-        return model.coef_, model.intercept_
+        try:
+            model = linear_model.LinearRegression().fit(X=X, y=y)
+            return model.coef_, model.intercept_
+        except:
+            self.skip_frame = True
+            return -1, -1
 
     def makeRANSACRegressionModel(self, line_regression_points):
         df = pd.DataFrame(line_regression_points)
         X = df.as_matrix([0])
         y = df.as_matrix([1])
-        model = linear_model.RANSACRegressor().fit(X=X, y=y)
-
-        return model.estimator_.coef_, model.estimator_.intercept_
+        try:
+            model = linear_model.RANSACRegressor().fit(X=X, y=y)
+            return model.estimator_.coef_, model.estimator_.intercept_
+        except:
+            self.skip_frame = True
+            return -1, -1
 
     def goalLineDetection(self, src, left, top, right, bottom):
         """
@@ -351,22 +357,25 @@ class KeypointRegression():
         goal_left_post, goal_right_post = self.goalPostsRegresion(src, left, top, right, bottom, left_to_right_proportion, side)
     
         height, width = int(src.shape[0]), int(src.shape[1])
+        if self.skip_frame == False:
+            left_corner = self.linesIntersection(
+                                    goal_line_coef, 
+                                    goal_line_intercept,
+                                    1/(goal_left_post[0]+0.001),
+                                    -goal_left_post[1]/(goal_left_post[0]+0.001))
 
-        left_corner = self.linesIntersection(
-                                goal_line_coef, 
-                                goal_line_intercept,
-                                1/(goal_left_post[0]+0.001),
-                                -goal_left_post[1]/(goal_left_post[0]+0.001))
+            right_corner = self.linesIntersection(
+                                    goal_line_coef, 
+                                    goal_line_intercept,
+                                    1/(goal_right_post[0]+0.001),
+                                    -goal_right_post[1]/(goal_right_post[0]+0.001))
+            
+            return left_corner, right_corner
+        else:
+            return -1, -1
 
-        right_corner = self.linesIntersection(
-                                goal_line_coef, 
-                                goal_line_intercept,
-                                1/(goal_right_post[0]+0.001),
-                                -goal_right_post[1]/(goal_right_post[0]+0.001))
-        
-        return left_corner, right_corner
-    
     def goalAsCorners(self, src, left, top, right, bottom):
+        self.skip_frame = False
         left_to_right_proportion = 0.4
         left_corner, right_corner = self.goalCornersRegression(src, left, top, right, bottom, left_to_right_proportion)
         return left_corner, right_corner

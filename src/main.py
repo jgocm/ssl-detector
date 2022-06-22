@@ -50,10 +50,10 @@ def main():
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = False
+    SHOW_DISPLAY = True
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = SHOW_DISPLAY
+    DRAW = True
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -169,33 +169,7 @@ def main():
 
             Labels are available at: ssl-detector/models/ssl_labels.txt
             """
-            class_id, score, xmin, xmax, ymin, ymax = detection  
-            if class_id==1:     # ball
-                # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = keypoint_regressor.ballAsPoint(
-                                                            left=xmin, 
-                                                            top=ymin, 
-                                                            right=xmax, 
-                                                            bottom=ymax, 
-                                                            weight_x=0.5,
-                                                            weight_y=0.2)
-            
-                # DRAW OBJECT POINT ON SCREEN
-                if DRAW:
-                    myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
-
-                # BACK PROJECT BALL POSITION TO CAMERA 3D COORDINATES
-                object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
-                x, y = object_position[0], object_position[1]
-
-                if DRAW:
-                    caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
-                    myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
-
-                # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-                x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_ball = current_frame.updateBall(x, y, score)
-              
+            class_id, score, xmin, xmax, ymin, ymax = detection               
             if class_id==2:
                 # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
                 left_corner, right_corner = keypoint_regressor.goalAsCorners(
@@ -204,38 +178,40 @@ def main():
                                                     top=ymin,
                                                     right=xmax,
                                                     bottom=ymax)
-                # DRAW OBJECT POINTS ON SCREEN
-                if DRAW:
-                    myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
-                    myGUI.drawCrossMarker(myGUI.screen, int(right_corner[0]), int(right_corner[1]))
-                
-                # BACK PROJECT GOAL LEFT CORNER POSITION TO CAMERA 3D COORDINATES
-                left_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0][0][0], y=left_corner[1][0][0], z_world=0)
-                left_corner_x, left_corner_y = left_corner_position[0], left_corner_position[1]
 
-                if DRAW:
-                    caption = f"Position:{left_corner_x[0]:.2f},{left_corner_y[0]:.2f}"
-                    myGUI.drawText(myGUI.screen, caption, (int(left_corner[0]-25), int(left_corner[1]+25)), 0.4)
+                if keypoint_regressor.skip_frame == False:
+                    # DRAW OBJECT POINTS ON SCREEN
+                    if DRAW:
+                        myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
+                        myGUI.drawCrossMarker(myGUI.screen, int(right_corner[0]), int(right_corner[1]))
+                    
+                    # BACK PROJECT GOAL LEFT CORNER POSITION TO CAMERA 3D COORDINATES
+                    left_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0][0][0], y=left_corner[1][0][0], z_world=0)
+                    left_corner_x, left_corner_y = left_corner_position[0], left_corner_position[1]
 
-                # BACK PROJECT GOAL RIGHT CORNER POSITION TO CAMERA 3D COORDINATES
-                right_corner_position = ssl_cam.pixelToCameraCoordinates(x=right_corner[0][0][0], y=right_corner[1][0][0], z_world=0)
-                right_corner_x, right_corner_y = right_corner_position[0], right_corner_position[1]
+                    if DRAW:
+                        caption = f"Position:{left_corner_x[0]:.2f},{left_corner_y[0]:.2f}"
+                        myGUI.drawText(myGUI.screen, caption, (int(left_corner[0]-25), int(left_corner[1]+25)), 0.4)
 
-                if DRAW:
-                    caption = f"Position:{right_corner_x[0]:.2f},{right_corner_y[0]:.2f}"
-                    myGUI.drawText(myGUI.screen, caption, (int(right_corner[0]-25), int(right_corner[1]+25)), 0.4)
-                
-                # COMPUTE ROBOT RELOCALIZATION FROM GOAL CORNERS DETECTION
-                tx, ty, w = ssl_cam.selfLocalizationFromGoalCorners(
-                        left_corner_x[0], 
-                        left_corner_y[0], 
-                        right_corner_x[0], 
-                        right_corner_y[0])
+                    # BACK PROJECT GOAL RIGHT CORNER POSITION TO CAMERA 3D COORDINATES
+                    right_corner_position = ssl_cam.pixelToCameraCoordinates(x=right_corner[0][0][0], y=right_corner[1][0][0], z_world=0)
+                    right_corner_x, right_corner_y = right_corner_position[0], right_corner_position[1]
 
-                print(tx, ty, w)
-                # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-                #x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                #ssl_goal = current_frame.updateGoalCenter(x, y, score)
+                    if DRAW:
+                        caption = f"Position:{right_corner_x[0]:.2f},{right_corner_y[0]:.2f}"
+                        myGUI.drawText(myGUI.screen, caption, (int(right_corner[0]-25), int(right_corner[1]+25)), 0.4)
+                    
+                    # COMPUTE ROBOT RELOCALIZATION FROM GOAL CORNERS DETECTION
+                    tx, ty, w = ssl_cam.selfLocalizationFromGoalCorners(
+                            left_corner_x[0], 
+                            left_corner_y[0], 
+                            right_corner_x[0], 
+                            right_corner_y[0])
+                    cv2.imwrite("Goal Localization Test.jpg",myGUI.screen)
+                    print(tx, ty, w)
+                    # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
+                    tx, ty, _ = ssl_robot.cameraToRobotCoordinates(tx, ty)
+                    #ssl_goal = current_frame.updateGoalCenter(x, y, score)
 
         # STATE MACHINE
         # TO-DO: move to state machine class

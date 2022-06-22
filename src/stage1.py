@@ -180,7 +180,7 @@ def main():
         avg_time = 0.8*avg_time + 0.2*frame_time
         if SHOW_DISPLAY:
             key = cv2.waitKey(10) & 0xFF
-            quit = myGUI.commandHandler(key=key)   
+            quit = myGUI.commandHandler(key=key)
             if DRAW: 
                 myGUI.drawText(myGUI.screen, f"AVG FPS: {1/avg_time:.2f}s", (8, 13), 0.5)
             cv2.imshow(WINDOW_NAME, myGUI.screen)
