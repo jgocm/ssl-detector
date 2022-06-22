@@ -571,31 +571,19 @@ class Camera():
 
         return uvPoint
     
-    def selfLocalizationFromGoalCorners(self, left_corner_x, left_corner_y, right_corner_x, right_corner_y):
-        goal_width = 1000
-        w_sin = (np.abs(left_corner_x)+np.abs(right_corner_x))/goal_width
+    def selfLocalizationFromGoalCorners(self, x1, y1, x2, y2):
+        theta = math.atan((y2-y1)/(x1-x2))
         
-        if w_sin > 1:
-            w_sin = 1
-            w_cos = 0
-        elif w_sin < -1:
-            w_sin = -1
-            w_cos = 0
-        else:
-            w_cos = math.sqrt(1-w_sin**2)
+        x0 = (x1 + x2)/2
+        y0 = (y1 + y2)/2
 
         center_x = 0
         center_y = 2820
 
-        cam_center_x = (left_corner_x+right_corner_x)/2
-        cam_center_y = (left_corner_y+right_corner_y)/2
+        xt = center_x - math.cos(theta)*x0 + math.sin(theta)*y0
+        yt = center_y - math.sin(theta)*x0 - math.cos(theta)*y0
 
-        tx = center_x - cam_center_x*w_sin - cam_center_y*w_cos
-        ty = center_y + cam_center_x*w_cos - cam_center_y*w_sin
-
-        w = math.atan2(w_sin, w_cos)
-
-        return tx, ty, w
+        return xt, yt, theta
 
 
 if __name__=="__main__":
