@@ -203,7 +203,9 @@ def main():
                                     top=ymin,
                                     right=xmax,
                                     bottom=ymax)
-                    if not keypoint_regressor.skip_frame:
+                    if keypoint_regressor.skip_frame:
+                        print("Corner regression has failed")
+                    else:
                         # DRAW OBJECT POINTS ON SCREEN
                         if DRAW:
                             myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
@@ -276,7 +278,7 @@ def main():
                 relative_distance=-2
             )
             if target.getDistance() < 0.05:
-                state == "stopAndRelocalize"
+                state = "stopAndRelocalize"
                 state_time = time.time()
                 
         elif state == "stopAndRelocalize":
@@ -286,21 +288,24 @@ def main():
                 keypoint_regressor.skip_frame = True
                 if ssl_robot.is_located:
                     state = "rotateAroundGoal"
+                    state_time = time.time()
                 else:
                     state = "driveTowardsGoalCenter"
         
         elif state == "rotateAroundGoal":
             target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
-            target.x = ssl_goal.center_x - ssl_robot.tx
-            target.y = ssl_goal.center_y - ssl_robot.ty
+            target.x = ssl_goal.center_x
+            target.y = ssl_goal.center_y
             target.w = -ssl_robot.w
-            if np.abs(target.y) < 0.2:
+            if time.time() - state_time > 20:
                 state = "stopOnMiddle"
                 state_time = time.time()
-        
+
         elif state == "stopOnMiddle":
-            target.type = communication_proto.pb.protoPositionSSL.stop           
-    
+            target.type = communication_proto.pb.protoPositionSSL.stop
+            if time.time() - state_time > 0.5:
+                break        
+        
         eth_comm.setPositionMessage(
                                 x = target.x, 
                                 y = target.y,
@@ -312,7 +317,7 @@ def main():
         if state != "rotateAroundGoal":
             eth_comm.resetRobotPosition()
 
-        #print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
+        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
