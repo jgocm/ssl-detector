@@ -297,15 +297,81 @@ def main():
             target.x = ssl_goal.center_x
             target.y = ssl_goal.center_y
             target.w = -ssl_robot.w
-            if time.time() - state_time > 20:
+
+            R = target.getDistance()
+            theta = np.abs(target.w)
+            vel_min = 0.1
+            if time.time() - state_time > R*theta/vel_min:
                 state = "stopOnMiddle"
                 state_time = time.time()
 
         elif state == "stopOnMiddle":
             target.type = communication_proto.pb.protoPositionSSL.stop
             if time.time() - state_time > 0.5:
-                break        
+                state = "alignToMiddle"
         
+        elif state ==  "alignToMiddle":
+            target.type = communication_proto.pb.protoPositionSSL.rotateControl
+            target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
+                x1=ssl_robot.x,
+                y1=ssl_robot.y,
+                x2=ssl_goal.center_x,
+                y2=ssl_goal.center_y,
+                relative_angle=0,
+                relative_distance=-2
+            )          
+            if np.abs(target.w) < 0.05:
+                state = "relocalizeOnMiddle"
+        
+        elif state == "relocalizeOnMiddle":
+            target.type = communication_proto.pb.protoPositionSSL.stop
+            keypoint_regressor.skip_frame = False
+            if time.time() - state_time > 1:
+                keypoint_regressor.skip_frame = True
+                if ssl_robot.is_located:
+                    if np.abs(ssl_robot.ty) < 0.1:
+                        state = "driveToPointRadius"
+                    else:
+                        state = "stopAndRelocalize"
+                    state_time = time.time()
+                else:
+                    state = "alignToMiddle"
+        
+        elif state == "driveToPointRadius":
+            RADIUS = 2
+            target.type = communication_proto.pb.protoPositionSSL.target
+            target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
+                x1=ssl_robot.x,
+                y1=ssl_robot.y,
+                x2=ssl_goal.center_x,
+                y2=ssl_goal.center_y,
+                relative_angle=0,
+                relative_distance=-RADIUS
+            )           
+            if target.getDistance() < 0.05:
+                state = "rotateToPointAngle"
+                state_time = time.time()
+        
+        elif state == "rotateToPointAngle":
+            ANGLE = math.pi/6
+
+            target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
+            target.x = ssl_goal.center_x
+            target.y = ssl_goal.center_y
+            target.w = ANGLE
+
+            R = target.getDistance()
+            theta = np.abs(target.w)
+            vel_min = 0.1
+            if time.time() - state_time > R*theta/vel_min:
+                state = "finish"
+                state_time = time.time()
+        
+        elif state == "finish":
+            target.type = communication_proto.pb.protoPositionSSL.stop
+            if time.time() - state_time > 0.5:
+                break
+
         eth_comm.setPositionMessage(
                                 x = target.x, 
                                 y = target.y,
