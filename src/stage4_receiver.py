@@ -10,6 +10,7 @@ import sys
 import os
 
 # LOCAL IMPORTS
+from fsm import FSM, Stage2States
 from entities import Robot, Goal, Ball, Frame
 import object_detection
 import object_localization
@@ -130,8 +131,16 @@ def main():
     # BALL TO PIXEL REGRESSION WEIGHTS
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
+    # INIT VISION BLACKOUT STATE MACHINE
+    INITIAL_STATE = 1
+    state_machine = FSM(
+        stage = 2,
+        initial_state = INITIAL_STATE,
+        init_time = start)
+
+
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 40
+    EXECUTION_TIME = 60
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -267,31 +276,71 @@ def main():
             if dist>0.1:
                 state = "drive1"
             elif time.time()-state_time>0.5:
-                state = "align1"
+                state = "align"
 
-        elif state ==  "align1":
+        elif state ==  "align":
             target.type = communication_proto.pb.protoPositionSSL.rotateControl
             target.x, target.y, target.w = ssl_ball.x, ssl_ball.y, ssl_ball.w
-            if np.abs(target.w)<0.1:
-                state = "stop2"
+            if np.abs(target.w)<=0.090:
+                state = "waitToReceive"
                 state_time = time.time()
 
-        elif state == "stop2":
+        elif state == "waitToReceive":
             target.type = communication_proto.pb.protoPositionSSL.stop
-            if np.abs(target.w)>0.1:
-                state = "align1"
+            target.x, target.y, target.w = ssl_ball.x, ssl_ball.y, ssl_ball.w
+            dist = math.sqrt(target.x**2+target.y**2)+0.001
+            if np.abs(target.w)>0.090:
+                state = "align"
+            elif dist<0.5:
+                state = "prepareToKick"
+                state_time = time.time()
+                target.type = communication_proto.pb.protoPositionSSL.stop
+                
+        elif state == "prepareToKick":
+            target.type = communication_proto.pb.protoPositionSSL.stop
+            if time.time()-state_time>4:
+                state = "backwardsForSearch"
+                state_time = time.time()
 
-        eth_comm.setPositionMessage(
-                                x = target.x, 
-                                y = target.y,
-                                w = target.w,
-                                posType = target.type)
-        eth_comm.sendSSLMessage()
+        elif state == "backwardsForSearch":
+            target.type = communication_proto.pb.protoPositionSSL.dock
+            target.x, target.y, target.w = -6, 0, 0 
+            if time.time()-state_time>1.1:
+                state="setGoal"
+      
+        elif state == "setGoal":
+            # STATE MACHINE
+            ssl_robot.charge = True
+            target, ssl_robot = state_machine.stage2(
+                                    frame = current_frame, 
+                                    ball = ssl_ball,
+                                    goal = ssl_goal,
+                                    robot = ssl_robot)
         
-        if state != "dock":
-            eth_comm.resetRobotPosition()
+            # UPDATE PROTO MESSAGE
+            eth_comm.setSSLMessage(target = target, robot = ssl_robot)            
 
-        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
+        if state != "setGoal":
+            eth_comm.setPositionMessage(
+                                    x = target.x, 
+                                    y = target.y,
+                                    w = target.w,
+                                    posType = target.type)                        
+            eth_comm.sendSSLMessage()
+            
+            if state != "dock":
+                eth_comm.resetRobotPosition()
+
+            print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
+        else:
+            # ACTION
+            eth_comm.sendSSLMessage()
+            print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
+    
+            if state_machine.current_state != Stage2States.dockAndShoot:
+                eth_comm.resetRobotPosition()
+            if state_machine.current_state == Stage2States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
+                break
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
