@@ -50,7 +50,7 @@ def main():
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = True
+    SHOW_DISPLAY = False
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
     DRAW = SHOW_DISPLAY
@@ -68,7 +68,6 @@ def main():
                 camera_offset = CAMERA_TO_CENTER_OFFSET,
                 initial_pose = INITIAL_POSE
                 )
-    ssl_robot.charge = True
 
     # INIT ENTITIES
     ssl_field = Field()
@@ -134,7 +133,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 20
+    EXECUTION_TIME = 60
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -320,7 +319,7 @@ def main():
                 relative_angle=0,
                 relative_distance=-2
             )          
-            if np.abs(target.w) < 0.05:
+            if np.abs(target.w) < 0.1:
                 state = "relocalizeOnMiddle"
         
         elif state == "relocalizeOnMiddle":
@@ -338,7 +337,7 @@ def main():
                     state = "alignToMiddle"
         
         elif state == "driveToPointRadius":
-            RADIUS = 2
+            RADIUS = 1.5
             target.type = communication_proto.pb.protoPositionSSL.target
             target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                 x1=ssl_robot.x,
@@ -353,7 +352,7 @@ def main():
                 state_time = time.time()
         
         elif state == "rotateToPointAngle":
-            ANGLE = math.pi/6
+            ANGLE = -math.pi/12
 
             target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
             target.x = ssl_goal.center_x
