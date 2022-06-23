@@ -9,12 +9,12 @@ import sys
 import os
 
 # LOCAL IMPORTS
-from entities import Robot, Goal, Ball, Frame
+from entities import Robot, Goal, Ball, Frame, Field
 import object_detection
 import object_localization
 import communication_proto
 import interface
-from navigation import TargetPoint
+from navigation import GroundPoint, TargetPoint
 
 def rotationSign(x, y):
     w = math.atan2(-y, -x)
@@ -53,7 +53,7 @@ def main():
     SHOW_DISPLAY = True
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = True
+    DRAW = SHOW_DISPLAY
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -71,7 +71,7 @@ def main():
     ssl_robot.charge = True
 
     # INIT ENTITIES
-    ssl_ball = Ball()
+    ssl_field = Field()
     ssl_goal = Goal()
     target = TargetPoint()
 
@@ -203,66 +203,113 @@ def main():
                                     top=ymin,
                                     right=xmax,
                                     bottom=ymax)
+                    if not keypoint_regressor.skip_frame:
+                        # DRAW OBJECT POINTS ON SCREEN
+                        if DRAW:
+                            myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
+                            myGUI.drawCrossMarker(myGUI.screen, int(right_corner[0]), int(right_corner[1]))
+                        
+                        # BACK PROJECT GOAL LEFT CORNER POSITION TO CAMERA 3D COORDINATES
+                        left_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0][0][0], y=left_corner[1][0][0], z_world=0)
+                        left_corner_x, left_corner_y = left_corner_position[0], left_corner_position[1]
 
-                    # DRAW OBJECT POINTS ON SCREEN
-                    if DRAW:
-                        myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
-                        myGUI.drawCrossMarker(myGUI.screen, int(right_corner[0]), int(right_corner[1]))
-                    
-                    # BACK PROJECT GOAL LEFT CORNER POSITION TO CAMERA 3D COORDINATES
-                    left_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0][0][0], y=left_corner[1][0][0], z_world=0)
-                    left_corner_x, left_corner_y = left_corner_position[0], left_corner_position[1]
+                        if DRAW:
+                            caption = f"Position:{left_corner_x[0]:.2f},{left_corner_y[0]:.2f}"
+                            myGUI.drawText(myGUI.screen, caption, (int(left_corner[0]-25), int(left_corner[1]+25)), 0.4)
 
-                    if DRAW:
-                        caption = f"Position:{left_corner_x[0]:.2f},{left_corner_y[0]:.2f}"
-                        myGUI.drawText(myGUI.screen, caption, (int(left_corner[0]-25), int(left_corner[1]+25)), 0.4)
+                        left_corner_x, left_corner_y, _ = ssl_robot.cameraToRobotCoordinates(left_corner_x[0], left_corner_y[0])
 
-                    # BACK PROJECT GOAL RIGHT CORNER POSITION TO CAMERA 3D COORDINATES
-                    right_corner_position = ssl_cam.pixelToCameraCoordinates(x=right_corner[0][0][0], y=right_corner[1][0][0], z_world=0)
-                    right_corner_x, right_corner_y = right_corner_position[0], right_corner_position[1]
+                        # BACK PROJECT GOAL RIGHT CORNER POSITION TO CAMERA 3D COORDINATES
+                        right_corner_position = ssl_cam.pixelToCameraCoordinates(x=right_corner[0][0][0], y=right_corner[1][0][0], z_world=0)
+                        right_corner_x, right_corner_y = right_corner_position[0], right_corner_position[1]
 
-                    if DRAW:
-                        caption = f"Position:{right_corner_x[0]:.2f},{right_corner_y[0]:.2f}"
-                        myGUI.drawText(myGUI.screen, caption, (int(right_corner[0]-25), int(right_corner[1]+25)), 0.4)
-                    
-                    # COMPUTE ROBOT RELOCALIZATION FROM GOAL CORNERS DETECTION
-                    tx, ty, w = ssl_cam.selfLocalizationFromGoalCorners(
-                            left_corner_x[0], 
-                            left_corner_y[0], 
-                            right_corner_x[0], 
-                            right_corner_y[0])
+                        if DRAW:
+                            caption = f"Position:{right_corner_x[0]:.2f},{right_corner_y[0]:.2f}"
+                            myGUI.drawText(myGUI.screen, caption, (int(right_corner[0]-25), int(right_corner[1]+25)), 0.4)
+                        
+                        right_corner_x, right_corner_y, _ = ssl_robot.cameraToRobotCoordinates(right_corner_x[0], right_corner_y[0])
 
-                    # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-                    w = ssl_robot.cameraToRobotRotation(w)
-                    tx, ty, _ = ssl_robot.cameraToRobotCoordinates(tx, ty)
-                    ssl_robot.updateSelfPose(tx, ty, w)
+                        ssl_goal = current_frame.updateGoalCorners(
+                            left_corner_x, 
+                            left_corner_y,
+                            right_corner_x,
+                            right_corner_y,
+                            score)
+
+                        # COMPUTE ROBOT RELOCALIZATION FROM GOAL CORNERS REGRESSION
+                        tx, ty, w = target.getSelfPoseFromGoalCorners(
+                                                        left_corner_x, 
+                                                        left_corner_y,
+                                                        right_corner_x,
+                                                        right_corner_y)
+
+                        ssl_robot.updateSelfPose(tx, ty, w)
 
         # STATE MACHINE
         # TO-DO: move to state machine class
         if state == "search":
             target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
             if current_frame.has_goal: 
-                state = "drive1"
-                keypoint_regressor.skip_frame == False
+                state = "alignToGoalCenter"
+        
+        elif state == "alignToGoalCenter":
+            target.type = communication_proto.pb.protoPositionSSL.rotateControl
+            target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
+                x1=ssl_robot.x,
+                y1=ssl_robot.y,
+                x2=ssl_goal.center_x,
+                y2=ssl_goal.center_y,
+                relative_angle=0,
+                relative_distance=-2
+            )          
+            if np.abs(target.w) < 0.1:
+                state = "driveTowardsGoalCenter"
 
-        elif state == "drive1":
+        elif state == "driveTowardsGoalCenter":
             target.type = communication_proto.pb.protoPositionSSL.target
-            target.x = 0 - ssl_robot.x
-            target.y = 0 - ssl_robot.y
-            target.w = 0 - ssl_robot.w
-
+            target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
+                x1=ssl_robot.x,
+                y1=ssl_robot.y,
+                x2=ssl_goal.center_x,
+                y2=ssl_goal.center_y,
+                relative_angle=0,
+                relative_distance=-2
+            )
+            if target.getDistance() < 0.05:
+                state == "stopAndRelocalize"
+                state_time = time.time()
+                
+        elif state == "stopAndRelocalize":
+            target.type = communication_proto.pb.protoPositionSSL.stop
+            keypoint_regressor.skip_frame = False
+            if time.time() - state_time > 1:
+                keypoint_regressor.skip_frame = True
+                if ssl_robot.is_located:
+                    state = "rotateAroundGoal"
+                else:
+                    state = "driveTowardsGoalCenter"
+        
+        elif state == "rotateAroundGoal":
+            target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
+            target.x = ssl_goal.center_x - ssl_robot.tx
+            target.y = ssl_goal.center_y - ssl_robot.ty
+            target.w = -ssl_robot.w
+            if np.abs(target.y) < 0.2:
+                state = "stopOnMiddle"
+                state_time = time.time()
+        
+        elif state == "stopOnMiddle":
+            target.type = communication_proto.pb.protoPositionSSL.stop           
+    
         eth_comm.setPositionMessage(
                                 x = target.x, 
                                 y = target.y,
                                 w = target.w,
                                 posType = target.type)
-        eth_comm.setKickMessage(
-                            front=ssl_robot.front, 
-                            charge=ssl_robot.charge, 
-                            kickStrength=ssl_robot.kick_strength)
+        eth_comm.setKickMessage()
         eth_comm.sendSSLMessage()
         
-        if state != "dock":
+        if state != "rotateAroundGoal":
             eth_comm.resetRobotPosition()
 
         #print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')

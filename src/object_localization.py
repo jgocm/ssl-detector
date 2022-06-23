@@ -16,7 +16,7 @@ class KeypointRegression():
         self.RED = [0, 0, 255]
         self.WHITE = [255, 255, 255]
         self.min_line_length = 3
-        self.skip_frame = False
+        self.skip_frame = True
 
     def ballAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.2):
         x = weight_x*left+(1-weight_x)*right
@@ -577,8 +577,8 @@ class Camera():
         x0 = (x1 + x2)/2
         y0 = (y1 + y2)/2
 
-        center_x = 0
-        center_y = 2820
+        center_x = 2820
+        center_y = 0
 
         xt = center_x - math.cos(theta)*x0 + math.sin(theta)*y0
         yt = center_y - math.sin(theta)*x0 - math.cos(theta)*y0

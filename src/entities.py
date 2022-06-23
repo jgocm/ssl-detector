@@ -21,6 +21,7 @@ class Robot():
         self.tx = initial_pose[0]
         self.ty = initial_pose[1]
         self.w = initial_pose[2]
+        self.is_located = False
 
         self.camera_offset = camera_offset
 
@@ -35,6 +36,7 @@ class Robot():
         self.tx = x
         self.ty = y
         self.w = w
+        self.is_located = True
 
     def cameraToRobotCoordinates(self, x, y):
         robot_x = (y + self.camera_offset)/1000
@@ -107,11 +109,7 @@ class Field():
         self.line_thickness = line_thickness
         self.center_radius = center_radius
         self.goal = Goal()
-    
-    def getGoalCoordinates(self):
-        p1 = -self.goal.width/2, self.length/2
-        p2 = self.goal.width/2, self.length/2
-        return p1, p2
+        self.goal.center_x, self.goal.center_y = self.length/2, 0
     
 class Frame():
     def __init__(
@@ -148,6 +146,8 @@ class Frame():
             self.goal.left_y = left_corner_y
             self.goal.right_x = right_corner_x
             self.goal.right_y = right_corner_y
+            self.has_goal = True
+            self.goal.score = score
         return self.goal
 
     def updateRobot(self, x, y, score):
