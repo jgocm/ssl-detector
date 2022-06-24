@@ -319,6 +319,16 @@ def main():
             elif time.time()-state_time > 3:
                 ssl_robot.front = True
                 ssl_robot.kick_strength = 10
+                state = "backwards"
+
+        elif state == "backwards":
+            target.type = communication_proto.pb.protoPositionSSL.dock
+            target.x, target.y, target.w = -6, 0, 0 
+            if time.time()-state_time>1.1:
+                state="endStage"
+
+        elif state == "endStage":
+            target.typr = communication_proto.pb.protoPositionSSL.stop
 
         eth_comm.setPositionMessage(
                                 x = target.x, 
