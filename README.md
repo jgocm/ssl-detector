@@ -172,7 +172,7 @@ At the calibration screen, the current reference point to be marked is shown on 
 - 'enter': skips the current reference point
 - 's': saves calibration parameters after all points are collected and prints camera translation (in mm) and rotation angles (in degrees) on terminal
 
-The following image shows a completed camera calibration procedure:
+The following image shows our currently used camera calibration procedure using 4 points only:
 ![image](https://user-images.githubusercontent.com/85940536/175784504-eb46bc5c-2b74-451a-97bb-a792cc973289.png)
 
 Tips that improve accuracy:
