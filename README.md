@@ -179,3 +179,11 @@ Tips that improve accuracy:
 1. Aligning the camera with the field axis helps a lot.
 2. Marking points with precision impacts the calibration, so we recommend using points that are easier to identify: Field Corners, Goal Corners and Penalty Area Lower Corners
 3. After saving, check if camera rotation and position results match with your setup. If not, try erasing points ('backspace') and redo calibration. Errors should be less than 10 mm for position and 1 degree for rotation angles.
+
+
+## References
+- [Jetpack 4.6.1](https://developer.nvidia.com/embedded/jetpack-sdk-461)
+- [TensorRT Examples](https://github.com/NobuoTsukamoto/tensorrt-examples)
+- [TensorRT](https://github.com/NVIDIA/TensorRT)
+- [Pyrestone Fan Controller](https://github.com/Pyrestone/jetson-fan-ctl.git)
+- [Camera Calibration using OpenCV](https://learnopencv.com/camera-calibration-using-opencv/)
