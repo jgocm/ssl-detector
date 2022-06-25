@@ -1,7 +1,7 @@
 # SSL-Detector
 Object Detection and Localization for RoboCup SSL
 
-This project was developed and tested on a 4GB NVIDIA Jetson Nano using [Jetpack 4.6.1](https://developer.nvidia.com/embedded/jetpack-sdk-4610)
+This project was developed and tested on a 4GB NVIDIA Jetson Nano using [Jetpack 4.6.1](https://developer.nvidia.com/embedded/jetpack-sdk-461)
 
 ## Setup From Fresh Jetpack 4.6.1 Installation
 
