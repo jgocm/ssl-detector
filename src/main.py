@@ -50,7 +50,7 @@ def main():
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = False
+    SHOW_DISPLAY = True
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
     DRAW = SHOW_DISPLAY
@@ -250,9 +250,9 @@ def main():
         elif state == "rotate":
             target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
             target.x, target.y = ssl_ball.x, ssl_ball.y
-            if current_frame.has_ball and current_frame.has_goal:
+            if current_frame.has_ball:
                 _, _, target.w = directionVector(ssl_goal.center_x, ssl_goal.center_y, ssl_ball.x, ssl_ball.y)
-                if np.abs(target.w) < 0.03:
+                if np.abs(target.w) < 0.05:
                     state = "stop2"
                     state_time = time.time()
                     target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
@@ -262,7 +262,7 @@ def main():
         elif state == "stop2":
             target.type = communication_proto.pb.protoPositionSSL.stop
             _, _, target.w = directionVector(ssl_goal.center_x, ssl_goal.center_y, ssl_ball.x, ssl_ball.y)
-            if np.abs(target.w) > 0.035:
+            if np.abs(target.w) > 0.105:
                 state = "rotate"
                 state_time = time.time()
             elif time.time()-state_time > 0.2:

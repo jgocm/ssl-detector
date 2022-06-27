@@ -140,7 +140,7 @@ def main():
 
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 60
+    EXECUTION_TIME = 120
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
