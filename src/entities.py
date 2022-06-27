@@ -93,13 +93,13 @@ class Goal():
 class Field():
     def __init__(
                 self,
-                field_width = 3760,
-                field_length = 5640,
-                penalty_area_width = 2000,
-                penalty_area_depth = 1000,
-                center_radius = 1000,
-                boundary_width = 180,
-                line_thickness = 20
+                field_width = 3.760,
+                field_length = 5.640,
+                penalty_area_width = 2.000,
+                penalty_area_depth = 1.000,
+                center_radius = 1.000,
+                boundary_width = 0.180,
+                line_thickness = 0.020
                 ):
         self.width = field_width
         self.length = field_length

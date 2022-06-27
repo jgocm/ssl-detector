@@ -148,8 +148,8 @@ def main():
     state_time = time.time()
 
     # STAGE 3 TARGET POINT
-    FINAL_X = 2
-    FINAL_Y = 0
+    FINAL_X = 0.82
+    FINAL_Y = 0.5
 
     FINAL_ANGLE = -math.atan2(FINAL_Y, (ssl_field.goal.center_x-FINAL_X))
     FINAL_RADIUS = math.sqrt((ssl_field.goal.center_x-FINAL_X)**2 + FINAL_Y**2)
@@ -270,7 +270,7 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-1.5
+                relative_distance=-FINAL_RADIUS
             )          
             if np.abs(target.w) < 0.1:
                 state = "driveTowardsGoalCenter"
@@ -283,7 +283,7 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-1.5
+                relative_distance=-FINAL_RADIUS
             )
             if target.getDistance() < 0.05:
                 state = "stopAndRelocalize"
@@ -308,7 +308,7 @@ def main():
 
             R = target.getDistance()
             theta = np.abs(target.w)
-            vel_min = 0.05
+            vel_min = 0.1
             if time.time() - state_time > R*theta/vel_min:
                 state = "stopOnMiddle"
                 state_time = time.time()
@@ -326,7 +326,7 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-1.5
+                relative_distance=-FINAL_RADIUS
             )
             if np.abs(target.w) < 0.1:
                 state = "relocalizeOnMiddle"
@@ -349,7 +349,7 @@ def main():
             target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
             target.x = ssl_goal.center_x
             target.y = ssl_goal.center_y
-            target.w = FINAL_ANGLE
+            target.w = FINAL_ANGLE - ssl_robot.w
 
             R = target.getDistance()
             theta = np.abs(target.w)
@@ -360,7 +360,7 @@ def main():
         
         elif state == "stopOnTargetAngle":
             target.type = communication_proto.pb.protoPositionSSL.stop
-            if time.time() - state_time > 0.2:
+            if time.time() - state_time > 1:
                 state = "realignToGoalCenter"
 
         elif state ==  "realignToGoalCenter":
@@ -371,7 +371,7 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-1.5
+                relative_distance=-FINAL_RADIUS
             )
             if np.abs(target.w) < 0.1:
                 state = "relocalizeOnTarget"
@@ -382,7 +382,7 @@ def main():
             if time.time() - state_time > 1:
                 keypoint_regressor.skip_frame = True
                 if ssl_robot.is_located:
-                    if np.abs(final_target.w-ssl_robot.w) < 0.1:
+                    if np.abs(FINAL_ANGLE - ssl_robot.w) < 0.05:
                         state = "driveToTargetRadius"
                     else:
                         state = "rotateToTargetAngle"
@@ -406,7 +406,7 @@ def main():
 
         elif state == "finish":
             target.type = communication_proto.pb.protoPositionSSL.stop
-            if time.time() - state_time > 0.5:
+            if time.time() - state_time > 3:
                 break
 
         eth_comm.setPositionMessage(
@@ -417,10 +417,10 @@ def main():
         eth_comm.setKickMessage()
         eth_comm.sendSSLMessage()
         
-        if state != "rotateAroundGoal":
+        if target.type == communication_proto.pb.protoPositionSSL.rotateInPoint:
             eth_comm.resetRobotPosition()
 
-        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
+        print(f'State: {state} | Target: {ssl_robot.tx:.3f}, {ssl_robot.ty:.3f}, {final_target.w-ssl_robot.w:.3f}, {target.type}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
