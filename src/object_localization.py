@@ -161,7 +161,7 @@ class Camera():
 
         return p
 
-    def ballAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.2):
+    def ballAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.15):
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
@@ -221,7 +221,7 @@ if __name__=="__main__":
                 labels_path=cwd+"/models/ssl_labels.txt", 
                 input_width=300, 
                 input_height=300,
-                score_threshold = 0.5,
+                score_threshold = 0.25,
                 draw = True,
                 display_fps = False,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
@@ -265,15 +265,7 @@ if __name__=="__main__":
             
             # BALL LOCALIZATION ON IMAGE
             if class_id==1:     # ball
-                # COMPUTE PIXEL FOR BALL POSITION
-                pixel_x, pixel_y = ssl_cam.ballAsPointLinearRegression(
-                                                                    left = xmin, 
-                                                                    top = ymin, 
-                                                                    right = xmax, 
-                                                                    bottom = ymax, 
-                                                                    weight_x = regression_weights[0],
-                                                                    weight_y = regression_weights[1])
-                                                            
+                # COMPUTE PIXEL FOR BALL POSITION                                                            
                 pixel_x, pixel_y = ssl_cam.ballAsPoint(
                                                     left = xmin, 
                                                     top = ymin, 

@@ -93,7 +93,7 @@ def main():
                 labels_path = PATH_TO_LABELS, 
                 input_width = 300, 
                 input_height = 300,
-                score_threshold = 0.5,
+                score_threshold = 0.4,
                 draw = False,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
                 )
@@ -146,9 +146,7 @@ def main():
                                                 left=xmin, 
                                                 top=ymin, 
                                                 right=xmax, 
-                                                bottom=ymax, 
-                                                weight_x=0.5,
-                                                weight_y=0.2)
+                                                bottom=ymax)
             
                 # DRAW OBJECT POINT ON SCREEN
                 if DRAW:

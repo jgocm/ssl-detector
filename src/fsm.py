@@ -208,7 +208,9 @@ class FSM():
                 # rotate: rotates around the ball searching for a goal
                 target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
                 target.setPosition(x=ball.x, y=ball.y)
-                target.w = math.pi
+                target.w = math.pi/6
+                if goal.center_y < 0:
+                    target.w = -target.w
                 if frame.has_ball and frame.has_goal:
                     final_state = self.moveNStates(1)
 
@@ -222,13 +224,11 @@ class FSM():
                     x2 = goal.center_x,
                     y2 = goal.center_y
                     )
-                if frame.has_goal:
-                    self.reset_odometry = True
-                else:
-                    self.reset_odometry = False
-                if np.abs(target.w) < 0.05:
+                if np.abs(target.w) < 0.03:
                     final_state = self.moveNStates(1)
-                    self.reset_odometry = True
+                
+                elif not frame.has_goal:
+                    final_state = self.moveNStates(-2)
 
             elif self.current_state == Stage2States.stopToShoot:
                 # stop2: breaks when ball and goal are aligned
@@ -240,8 +240,8 @@ class FSM():
                         y2 = goal.center_y
                         )
                 robot.charge = True
-                if np.abs(target.w) > 0.055:
-                    final_state = self.moveNStates(-1)
+                if np.abs(target.w) > 0.035 or target.getDirection() > 0.125:
+                    final_state = self.moveNStates(-3)
                 elif self.getStateDuration(frame.timestamp) > 0.3:
                     final_state = self.moveNStates(1)
             

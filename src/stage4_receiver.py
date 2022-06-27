@@ -184,9 +184,7 @@ def main():
                                                     left=xmin, 
                                                     top=ymin, 
                                                     right=xmax, 
-                                                    bottom=ymax, 
-                                                    weight_x=0.5,
-                                                    weight_y=0.2)
+                                                    bottom=ymax)
 
                 # DRAW OBJECT POINT ON SCREEN
 
@@ -281,31 +279,28 @@ def main():
         elif state ==  "align":
             target.type = communication_proto.pb.protoPositionSSL.rotateControl
             target.x, target.y, target.w = ssl_ball.x, ssl_ball.y, ssl_ball.w
-            if np.abs(target.w)<=0.090:
+            if np.abs(target.w)<=0.050:
                 state = "waitToReceive"
                 state_time = time.time()
 
         elif state == "waitToReceive":
-            target.type = communication_proto.pb.protoPositionSSL.stop
+            target.type = communication_proto.pb.protoPositionSSL.rotateControl
             target.x, target.y, target.w = ssl_ball.x, ssl_ball.y, ssl_ball.w
             dist = math.sqrt(target.x**2+target.y**2)+0.001
-            if np.abs(target.w)>0.090:
-                state = "align"
-            elif dist<0.5:
+            if dist<0.4:
                 state = "prepareToKick"
                 state_time = time.time()
-                target.type = communication_proto.pb.protoPositionSSL.stop
                 
         elif state == "prepareToKick":
-            target.type = communication_proto.pb.protoPositionSSL.stop
+            target.type = communication_proto.pb.protoPositionSSL.rotateControl
             if time.time()-state_time>4:
                 state = "backwardsForSearch"
                 state_time = time.time()
 
         elif state == "backwardsForSearch":
             target.type = communication_proto.pb.protoPositionSSL.dock
-            target.x, target.y, target.w = -6, 0, 0 
-            if time.time()-state_time>1.1:
+            target.x, target.y, target.w = -1, 0, 0
+            if time.time()-state_time>2:
                 state="setGoal"
       
         elif state == "setGoal":
@@ -328,7 +323,7 @@ def main():
                                     posType = target.type)                        
             eth_comm.sendSSLMessage()
             
-            if state != "dock":
+            if state != "backwardsForSearch":
                 eth_comm.resetRobotPosition()
 
             print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
@@ -337,7 +332,7 @@ def main():
             eth_comm.sendSSLMessage()
             print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
     
-            if state_machine.current_state != Stage2States.dockAndShoot:
+            if state_machine.reset_odometry:
                 eth_comm.resetRobotPosition()
             if state_machine.current_state == Stage2States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
                 break
