@@ -148,8 +148,8 @@ def main():
     state_time = time.time()
 
     # STAGE 3 TARGET POINT
-    FINAL_X = 0.5
-    FINAL_Y = 0
+    FINAL_X = 0
+    FINAL_Y = 1.5
 
     FINAL_ANGLE = -math.atan2(FINAL_Y, (ssl_field.goal.center_x-FINAL_X))
     FINAL_RADIUS = math.sqrt((ssl_field.goal.center_x-FINAL_X)**2 + FINAL_Y**2)
@@ -330,7 +330,7 @@ def main():
                 relative_angle=0,
                 relative_distance=-1.5
             )
-            if np.abs(target.w) < 0.1:
+            if np.abs(target.w) < 0.05:
                 state = "relocalizeOnMiddle"
         
         elif state == "relocalizeOnMiddle":
@@ -339,7 +339,7 @@ def main():
             if time.time() - state_time > 1:
                 keypoint_regressor.skip_frame = True
                 if ssl_robot.is_located:
-                    if np.abs(ssl_robot.w) < 0.05:
+                    if np.abs(ssl_robot.ty) < 0.05:
                         state = "driveToTargetX"
                     else:
                         state = "rotateAroundGoal"
@@ -354,7 +354,7 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-FINAL_X
+                relative_distance=-FINAL_RADIUS
             )
             if current_frame.has_goal:
                 target.type = communication_proto.pb.protoPositionSSL.target
