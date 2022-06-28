@@ -39,6 +39,7 @@ class TargetPoint(GroundPoint):
         self.y = y
         self.w = w
         self.type = pb.protoPositionSSL.unknown
+        self.reset_odometry = True
 
     def get2XYCoordinatesVector(self, x1, y1, x2, y2):
         """

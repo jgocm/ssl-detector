@@ -183,8 +183,11 @@ class KeypointRegression():
 
     def goalLeftPostRegressionFromLeft(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
         right = int(left_to_right_proportion*(left+right))
-        goal_post_points = self.goalLeftPostDetectionGrayScale(src, left, top, right, bottom)
-        goal_post_model = self.makeRANSACRegressionModel(goal_post_points)
+        try:
+            goal_post_points = self.goalLeftPostDetectionGrayScale(src, left, top, right, bottom)
+            goal_post_model = self.makeRANSACRegressionModel(goal_post_points)
+        except:
+            self.skip_frame = True
         return goal_post_model
     
     def goalRightPostRegressionFromRight(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
