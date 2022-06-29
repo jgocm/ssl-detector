@@ -148,11 +148,13 @@ def main():
     state_time = time.time()
 
     # STAGE 3 TARGET POINT
-    FINAL_X = 0
-    FINAL_Y = 1.5
+    FINAL_X = 1.82
+    FINAL_Y = -1
 
     FINAL_ANGLE = -math.atan2(FINAL_Y, (ssl_field.goal.center_x-FINAL_X))
     FINAL_RADIUS = math.sqrt((ssl_field.goal.center_x-FINAL_X)**2 + FINAL_Y**2)
+
+    RELOCALIZATION_RADIUS = 1.7
 
     final_target = TargetPoint(x=FINAL_X, y=FINAL_Y, w=FINAL_ANGLE)
 
@@ -270,7 +272,7 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-1.5
+                relative_distance=-RELOCALIZATION_RADIUS
             )
             if target.getDistance() < 0.05:
                 state = "alignToGoalCenter"
@@ -284,7 +286,7 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-1.5
+                relative_distance=-RELOCALIZATION_RADIUS
             )          
             if np.abs(target.w) < 0.1:
                 state = "stopAndRelocalize"
@@ -313,10 +315,10 @@ def main():
             if time.time() - state_time > R*theta/vel:
                 state = "stopOnMiddle"
                 state_time = time.time()
-                target.reset_odometry = True
 
         elif state == "stopOnMiddle":
             target.type = communication_proto.pb.protoPositionSSL.stop
+            target.reset_odometry = True
             if time.time() - state_time > 0.2:
                 state = "alignToMiddle"
         
@@ -328,10 +330,11 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-1.5
+                relative_distance=-RELOCALIZATION_RADIUS
             )
-            if np.abs(target.w) < 0.05:
+            if np.abs(target.w) < 0.1:
                 state = "relocalizeOnMiddle"
+                ssl_robot.is_located = False
         
         elif state == "relocalizeOnMiddle":
             target.type = communication_proto.pb.protoPositionSSL.stop
@@ -339,48 +342,62 @@ def main():
             if time.time() - state_time > 1:
                 keypoint_regressor.skip_frame = True
                 if ssl_robot.is_located:
-                    if np.abs(ssl_robot.ty) < 0.05:
-                        state = "driveToTargetX"
+                    if np.abs(ssl_robot.ty) < 0.1:
+                        state = "alignToGoalLine"
                     else:
                         state = "rotateAroundGoal"
                     state_time = time.time()
                 else:
-                    state = "alignToMiddle"
+                    state = "search"
         
-        elif state == "driveToTargetX":
-            target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
-                x1=ssl_robot.x,
-                y1=ssl_robot.y,
-                x2=ssl_goal.center_x,
-                y2=ssl_goal.center_y,
-                relative_angle=0,
-                relative_distance=-FINAL_RADIUS
-            )
-            if current_frame.has_goal:
-                target.type = communication_proto.pb.protoPositionSSL.target
-                target.reset_odometry = True
-                state_time = time.time()
-                if target.getDistance() < 0.05:
-                    state = "driveToTargetY"
-            else:
-                target.type = communication_proto.pb.protoPositionSSL.dock
-                target.reset_odometry = False
-                if time.time() - state_time > 3:
-                    state = "driveToTargetY"
-        
-        elif state == "driveToTargetY":
-            target.type = communication_proto.pb.protoPositionSSL.dock
+        elif state == "alignToGoalLine":
+            target.type = communication_proto.pb.protoPositionSSL.rotateControl
+            target.x, target.y, target.w = 0, 0, ssl_robot.w
             target.reset_odometry = False
-            target.x, target.y, target.w = 0, FINAL_Y, 0
-            if time.time() - state_time > 3:
+
+            if time.time() - state_time > 2:
+                state = "brakeToXTranslation"
+                state_time = time.time()
+
+        elif state == "brakeToXTranslation":
+            target.type = communication_proto.pb.protoPositionSSL.stop
+            target.reset_odometry = True
+
+            if time.time() - state_time > 0.5:
+                state = "driveToTargetX"
+                state_time = time.time()
+
+        elif state == "driveToTargetX":
+            target.type = communication_proto.pb.protoPositionSSL.target
+            target.x, target.y, target.w = FINAL_X - ssl_robot.tx, 0, 0
+            target.reset_odometry = False
+
+            if time.time() - state_time > 5:
+                state = "brakeToYTranslation"
+                state_time = time.time()
+        
+        elif state == "brakeToYTranslation":
+            target.type = communication_proto.pb.protoPositionSSL.stop
+            target.reset_odometry = True
+
+            if time.time() - state_time > 0.5:
+                state = "driveToTargetY"
+                state_time = time.time()
+
+        elif state == "driveToTargetY":
+            target.type = communication_proto.pb.protoPositionSSL.target
+            target.x, target.y, target.w = 0, FINAL_Y- ssl_robot.ty, 0
+            target.reset_odometry = False
+
+            if time.time() - state_time > 5:
                 state = "finish"
                 state_time = time.time()
 
         elif state == "finish":
             target.type = communication_proto.pb.protoPositionSSL.stop
             target.reset_odometry = True
-            if time.time() - state_time > 3:
-                break              
+            if time.time() - state_time > 1:
+                break
 
         eth_comm.setPositionMessage(
                                 x = target.x, 
