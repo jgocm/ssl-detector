@@ -148,8 +148,8 @@ def main():
     state_time = time.time()
 
     # STAGE 3 TARGET POINT
-    FINAL_X = 1.82
-    FINAL_Y = -1
+    FINAL_X = 0.5
+    FINAL_Y = -0.5
 
     FINAL_ANGLE = -math.atan2(FINAL_Y, (ssl_field.goal.center_x-FINAL_X))
     FINAL_RADIUS = math.sqrt((ssl_field.goal.center_x-FINAL_X)**2 + FINAL_Y**2)
@@ -342,6 +342,7 @@ def main():
             if time.time() - state_time > 1:
                 keypoint_regressor.skip_frame = True
                 if ssl_robot.is_located:
+                    target.x, target.y, target.w = ssl_robot.tx, ssl_robot.ty, ssl_robot.w
                     if np.abs(ssl_robot.ty) < 0.1:
                         state = "alignToGoalLine"
                     else:
@@ -351,8 +352,8 @@ def main():
                     state = "search"
         
         elif state == "alignToGoalLine":
-            target.type = communication_proto.pb.protoPositionSSL.rotateControl
-            target.x, target.y, target.w = 0, 0, ssl_robot.w
+            target.type = communication_proto.pb.protoPositionSSL.target
+            target.x, target.y, target.w = 0, -ssl_robot.ty, -ssl_robot.w
             target.reset_odometry = False
 
             if time.time() - state_time > 2:
@@ -360,10 +361,11 @@ def main():
                 state_time = time.time()
 
         elif state == "brakeToXTranslation":
-            target.type = communication_proto.pb.protoPositionSSL.stop
+            target.type = communication_proto.pb.protoPositionSSL.target
+            target.x, target.y, target.w = 0, 0, 0
             target.reset_odometry = True
 
-            if time.time() - state_time > 0.5:
+            if time.time() - state_time > 0.2:
                 state = "driveToTargetX"
                 state_time = time.time()
 
@@ -377,16 +379,17 @@ def main():
                 state_time = time.time()
         
         elif state == "brakeToYTranslation":
-            target.type = communication_proto.pb.protoPositionSSL.stop
+            target.type = communication_proto.pb.protoPositionSSL.target
+            target.x, target.y, target.w = 0, 0, 0
             target.reset_odometry = True
 
-            if time.time() - state_time > 0.5:
+            if time.time() - state_time > 0.2:
                 state = "driveToTargetY"
                 state_time = time.time()
 
         elif state == "driveToTargetY":
             target.type = communication_proto.pb.protoPositionSSL.target
-            target.x, target.y, target.w = 0, FINAL_Y- ssl_robot.ty, 0
+            target.x, target.y, target.w = 0, FINAL_Y, 0
             target.reset_odometry = False
 
             if time.time() - state_time > 5:
