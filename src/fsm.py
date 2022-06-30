@@ -128,6 +128,7 @@ class FSM():
                     relative_distance = 0
                     )
                 target.type = communication_proto.pb.protoPositionSSL.dock
+                target.reset_odometry = False
                 if self.getStateDuration(current_timestamp=frame.timestamp) > 3:
                     final_state = self.moveNStates(1)
             
@@ -154,7 +155,7 @@ class FSM():
             if self.current_state.value == 1:
                 # init state: waits for 0.3 seconds
                 target.type = communication_proto.pb.protoPositionSSL.stop
-                if self.getStateDuration(frame.timestamp) > 0.3:
+                if self.getStateDuration(frame.timestamp) > 0.2:
                     final_state = self.moveNStates(1)
 
             elif self.current_state.value == 2:
@@ -256,6 +257,7 @@ class FSM():
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
+                target.reset_odometry = False
                 robot.charge = True
                 if robot.front:
                     robot.front = False

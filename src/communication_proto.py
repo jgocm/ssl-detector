@@ -108,11 +108,12 @@ class SocketUDP():
 
         return self.msg
      
-    def setPositionMessage(self, x, y, w, posType):
+    def setPositionMessage(self, x, y, w, pos_type, reset_odometry):
         self.msg.x = x
         self.msg.y = y
         self.msg.w = w
-        self.msg.posType = posType
+        self.msg.posType = pos_type
+        self.msg.resetOdometry = reset_odometry
 
         return self.msg
 
@@ -122,6 +123,7 @@ class SocketUDP():
         self.msg.y = target.y
         self.msg.w = target.w
         self.msg.posType = target.type
+        self.msg.resetOdometry = target.reset_odometry
 
         self.msg.front = robot.front
         self.msg.chip = robot.chip

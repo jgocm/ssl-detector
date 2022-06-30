@@ -95,8 +95,9 @@ def main():
 
     # INIT VISION BLACKOUT STATE MACHINE
     INITIAL_STATE = 1
+    STAGE = 1
     state_machine = FSM(
-        stage = 1,
+        stage = STAGE,
         initial_state = INITIAL_STATE,
         init_time = start)
 
