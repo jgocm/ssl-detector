@@ -32,5 +32,6 @@ message protoPositionSSL{
     bool charge  = 7;
     double kickStrength = 8 ;
     bool dribbler = 9;
-    double dribSpeed = 10;   
+    double dribSpeed = 10;
+    bool resetOdometry = 11;
 };
