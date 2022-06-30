@@ -300,7 +300,8 @@ def main():
         elif state == "backwardsForSearch":
             target.type = communication_proto.pb.protoPositionSSL.dock
             target.x, target.y, target.w = -1, 0, 0
-            if time.time()-state_time>2:
+            target.reset_odometry = False
+            if time.time()-state_time>3:
                 state="setGoal"
       
         elif state == "setGoal":
@@ -320,20 +321,17 @@ def main():
                                     x = target.x, 
                                     y = target.y,
                                     w = target.w,
-                                    posType = target.type)                        
-            eth_comm.sendSSLMessage()
+                                    pos_type = target.type,
+                                    reset_odometry = target.reset_odometry)                        
+            eth_comm.sendSSLMessage()       
             
-            if state != "backwardsForSearch":
-                eth_comm.resetRobotPosition()
 
-            print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
+            print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}, {target.reset_odometry}')
         else:
             # ACTION
             eth_comm.sendSSLMessage()
-            print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
+            print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}, {eth_comm.msg.resetOdometry}')
     
-            if state_machine.reset_odometry:
-                eth_comm.resetRobotPosition()
             if state_machine.current_state == Stage2States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
                 break
 

@@ -134,8 +134,9 @@ class SocketUDP():
 
         return self.msg
 
-    def sendSSLMessage(self):
-        self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
+    def sendSSLMessage(self, times = 5):
+        for i in range(0, times):
+            self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
 
 if __name__ == "__main__":
     host_address = "199.0.1.2"

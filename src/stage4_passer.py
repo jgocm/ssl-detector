@@ -310,6 +310,7 @@ def main():
         elif state == "dock":
             target.type = communication_proto.pb.protoPositionSSL.dock
             _, _, target.w = directionVector(ssl_robot_allie.x, ssl_robot_allie.y, ssl_ball.x, ssl_ball.y)
+            target.reset_odometry = False
             if ssl_robot.front or not ssl_robot.charge:
                 ssl_robot.front = False
                 ssl_robot.charge = False
@@ -324,30 +325,24 @@ def main():
 
         elif state == "backwards":
             ssl_robot.front = False
+            target.reset_odometry = False
             target.type = communication_proto.pb.protoPositionSSL.dock
-            target.x, target.y, target.w = -6, 0, 0 
-            if time.time()-state_time>2:
-                state="endStage"
+            target.x, target.y, target.w = -1, 0, 0 
+            if time.time()-state_time>3:
+                state="finish"
+                state_time = time.time()
 
-        elif state == "endStage":
+        elif state == "finish":
             target.type = communication_proto.pb.protoPositionSSL.stop
+            if time.time()-state_time>1:
+                break
 
+        # UPDATE PROTO MESSAGE
+        eth_comm.setSSLMessage(target = target, robot = ssl_robot)
 
-        eth_comm.setPositionMessage(
-                                x = target.x, 
-                                y = target.y,
-                                w = target.w,
-                                posType = target.type)
-        eth_comm.setKickMessage(
-                            front=ssl_robot.front, 
-                            charge=ssl_robot.charge, 
-                            kickStrength=ssl_robot.kick_strength)
+        # ACTION      
         eth_comm.sendSSLMessage()
-        
-        if state != "dock" and "backwards":
-            eth_comm.resetRobotPosition()
-
-        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
+        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}, {target.reset_odometry}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time

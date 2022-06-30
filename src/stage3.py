@@ -344,14 +344,14 @@ def main():
                 if ssl_robot.is_located:
                     target.x, target.y, target.w = ssl_robot.tx, ssl_robot.ty, ssl_robot.w
                     if np.abs(ssl_robot.ty) < 0.1:
-                        state = "alignToGoalLine"
+                        state = "rotateToFieldAxis"
                     else:
                         state = "rotateAroundGoal"
                     state_time = time.time()
                 else:
                     state = "search"
         
-        elif state == "alignToGoalLine":
+        elif state == "rotateToFieldAxis":
             target.type = communication_proto.pb.protoPositionSSL.target
             target.x, target.y, target.w = 0, -ssl_robot.ty, -ssl_robot.w
             target.reset_odometry = False
@@ -402,18 +402,10 @@ def main():
             if time.time() - state_time > 1:
                 break
 
-        eth_comm.setPositionMessage(
-                                x = target.x, 
-                                y = target.y,
-                                w = target.w,
-                                posType = target.type)
-        eth_comm.setKickMessage()
+        eth_comm.setSSLMessage(target = target, robot = ssl_robot)
         eth_comm.sendSSLMessage()
-        
-        if target.reset_odometry:
-            eth_comm.resetRobotPosition()
 
-        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
+        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}, {target.reset_odometry}')
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
