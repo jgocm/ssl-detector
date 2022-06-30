@@ -50,7 +50,7 @@ def main():
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = False
+    SHOW_DISPLAY = True
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
     DRAW = SHOW_DISPLAY

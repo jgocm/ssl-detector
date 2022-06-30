@@ -93,7 +93,7 @@ def main():
                 labels_path = PATH_TO_LABELS, 
                 input_width = 300, 
                 input_height = 300,
-                score_threshold = 0.5,
+                score_threshold = 0.4,
                 draw = False,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
                 )
@@ -146,9 +146,7 @@ def main():
                                                 left=xmin, 
                                                 top=ymin, 
                                                 right=xmax, 
-                                                bottom=ymax, 
-                                                weight_x=0.5,
-                                                weight_y=0.2)
+                                                bottom=ymax)
             
                 # DRAW OBJECT POINT ON SCREEN
                 if DRAW:
@@ -204,7 +202,7 @@ def main():
         eth_comm.sendSSLMessage()
         print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
  
-        if state_machine.current_state != Stage2States.dockAndShoot:
+        if state_machine.reset_odometry:
             eth_comm.resetRobotPosition()
         if state_machine.current_state == Stage2States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
             break

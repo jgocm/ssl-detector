@@ -131,7 +131,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 20
+    EXECUTION_TIME = 40
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -281,7 +281,7 @@ def main():
             target.x, target.y = ssl_ball.x, ssl_ball.y
             if current_frame.has_ball and current_frame.has_robot:
                 _, _, target.w = directionVector(ssl_robot_allie.x, ssl_robot_allie.y, ssl_ball.x, ssl_ball.y)
-                if np.abs(target.w) < 0.03:
+                if np.abs(target.w) < 0.125:
                     state = "stop2"
                     state_time = time.time()
                     target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
@@ -291,7 +291,7 @@ def main():
         elif state == "stop2":
             target.type = communication_proto.pb.protoPositionSSL.stop
             _, _, target.w = directionVector(ssl_robot_allie.x, ssl_robot_allie.y, ssl_ball.x, ssl_ball.y)
-            if np.abs(target.w) > 0.035:
+            if np.abs(target.w) > 0.125:
                 state = "rotate"
                 state_time = time.time()
             elif time.time()-state_time > 0.2:
@@ -319,6 +319,19 @@ def main():
             elif time.time()-state_time > 3:
                 ssl_robot.front = True
                 ssl_robot.kick_strength = 10
+                state_time = time.time()
+                state = "backwards"
+
+        elif state == "backwards":
+            ssl_robot.front = False
+            target.type = communication_proto.pb.protoPositionSSL.dock
+            target.x, target.y, target.w = -6, 0, 0 
+            if time.time()-state_time>2:
+                state="endStage"
+
+        elif state == "endStage":
+            target.type = communication_proto.pb.protoPositionSSL.stop
+
 
         eth_comm.setPositionMessage(
                                 x = target.x, 
@@ -331,7 +344,7 @@ def main():
                             kickStrength=ssl_robot.kick_strength)
         eth_comm.sendSSLMessage()
         
-        if state != "dock":
+        if state != "dock" and "backwards":
             eth_comm.resetRobotPosition()
 
         print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
