@@ -17,32 +17,6 @@ import communication_proto
 import interface
 from navigation import TargetPoint
 
-def rotationSign(x, y):
-    w = math.atan2(-y, -x)
-    if w>0:
-        return -1
-    else:
-        return 1
-
-def offsetTarget(x, y, offset=1):
-    dist = math.sqrt(x**2+y**2) + 0.001
-    prop = (dist - offset)/dist
-    target_x, target_y = prop*x, prop*y
-    return target_x, target_y
-
-def directionVector(x1, y1, x2, y2):
-    vy = y2-y1
-    vx = x2-x1
-    w = math.atan2(-vy, -vx)
-    return vx, vy, w
-
-def alignedTarget(vx, vy, bx, by, offset):
-    v_norm = math.sqrt(vx**2+vy**2)
-    target_x = vx*offset/v_norm + bx
-    target_y = vy*offset/v_norm + by
-    target_w = math.atan2(target_y, target_x)
-    return target_x, target_y, target_w
-
 def main():
     cwd = os.getcwd()
 
