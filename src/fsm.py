@@ -32,8 +32,9 @@ class Stage2States(Enum):
     rotateAlignToGoal = 7
     stopToShoot = 8
     driveToBall = 9
-    dockAndShoot = 10
-    finish = 11
+    driveTowardsGoal = 10
+    dockAndShoot = 11
+    finish = 12
 
 # STILL NOT IMPLEMENTED
 class Stage3States(Enum):
@@ -207,7 +208,12 @@ class FSM():
                 # rotate: rotates around the ball searching for a goal
                 target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
                 target.setPosition(x=ball.x, y=ball.y)
-                target.w = math.pi/6
+
+                if goal.center_x > 0:
+                    target.w = math.pi/6
+                else:
+                    target.w = math.pi/2
+
                 if goal.center_y < 0:
                     target.w = -target.w
                 if frame.has_ball and frame.has_goal:
@@ -223,11 +229,13 @@ class FSM():
                     x2 = goal.center_x,
                     y2 = goal.center_y
                     )
-                if np.abs(target.w) < 0.03:
+                if frame.has_goal:
+                    target.reset_odometry = True
+                else:
+                    target.reset_odometry = False
+
+                if (np.abs(target.w) < 0.025) or (self.getStateDuration(frame.timestamp) > 5):
                     final_state = self.moveNStates(1)
-                
-                elif not frame.has_goal:
-                    final_state = self.moveNStates(-2)
 
             elif self.current_state == Stage2States.stopToShoot:
                 # stop2: breaks when ball and goal are aligned
@@ -239,12 +247,28 @@ class FSM():
                         y2 = goal.center_y
                         )
                 robot.charge = True
-                if np.abs(target.w) > 0.035 or target.getDirection() > 0.125:
-                    final_state = self.moveNStates(-3)
-                elif self.getStateDuration(frame.timestamp) > 0.3:
+
+                if frame.has_goal:
+                    final_state = self.moveNStates(2)
+                elif self.getStateDuration(frame.timestamp) > 0.5:
                     final_state = self.moveNStates(1)
+
             
             elif self.current_state == Stage2States.driveToBall:
+                # drive3: drives to ball position towards goal direction
+                target.type = communication_proto.pb.protoPositionSSL.target
+                target.setPosition(x = ball.x, y = ball.y)
+                _, _, target.w = target.get2XYCoordinatesVector(
+                        x1 = 0,
+                        y1 = 0,
+                        x2 = ball.x,
+                        y2 = ball.y
+                        )
+                robot.charge = True
+                if not frame.has_ball and target.getDistance()<0.400:
+                    final_state = self.moveNStates(2)
+
+            elif self.current_state == Stage2States.driveTowardsGoal:
                 # drive3: drives to ball position towards goal direction
                 target.type = communication_proto.pb.protoPositionSSL.target
                 target.setPosition(x = ball.x, y = ball.y)
@@ -257,16 +281,24 @@ class FSM():
                 robot.charge = True
                 if not frame.has_ball and target.getDistance()<0.400:
                     final_state = self.moveNStates(1)
-            
+
             elif self.current_state == Stage2States.dockAndShoot:
                 # dock: drives to last target ball using inertial odometry and shoots to goal
                 target.type = communication_proto.pb.protoPositionSSL.dock
                 target.setPosition(x = ball.x, y = ball.y)
-                _, _, target.w = target.get2XYCoordinatesVector(
+                if self.last_state == Stage2States.driveTowardsGoal:
+                    _, _, target.w = target.get2XYCoordinatesVector(
+                            x1 = 0,
+                            y1 = 0,
+                            x2 = goal.center_x,
+                            y2 = goal.center_y
+                            )
+                elif self.last_state == Stage2States.driveToBall:
+                    _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = 0,
                         y1 = 0,
-                        x2 = goal.center_x,
-                        y2 = goal.center_y
+                        x2 = ball.x,
+                        y2 = ball.y
                         )
                 target.reset_odometry = False
                 robot.charge = True

@@ -148,8 +148,8 @@ def main():
     state_time = time.time()
 
     # STAGE 3 TARGET POINT
-    FINAL_X = 0.5
-    FINAL_Y = -0.5
+    FINAL_X = 0
+    FINAL_Y = 0
 
     FINAL_ANGLE = -math.atan2(FINAL_Y, (ssl_field.goal.center_x-FINAL_X))
     FINAL_RADIUS = math.sqrt((ssl_field.goal.center_x-FINAL_X)**2 + FINAL_Y**2)
@@ -265,7 +265,7 @@ def main():
                 state = "driveTowardsGoalCenter"
 
         elif state == "driveTowardsGoalCenter":
-            target.type = communication_proto.pb.protoPositionSSL.target
+            target.type = communication_proto.pb.protoPositionSSL.dock
             target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                 x1=ssl_robot.x,
                 y1=ssl_robot.y,
@@ -274,6 +274,7 @@ def main():
                 relative_angle=0,
                 relative_distance=-RELOCALIZATION_RADIUS
             )
+
             if target.getDistance() < 0.05:
                 state = "alignToGoalCenter"
                 state_time = time.time()
@@ -311,8 +312,8 @@ def main():
 
             R = target.getDistance()
             theta = np.abs(target.w)
-            vel = theta*0.5/(math.pi/6)
-            if time.time() - state_time > R*theta/vel:
+            vel_min = 0.05
+            if time.time() - state_time > R*theta/vel_min:
                 state = "stopOnMiddle"
                 state_time = time.time()
 
@@ -344,55 +345,31 @@ def main():
                 if ssl_robot.is_located:
                     target.x, target.y, target.w = ssl_robot.tx, ssl_robot.ty, ssl_robot.w
                     if np.abs(ssl_robot.ty) < 0.1:
-                        state = "rotateToFieldAxis"
+                        state = "rotateToTargetDirection"
                     else:
                         state = "rotateAroundGoal"
                     state_time = time.time()
                 else:
                     state = "search"
         
-        elif state == "rotateToFieldAxis":
-            target.type = communication_proto.pb.protoPositionSSL.target
-            target.x, target.y, target.w = 0, -ssl_robot.ty, -ssl_robot.w
+        elif state == "rotateToTargetDirection":
+            target.type = communication_proto.pb.protoPositionSSL.rotateControl
+            target.x, target.y = FINAL_X - ssl_robot.tx, FINAL_Y - ssl_robot.ty
+            target.w = target.getDirection()
             target.reset_odometry = False
 
-            if time.time() - state_time > 2:
-                state = "brakeToXTranslation"
+            if time.time() - state_time > 1:
+                state = "driveToTargetPosition"
                 state_time = time.time()
+                target.reset_odometry = True
 
-        elif state == "brakeToXTranslation":
+        elif state == "driveToTargetPosition":
             target.type = communication_proto.pb.protoPositionSSL.target
-            target.x, target.y, target.w = 0, 0, 0
-            target.reset_odometry = True
-
-            if time.time() - state_time > 0.2:
-                state = "driveToTargetX"
-                state_time = time.time()
-
-        elif state == "driveToTargetX":
-            target.type = communication_proto.pb.protoPositionSSL.target
-            target.x, target.y, target.w = FINAL_X - ssl_robot.tx, 0, 0
+            dist = math.sqrt((FINAL_X - ssl_robot.tx)**2 + (FINAL_Y - ssl_robot.ty)**2)
+            target.x, target.y, target.w = 1.2*dist, 0, 0
             target.reset_odometry = False
 
-            if time.time() - state_time > 5:
-                state = "brakeToYTranslation"
-                state_time = time.time()
-        
-        elif state == "brakeToYTranslation":
-            target.type = communication_proto.pb.protoPositionSSL.target
-            target.x, target.y, target.w = 0, 0, 0
-            target.reset_odometry = True
-
-            if time.time() - state_time > 0.2:
-                state = "driveToTargetY"
-                state_time = time.time()
-
-        elif state == "driveToTargetY":
-            target.type = communication_proto.pb.protoPositionSSL.target
-            target.x, target.y, target.w = 0, FINAL_Y, 0
-            target.reset_odometry = False
-
-            if time.time() - state_time > 5:
+            if time.time() - state_time > 10:
                 state = "finish"
                 state_time = time.time()
 
