@@ -133,7 +133,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 60
+    EXECUTION_TIME = 300
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -145,6 +145,7 @@ def main():
     state = "search"
 
     # INIT STATE MACHINE TIMER
+    STAGE = 3
     state_time = time.time()
 
     # STAGE 3 TARGET POINT
@@ -154,9 +155,10 @@ def main():
     FINAL_ANGLE = -math.atan2(FINAL_Y, (ssl_field.goal.center_x-FINAL_X))
     FINAL_RADIUS = math.sqrt((ssl_field.goal.center_x-FINAL_X)**2 + FINAL_Y**2)
 
-    RELOCALIZATION_RADIUS = 1.7
+    RELOCALIZATION_RADIUS = 1.5
 
     final_target = TargetPoint(x=FINAL_X, y=FINAL_Y, w=FINAL_ANGLE)
+    frame_nr = 0
 
     while cap.isOpened():
         start_time = time.time()
@@ -207,6 +209,9 @@ def main():
                     ssl_goal = current_frame.updateGoalCenter(x, y, score)
                 
                 else:
+                    bbox = np.array([xmin, xmax, ymin, ymax])
+                    dir = cwd + f"/data/stage3/bbox_frame_nr{frame_nr}.txt"
+                    np.savetxt(dir, bbox)
                     left_corner, right_corner = keypoint_regressor.goalAsCorners(
                                     src=current_frame.input,
                                     left=xmin,
@@ -383,6 +388,11 @@ def main():
         eth_comm.sendSSLMessage()
 
         print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}, {target.reset_odometry}')
+
+        # SAVE FRAME
+        dir = cwd+f"/data/stage{STAGE}/frame{frame_nr}.jpg"
+        cv2.imwrite(dir, current_frame.input)
+        frame_nr += 1
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
