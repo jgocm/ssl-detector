@@ -36,14 +36,27 @@ ssl_robot = Robot(
             )
 while True:
     # LOAD GOAL IMAGE AND BOUNDING BOX
-    STAGE = 3
-    frame_nr = 108
-    img_path = cwd + f"/data/stage{STAGE}_1/frame{frame_nr}.jpg"
-    bbox_path = cwd + f"/data/stage{STAGE}/bbox_frame_nr{frame_nr}.txt"
+    STAGE = 2
+    frame_nr = 500
+    img_path = cwd + f"/data/stage{STAGE}/frame{frame_nr}.jpg"
+    #bbox_path = cwd + f"/data/stage{STAGE}/bbox_frame_nr{frame_nr}.txt"
     src = cv2.imread(img_path)
     height, width = src.shape[0], src.shape[1]
-    bbox = np.loadtxt(bbox_path)
+    #bbox = np.loadtxt(bbox_path)
+    bbox = [270, 440, 60, 102]
     xmin, xmax, ymin, ymax = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+
+    # GOAL AS CENTER POINT
+    pixel_x, pixel_y = ssl_cam.goalAsPoint(
+                                    left=xmin,
+                                    top=ymin,
+                                    right=xmax,
+                                    bottom=ymax)
+
+    object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
+    x, y = object_position[0], object_position[1]
+    x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
+    print(x, y)
 
     # DETECT GOAL LINE
     goal_line_points = corner_regressor.goalLineDetection(src=src, 

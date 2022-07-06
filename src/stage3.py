@@ -210,8 +210,6 @@ def main():
                 
                 else:
                     bbox = np.array([xmin, xmax, ymin, ymax])
-                    dir = cwd + f"/data/stage3/bbox_frame_nr{frame_nr}.txt"
-                    np.savetxt(dir, bbox)
                     left_corner, right_corner = keypoint_regressor.goalAsCorners(
                                     src=current_frame.input,
                                     left=xmin,
@@ -388,11 +386,6 @@ def main():
         eth_comm.sendSSLMessage()
 
         print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}, {target.reset_odometry}')
-
-        # SAVE FRAME
-        dir = cwd+f"/data/stage{STAGE}/frame{frame_nr}.jpg"
-        cv2.imwrite(dir, current_frame.input)
-        frame_nr += 1
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
