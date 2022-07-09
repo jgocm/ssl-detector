@@ -1,6 +1,8 @@
 from object_localization import KeypointRegression, Camera
 from entities import Robot
 from navigation import TargetPoint
+import object_detection
+import tensorrt as trt
 import os
 import cv2
 import numpy as np
@@ -34,59 +36,67 @@ ssl_robot = Robot(
             camera_offset = CAMERA_TO_CENTER_OFFSET,
             initial_pose = INITIAL_POSE
             )
+
+# OBJECT DETECTION MODEL
+PATH_TO_MODEL = cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt"
+PATH_TO_LABELS = cwd+"/models/ssl_labels.txt"
+trt_net = object_detection.DetectNet(
+            model_path = PATH_TO_MODEL, 
+            labels_path = PATH_TO_LABELS, 
+            input_width = 300, 
+            input_height = 300,
+            score_threshold = 0.3,
+            draw = False,
+            TRT_LOGGER = trt.Logger(trt.Logger.INFO)
+            )
+trt_net.loadModel()
+
+# LOAD GOAL IMAGE AND BOUNDING BOX
+STAGE = 3
+frame_nr = 300
 while True:
-    # LOAD GOAL IMAGE AND BOUNDING BOX
-    STAGE = 2
-    frame_nr = 500
-    img_path = cwd + f"/data/stage{STAGE}/frame{frame_nr}.jpg"
-    #bbox_path = cwd + f"/data/stage{STAGE}/bbox_frame_nr{frame_nr}.txt"
+    img_path = cwd + f"/data/stage{STAGE}_1/frame{frame_nr}.jpg"
     src = cv2.imread(img_path)
     height, width = src.shape[0], src.shape[1]
-    #bbox = np.loadtxt(bbox_path)
-    bbox = [270, 440, 60, 102]
-    xmin, xmax, ymin, ymax = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+    
+    detections = trt_net.inference(src).detections
 
-    # GOAL AS CENTER POINT
-    pixel_x, pixel_y = ssl_cam.goalAsPoint(
-                                    left=xmin,
-                                    top=ymin,
-                                    right=xmax,
-                                    bottom=ymax)
+    for detection in detections:
+        """
+        Detection ID's:
+        0: background
+        1: ball
+        2: goal
+        3: robot
 
-    object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
-    x, y = object_position[0], object_position[1]
-    x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-    print(x, y)
+        Labels are available at: ssl-detector/models/ssl_labels.txt
+        """
+        class_id, score, left, right, top,bottom = detection               
+        if class_id==2:
+            xmin, xmax, ymin, ymax = left, right, top, bottom
 
     # DETECT GOAL LINE
-    goal_line_points = corner_regressor.goalLineDetection(src=src, 
-                                                left=xmin, 
-                                                top=ymin, 
-                                                right=xmax, 
-                                                bottom=ymax)
+    coef, intercept = corner_regressor.goalLineRegression(
+                                        src=src,
+                                        left=xmin,
+                                        top=ymin,
+                                        right=xmax,
+                                        bottom=ymax)
 
-    for point in goal_line_points:
-        pixel_x, pixel_y = point
-        #src[pixel_y, pixel_x] = (0, 0, 0)
-
-    # GOAL LINE REGRESSION
-    _coef, _intercept = corner_regressor.makeLinearRegressionModel(goal_line_points)
-    def predict(coef, intercept, x):
-        y = coef*x + intercept
-        return y 
-    y0 = int(predict(_coef, _intercept, 0))
-    y1 = int(predict(_coef, _intercept, width))
-    cv2.line(src, (0, y0), (width, y1), (0, 0, 0), 1)
-
-    # COMPUTE SIDE
-    side = corner_regressor.getGoalSide(_coef)
+    cv2.line(
+            src,
+            (0, coef*0 + intercept),
+            (640, coef*640 + intercept),
+            (255, 0, 0),
+            1)
 
     # TEST SELF ORIENTATION FROM GOAL LINE
-    angle = ssl_cam.selfOrientationFromGoalLine(_coef, _intercept)
+    angle = ssl_cam.selfOrientationFromGoalLine(coef, intercept)
     print(angle)
 
     cv2.imshow('img', src)
-    key = 0xFF & cv2.waitKey(5)
+    frame_nr += 1
+    key = 0xFF & cv2.waitKey(0)
     if key == ord('q'):
         break
 

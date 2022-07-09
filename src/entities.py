@@ -37,6 +37,10 @@ class Robot():
         self.ty = y
         self.w = w
         self.is_located = True
+    
+    def updateSelfOrientation(self, w):
+        self.w = w
+        self.is_located = True
 
     def cameraToRobotCoordinates(self, x, y):
         robot_x = (y + self.camera_offset)/1000
@@ -108,8 +112,10 @@ class Field():
         self.boundary_width = boundary_width
         self.line_thickness = line_thickness
         self.center_radius = center_radius
-        self.goal = Goal()
-        self.goal.center_x, self.goal.center_y = self.length/2, 0
+        self.left_goal = Goal()
+        self.left_goal.center_x, self.left_goal.center_y = -self.length/2, 0
+        self.right_goal = Goal()
+        self.right_goal.center_x, self.right_goal.center_y = self.length/2, 0
     
 class Frame():
     def __init__(

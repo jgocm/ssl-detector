@@ -47,9 +47,8 @@ class KeypointRegression():
         return X, y
 
     def makeLinearRegressionModel(self, line_regression_points):
-        X, y = self.transformPointsToRegressionData(line_regression_points)
-        model = linear_model.LinearRegression().fit(X=X, y=y)
         try:
+            X, y = self.transformPointsToRegressionData(line_regression_points)
             model = linear_model.LinearRegression().fit(X=X, y=y)
             return model.coef_, model.intercept_
         except:
@@ -57,8 +56,8 @@ class KeypointRegression():
             return -1, -1
 
     def makeRANSACRegressionModel(self, line_regression_points):
-        X, y = self.transformPointsToRegressionData(line_regression_points)
         try:
+            X, y = self.transformPointsToRegressionData(line_regression_points)
             model = linear_model.RANSACRegressor().fit(X=X, y=y)
             return model.estimator_.coef_, model.estimator_.intercept_
         except:
@@ -117,9 +116,12 @@ class KeypointRegression():
     def goalLineRegression(self, src, left, top, right, bottom):
         try:
             goal_line_points = self.goalLineDetection(src, left, top, right, bottom)
-            goal_line_model = self.makeLinearRegressionModel(goal_line_points)
         except:
             self.skip_frame = True
+            goal_line_points = []
+        
+        goal_line_model = self.makeLinearRegressionModel(goal_line_points)
+
         return goal_line_model
      
 
@@ -193,18 +195,23 @@ class KeypointRegression():
         right = int(left_to_right_proportion*(left+right))
         try:
             goal_post_points = self.goalLeftPostDetectionGrayScale(src, left, top, right, bottom)
-            goal_post_model = self.makeRANSACRegressionModel(goal_post_points)
         except:
+            goal_post_points = []
             self.skip_frame = True
+
+        goal_post_model = self.makeRANSACRegressionModel(goal_post_points)
+
         return goal_post_model
     
     def goalRightPostRegressionFromRight(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
         left = int((1-left_to_right_proportion)*(left+right))
         try:
             goal_post_points = self.goalRightPostDetectionGrayScale(src, left, top, right, bottom)
-            goal_post_model = self.makeRANSACRegressionModel(goal_post_points)
         except:
+            goal_post_points = []
             self.skip_frame = True
+
+        goal_post_model = self.makeRANSACRegressionModel(goal_post_points)
         return goal_post_model
 
     def goalLeftPostDetectionBGR(self, src, left, top, right, bottom):
@@ -319,18 +326,20 @@ class KeypointRegression():
         right = int(left_to_right_proportion*(left+right))
         try:
             goal_post_points = self.goalLeftPostDetectionBGR(src, left, top, right, bottom)
-            goal_post_model = self.makeLinearRegressionModel(goal_post_points)
         except:
+            goal_post_points = []
             self.skip_frame = True        
+        goal_post_model = self.makeLinearRegressionModel(goal_post_points)
         return goal_post_model
     
     def goalRightPostRegressionFromLeft(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
         left = int((1-left_to_right_proportion)*(left+right))
         try:
             goal_post_points = self.goalRightPostDetectionBGR(src, left, top, right, bottom)
-            goal_post_model = self.makeLinearRegressionModel(goal_post_points)
         except:
-            self.skip_frame = True
+            goal_post_points = []
+            self.skip_frame = True        
+        goal_post_model = self.makeLinearRegressionModel(goal_post_points)
         return goal_post_model
 
     def goalLeftPostRegressionFromMiddle(self, src, left, top, right, bottom, left_to_right_proportion = 0.5):
@@ -616,7 +625,6 @@ class Camera():
         theta = -math.atan(diff[1]/diff[0])
         
         return theta
-
 
 if __name__=="__main__":
     import object_detection

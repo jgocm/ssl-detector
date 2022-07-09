@@ -208,3 +208,17 @@ class TargetPoint(GroundPoint):
         ty = center_y - (math.sin(theta)*x0 + math.cos(theta)*y0)
 
         return tx, ty, theta
+    
+    def getSelfOrientationFromGoalLine(self, coef, intercept):
+        theta = math.atan((x1-x2)/(y1-y2))
+
+        x0 = (x1 + x2)/2
+        y0 = (y1 + y2)/2
+
+        center_x = 2.82
+        center_y = 0
+
+        tx = center_x - (math.cos(theta)*x0 - math.sin(theta)*y0)
+        ty = center_y - (math.sin(theta)*x0 + math.cos(theta)*y0)
+
+        return tx, ty, theta

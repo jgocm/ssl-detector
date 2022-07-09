@@ -50,7 +50,7 @@ def main():
 
     # DISPLAY TITLE
     WINDOW_NAME = 'Vision Blackout'
-    SHOW_DISPLAY = False
+    SHOW_DISPLAY = True
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
     DRAW = SHOW_DISPLAY
@@ -60,7 +60,7 @@ def main():
     ROBOT_HEIGHT = 155
     ROBOT_DIAMETER = 180
     CAMERA_TO_CENTER_OFFSET = 90
-    INITIAL_POSE = 0, 0, 0
+    INITIAL_POSE = 1, -1, 0
     ssl_robot = Robot(                
                 id = ROBOT_ID,
                 height = ROBOT_HEIGHT,
@@ -87,7 +87,7 @@ def main():
     )
 
     # VIDEO CAPTURE CONFIGS
-    cap = cv2.VideoCapture("/dev/video0")
+    cap = cv2.VideoCapture(cwd+"/data/stage3/stage3.mp4")
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
@@ -152,13 +152,7 @@ def main():
     FINAL_X = 0
     FINAL_Y = 0
 
-    FINAL_ANGLE = -math.atan2(FINAL_Y, (ssl_field.goal.center_x-FINAL_X))
-    FINAL_RADIUS = math.sqrt((ssl_field.goal.center_x-FINAL_X)**2 + FINAL_Y**2)
-
     RELOCALIZATION_RADIUS = 1.5
-
-    final_target = TargetPoint(x=FINAL_X, y=FINAL_Y, w=FINAL_ANGLE)
-    frame_nr = 0
 
     while cap.isOpened():
         start_time = time.time()
@@ -209,56 +203,70 @@ def main():
                     ssl_goal = current_frame.updateGoalCenter(x, y, score)
                 
                 else:
-                    bbox = np.array([xmin, xmax, ymin, ymax])
-                    left_corner, right_corner = keypoint_regressor.goalAsCorners(
-                                    src=current_frame.input,
-                                    left=xmin,
-                                    top=ymin,
-                                    right=xmax,
-                                    bottom=ymax)
-                    if keypoint_regressor.skip_frame:
-                        print("Corner regression has failed")
+                    if state == "stopAndRelocalize":
+                        coef, intercept = keypoint_regressor.goalLineRegression(
+                                        src=current_frame.input,
+                                        left=xmin,
+                                        top=ymin,
+                                        right=xmax,
+                                        bottom=ymax)
+                        if keypoint_regressor.skip_frame:
+                            print("Line regression has failed")
+                        else:
+                            w = ssl_cam.selfOrientationFromGoalLine(
+                                                    coef,
+                                                    intercept)
+                            ssl_robot.updateSelfOrientation(w)
                     else:
-                        # DRAW OBJECT POINTS ON SCREEN
-                        if DRAW:
-                            myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
-                            myGUI.drawCrossMarker(myGUI.screen, int(right_corner[0]), int(right_corner[1]))
-                        
-                        # BACK PROJECT GOAL LEFT CORNER POSITION TO CAMERA 3D COORDINATES
-                        left_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0][0][0], y=left_corner[1][0][0], z_world=0)
-                        left_corner_x, left_corner_y = left_corner_position[0], left_corner_position[1]
+                        left_corner, right_corner = keypoint_regressor.goalAsCorners(
+                                        src=current_frame.input,
+                                        left=xmin,
+                                        top=ymin,
+                                        right=xmax,
+                                        bottom=ymax)
+                        if keypoint_regressor.skip_frame:
+                            print("Corner regression has failed")
+                        else:
+                            # DRAW OBJECT POINTS ON SCREEN
+                            if DRAW:
+                                myGUI.drawCrossMarker(myGUI.screen, int(left_corner[0]), int(left_corner[1]))
+                                myGUI.drawCrossMarker(myGUI.screen, int(right_corner[0]), int(right_corner[1]))
+                            
+                            # BACK PROJECT GOAL LEFT CORNER POSITION TO CAMERA 3D COORDINATES
+                            left_corner_position = ssl_cam.pixelToCameraCoordinates(x=left_corner[0][0][0], y=left_corner[1][0][0], z_world=0)
+                            left_corner_x, left_corner_y = left_corner_position[0], left_corner_position[1]
 
-                        if DRAW:
-                            caption = f"Position:{left_corner_x[0]:.2f},{left_corner_y[0]:.2f}"
-                            myGUI.drawText(myGUI.screen, caption, (int(left_corner[0]-25), int(left_corner[1]+25)), 0.4)
+                            if DRAW:
+                                caption = f"Position:{left_corner_x[0]:.2f},{left_corner_y[0]:.2f}"
+                                myGUI.drawText(myGUI.screen, caption, (int(left_corner[0]-25), int(left_corner[1]+25)), 0.4)
 
-                        left_corner_x, left_corner_y, _ = ssl_robot.cameraToRobotCoordinates(left_corner_x[0], left_corner_y[0])
+                            left_corner_x, left_corner_y, _ = ssl_robot.cameraToRobotCoordinates(left_corner_x[0], left_corner_y[0])
 
-                        # BACK PROJECT GOAL RIGHT CORNER POSITION TO CAMERA 3D COORDINATES
-                        right_corner_position = ssl_cam.pixelToCameraCoordinates(x=right_corner[0][0][0], y=right_corner[1][0][0], z_world=0)
-                        right_corner_x, right_corner_y = right_corner_position[0], right_corner_position[1]
+                            # BACK PROJECT GOAL RIGHT CORNER POSITION TO CAMERA 3D COORDINATES
+                            right_corner_position = ssl_cam.pixelToCameraCoordinates(x=right_corner[0][0][0], y=right_corner[1][0][0], z_world=0)
+                            right_corner_x, right_corner_y = right_corner_position[0], right_corner_position[1]
 
-                        if DRAW:
-                            caption = f"Position:{right_corner_x[0]:.2f},{right_corner_y[0]:.2f}"
-                            myGUI.drawText(myGUI.screen, caption, (int(right_corner[0]-25), int(right_corner[1]+25)), 0.4)
-                        
-                        right_corner_x, right_corner_y, _ = ssl_robot.cameraToRobotCoordinates(right_corner_x[0], right_corner_y[0])
+                            if DRAW:
+                                caption = f"Position:{right_corner_x[0]:.2f},{right_corner_y[0]:.2f}"
+                                myGUI.drawText(myGUI.screen, caption, (int(right_corner[0]-25), int(right_corner[1]+25)), 0.4)
+                            
+                            right_corner_x, right_corner_y, _ = ssl_robot.cameraToRobotCoordinates(right_corner_x[0], right_corner_y[0])
 
-                        ssl_goal = current_frame.updateGoalCorners(
-                            left_corner_x, 
-                            left_corner_y,
-                            right_corner_x,
-                            right_corner_y,
-                            score)
+                            ssl_goal = current_frame.updateGoalCorners(
+                                left_corner_x, 
+                                left_corner_y,
+                                right_corner_x,
+                                right_corner_y,
+                                score)
 
-                        # COMPUTE ROBOT RELOCALIZATION FROM GOAL CORNERS REGRESSION
-                        tx, ty, w = target.getSelfPoseFromGoalCorners(
-                                                        left_corner_x, 
-                                                        left_corner_y,
-                                                        right_corner_x,
-                                                        right_corner_y)
+                            # COMPUTE ROBOT RELOCALIZATION FROM GOAL CORNERS REGRESSION
+                            tx, ty, w = target.getSelfPoseFromGoalCorners(
+                                                            left_corner_x, 
+                                                            left_corner_y,
+                                                            right_corner_x,
+                                                            right_corner_y)
 
-                        ssl_robot.updateSelfPose(tx, ty, w)
+                            ssl_robot.updateSelfPose(tx, ty, w)
 
         # STATE MACHINE
         # TO-DO: move to state machine class
@@ -277,6 +285,13 @@ def main():
                 relative_angle=0,
                 relative_distance=-RELOCALIZATION_RADIUS
             )
+            goal_distance = math.sqrt(ssl_goal.center_x**2 + ssl_goal.center_y**2)
+            left_goal_distance = math.sqrt((ssl_field.left_goal.center_x-ssl_robot.tx)**2 + (ssl_field.left_goal.center_y-ssl_robot.ty)**2)
+            right_goal_distance = math.sqrt((ssl_field.right_goal.center_x-ssl_robot.tx)**2 + (ssl_field.right_goal.center_y-ssl_robot.ty)**2)
+
+            if np.abs(goal_distance - left_goal_distance) < np.abs(goal_distance - right_goal_distance):
+                FINAL_X = -FINAL_X
+                FINAL_Y = -FINAL_Y
 
             if target.getDistance() < 0.05:
                 state = "alignToGoalCenter"
@@ -334,8 +349,8 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-RELOCALIZATION_RADIUS
-            )
+                relative_distance=-RELOCALIZATION_RADIUS)
+
             if np.abs(target.w) < 0.1:
                 state = "relocalizeOnMiddle"
                 ssl_robot.is_located = False
