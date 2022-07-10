@@ -253,11 +253,11 @@ def main():
                             right_corner_x, right_corner_y, _ = ssl_robot.cameraToRobotCoordinates(right_corner_x[0], right_corner_y[0])
 
                             ssl_goal = current_frame.updateGoalCorners(
-                                left_corner_x, 
-                                left_corner_y,
-                                right_corner_x,
-                                right_corner_y,
-                                score)
+                                                        left_corner_x, 
+                                                        left_corner_y,
+                                                        right_corner_x,
+                                                        right_corner_y,
+                                                        score)
 
                             # COMPUTE ROBOT RELOCALIZATION FROM GOAL CORNERS REGRESSION
                             tx, ty, w = target.getSelfPoseFromGoalCorners(
@@ -275,6 +275,14 @@ def main():
             if current_frame.has_goal: 
                 state = "driveTowardsGoalCenter"
 
+            goal_distance = math.sqrt(ssl_goal.center_x**2 + ssl_goal.center_y**2)
+            left_goal_distance = math.sqrt((ssl_field.left_goal.center_x-ssl_robot.tx)**2 + (ssl_field.left_goal.center_y-ssl_robot.ty)**2)
+            right_goal_distance = math.sqrt((ssl_field.right_goal.center_x-ssl_robot.tx)**2 + (ssl_field.right_goal.center_y-ssl_robot.ty)**2)
+
+            if np.abs(goal_distance - left_goal_distance) < np.abs(goal_distance - right_goal_distance):
+                FINAL_X = -FINAL_X
+                FINAL_Y = -FINAL_Y
+
         elif state == "driveTowardsGoalCenter":
             target.type = communication_proto.pb.protoPositionSSL.dock
             target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
@@ -283,15 +291,7 @@ def main():
                 x2=ssl_goal.center_x,
                 y2=ssl_goal.center_y,
                 relative_angle=0,
-                relative_distance=-RELOCALIZATION_RADIUS
-            )
-            goal_distance = math.sqrt(ssl_goal.center_x**2 + ssl_goal.center_y**2)
-            left_goal_distance = math.sqrt((ssl_field.left_goal.center_x-ssl_robot.tx)**2 + (ssl_field.left_goal.center_y-ssl_robot.ty)**2)
-            right_goal_distance = math.sqrt((ssl_field.right_goal.center_x-ssl_robot.tx)**2 + (ssl_field.right_goal.center_y-ssl_robot.ty)**2)
-
-            if np.abs(goal_distance - left_goal_distance) < np.abs(goal_distance - right_goal_distance):
-                FINAL_X = -FINAL_X
-                FINAL_Y = -FINAL_Y
+                relative_distance=-RELOCALIZATION_RADIUS)
 
             if target.getDistance() < 0.05:
                 state = "alignToGoalCenter"
