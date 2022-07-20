@@ -7,7 +7,7 @@ This project was developed and tested on a 4GB NVIDIA Jetson Nano using [Jetpack
 In the [RoboCup Small Size League (SSL)](https://ssl.robocup.org/), teams are encouraged to propose solutions for executing basic soccer tasks inside the SSL field using only embedded sensing information for the [Vision Blackout Challenge](https://ssl.robocup.org/robocup-2022-technical-challenges/). We propose an embedded monocular vision approach for detecting objects and estimating relative positions inside the soccer field.
 
 ### Proposed Approach
-During soccer matches and especially for the Vision Blackout challenge, SSL objects mostly lay on the soccer field, and we exploit this prior knowledge for proposing a monocular vision solution for detecting and estimating their relative positions to the robot. 
+During soccer matches and especially for the Vision Blackout challenge, SSL objects mostly lay on the soccer field, and we exploit this prior knowledge for proposing a monocular vision solution for detecting and estimating their relative positions to the robot:
 - Camera is fixed to the robot and its intrinsic and extrinsic parameters are obtained using calibration and pose computation techniques from the Open Computer Vision Library (OpenCV);
 - SSD MobileNet v2 is used for detecting objects' 2D bounding boxes on camera frames;
 - Linear regression is applied to the bounding box’s coordinates, assigning a point on the field that corresponds to the object’s bottom center, which has its relative position to the camera, and, therefore, to the robot, estimated using pre-calibrated camera parameters;
@@ -15,17 +15,14 @@ During soccer matches and especially for the Vision Blackout challenge, SSL obje
 
 The following figure illustrates a scheme for the proposed method:
 
-![pipeline](https://user-images.githubusercontent.com/85940536/180003241-7b04e7ba-a4fc-4de4-b290-5f5e5baa92a2.png)
+![pipeline](https://github.com/jgocm/ssl-detector/blob/main/images/pipeline.png)
 
-The robot receives target positions and kicking commands for executing soccer tasks autonomously, such as:
+The Nano sends target positions and kicking commands to the robot's microncontroller through UDP socket, enabling it execute basic soccer tasks autonomously:
 
-1. Grabbing the ball:
-
-![stage1](https://user-images.githubusercontent.com/85940536/180006531-48790c45-085e-4ef5-949b-04c003e70be9.gif)
-
-2. Scoring on an empty goal:
-
-![stage2](https://user-images.githubusercontent.com/85940536/180006610-539e5366-5630-47d7-857c-10853ad8e324.gif)
+|  Task  |   Video  |
+|--------|----------|
+| <a>**Grabbing A Stationary Ball**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/main/images/stage1.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/main/images/stage1.gif width="300"></a> |
+| <a>**Scoring On An Empty Goal**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/main/images/stage2.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/main/images/stage2.gif width="300"></a> |
 
 ## Setup From Fresh Jetpack 4.6.1 Installation
 
