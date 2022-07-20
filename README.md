@@ -3,6 +3,25 @@ Object Detection and Localization for RoboCup Small Size League (SSL)
 
 This project was developed and tested on a 4GB NVIDIA Jetson Nano using [Jetpack 4.6.1](https://developer.nvidia.com/embedded/jetpack-sdk-461)
 
+## Overview
+In the [RoboCup Small Size League (SSL)](https://ssl.robocup.org/), teams are encouraged to propose solutions for executing basic soccer tasks inside the SSL field using only embedded sensing information for the [Vision Blackout Challenge](https://ssl.robocup.org/robocup-2022-technical-challenges/). We propose an embedded monocular vision approach for detecting objects and estimating relative positions inside the soccer field.
+
+### Proposed Approach
+During soccer matches and especially for the Vision Blackout challenge, SSL objects mostly lay on the soccer field, and we exploit this prior knowledge for proposing a monocular vision solution for detecting and estimating their relative positions to the robot. For that, the camera is fixed to the robot and its intrinsic and extrinsic parameters are obtained using calibration and pose computation techniques from the Open Computer Vision Library (OpenCV). 
+SSD MobileNet v2 is used for detecting objects' 2D bounding boxes on camera frames. After labeling, linear regression is applied to the bounding box’s coordinates, assigning a point on the field that corresponds to the object’s bottom center, which has its relative position to the camera, and, therefore, to the robot, estimated using pre-calibrated camera parameters. We implemented the proposed method on an 4GB NVIDIA Jetson Nano achieving real-time performance with an average processing speed of 30 frames per second and 10.8 Watts of power consumption. The following figure illustrates a scheme for the proposed method.
+
+![pipeline](https://user-images.githubusercontent.com/85940536/180003241-7b04e7ba-a4fc-4de4-b290-5f5e5baa92a2.png)
+
+The robot receives target positions and kicking commands for executing soccer tasks autonomously, such as:
+
+1. Grabbing the ball:
+
+![stage1](https://user-images.githubusercontent.com/85940536/180006531-48790c45-085e-4ef5-949b-04c003e70be9.gif)
+
+2. Scoring on an empty goal:
+
+![stage2](https://user-images.githubusercontent.com/85940536/180006610-539e5366-5630-47d7-857c-10853ad8e324.gif)
+
 ## Setup From Fresh Jetpack 4.6.1 Installation
 
 ### Remove Unnecessary Libraries (Optional)
