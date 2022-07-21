@@ -21,8 +21,8 @@ The Nano sends target positions and kicking commands to the robot's microncontro
 
 |  Task  |   Video  |
 |--------|----------|
-| <a>**Grabbing A Stationary Ball**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/master/images/stage1.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/main/images/stage1.gif width="300"></a> |
-| <a>**Scoring On An Empty Goal**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/master/images/stage2.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/main/images/stage2.gif width="300"></a> |
+| <a>**Grabbing A Stationary Ball**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/master/images/stage1.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/master/images/stage1.gif width="300"></a> |
+| <a>**Scoring On An Empty Goal**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/master/images/stage2.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/master/images/stage2.gif width="300"></a> |
 
 ## Setup From Fresh Jetpack 4.6.1 Installation
 
