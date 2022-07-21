@@ -15,14 +15,14 @@ During soccer matches and especially for the Vision Blackout challenge, SSL obje
 
 The following figure illustrates a scheme for the proposed method:
 
-![pipeline](https://github.com/jgocm/ssl-detector/blob/main/images/pipeline.png)
+![pipeline](https://github.com/jgocm/ssl-detector/blob/master/images/pipeline.png)
 
 The Nano sends target positions and kicking commands to the robot's microncontroller through UDP socket, enabling it execute basic soccer tasks autonomously:
 
 |  Task  |   Video  |
 |--------|----------|
-| <a>**Grabbing A Stationary Ball**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/main/images/stage1.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/main/images/stage1.gif width="300"></a> |
-| <a>**Scoring On An Empty Goal**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/main/images/stage2.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/main/images/stage2.gif width="300"></a> |
+| <a>**Grabbing A Stationary Ball**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/master/images/stage1.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/main/images/stage1.gif width="300"></a> |
+| <a>**Scoring On An Empty Goal**</a> | <a href="https://github.com/jgocm/ssl-detector/blob/master/images/stage2.gif" target="_blank"><img src=https://github.com/jgocm/ssl-detector/blob/main/images/stage2.gif width="300"></a> |
 
 ## Setup From Fresh Jetpack 4.6.1 Installation
 
@@ -183,7 +183,7 @@ reference_points = [
 ]
 ```
 
-Their global positions are estimated from the field dimensions on `configs/field_configs.py` and saved under [field_points3d.txt](https://github.com/jgocm/ssl-detector/blob/main/configs/field_points3d.txt).
+Their global positions are estimated from the field dimensions on `configs/field_configs.py` and saved under [field_points3d.txt](https://github.com/jgocm/ssl-detector/blob/master/configs/field_points3d.txt).
 
 At the calibration screen, the current reference point to be marked is shown on the upper left corner and the following mouse/keyboard commands are available:
 - 'left mouse click': moves the marker to mouse cursor current position
