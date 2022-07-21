@@ -659,8 +659,7 @@ class FSM():
                     relative_distance = -0.5
                     )
                 if target.getDistance() < 0.05:
-                    #final_state = self.moveNStates(1)
-                    final_state = Stage4ReceiverStates.finish
+                    final_state = self.moveNStates(1)
             
             elif self.current_state == Stage4ReceiverStates.stopInRotationPoint:
                 # stop1: breaks for align with ball center
