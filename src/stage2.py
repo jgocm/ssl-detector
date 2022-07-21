@@ -104,16 +104,18 @@ def main():
 
     # INIT VISION BLACKOUT STATE MACHINE
     INITIAL_STATE = 1
+    STAGE = 2
     state_machine = FSM(
-        stage = 2,
+        stage = STAGE,
         initial_state = INITIAL_STATE,
         init_time = start)
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 60
+    EXECUTION_TIME = 180
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
+    frame_nr = 0
 
     while cap.isOpened():
         start_time = time.time()
@@ -202,11 +204,13 @@ def main():
         eth_comm.sendSSLMessage()
         print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
  
-        if state_machine.reset_odometry:
-            eth_comm.resetRobotPosition()
         if state_machine.current_state == Stage2States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
             break
 
+        # SAVE FRAME
+        dir = cwd+f"/data/stage{STAGE}/frame{frame_nr}.jpg"
+        cv2.imwrite(dir, current_frame.input)
+        frame_nr += 1
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time

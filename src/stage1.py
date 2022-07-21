@@ -95,16 +95,18 @@ def main():
 
     # INIT VISION BLACKOUT STATE MACHINE
     INITIAL_STATE = 1
+    STAGE = 1
     state_machine = FSM(
-        stage = 1,
+        stage = STAGE,
         initial_state = INITIAL_STATE,
         init_time = start)
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 15
+    EXECUTION_TIME = 240
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
+    frame_nr = 1
 
     while cap.isOpened():
         start_time = time.time()
@@ -170,17 +172,19 @@ def main():
         eth_comm.sendSSLMessage()
         print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
         
-        if state_machine.current_state != Stage1States.dockBall:
-            eth_comm.resetRobotPosition()
         if state_machine.current_state == Stage1States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
             break
 
+        # SAVE FRAME
+        dir = cwd+f"/data/stage{STAGE}/frame{frame_nr}.jpg"
+        cv2.imwrite(dir, current_frame.input)
+        frame_nr += 1
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
         avg_time = 0.8*avg_time + 0.2*frame_time
         if SHOW_DISPLAY:
             key = cv2.waitKey(10) & 0xFF
-            quit = myGUI.commandHandler(key=key)   
+            quit = myGUI.commandHandler(key=key)
             if DRAW: 
                 myGUI.drawText(myGUI.screen, f"AVG FPS: {1/avg_time:.2f}s", (8, 13), 0.5)
             cv2.imshow(WINDOW_NAME, myGUI.screen)
@@ -188,9 +192,11 @@ def main():
                 eth_comm.sendStopMotion()
                 break
         else:
+
             if time.time()-config_time-start>EXECUTION_TIME:
                 print(f'Avg frame processing time:{avg_time}')
                 eth_comm.sendStopMotion()
+
                 break
 
     # RELEASE WINDOW AND DESTROY

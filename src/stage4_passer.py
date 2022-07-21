@@ -15,33 +15,8 @@ import object_detection
 import object_localization
 import communication_proto
 import interface
+from fsm import FSM, Stage4PasserStates
 from navigation import TargetPoint
-
-def rotationSign(x, y):
-    w = math.atan2(-y, -x)
-    if w>0:
-        return -1
-    else:
-        return 1
-
-def offsetTarget(x, y, offset=1):
-    dist = math.sqrt(x**2+y**2) + 0.001
-    prop = (dist - offset)/dist
-    target_x, target_y = prop*x, prop*y
-    return target_x, target_y
-
-def directionVector(x1, y1, x2, y2):
-    vy = y2-y1
-    vx = x2-x1
-    w = math.atan2(-vy, -vx)
-    return vx, vy, w
-
-def alignedTarget(vx, vy, bx, by, offset):
-    v_norm = math.sqrt(vx**2+vy**2)
-    target_x = vx*offset/v_norm + bx
-    target_y = vy*offset/v_norm + by
-    target_w = math.atan2(target_y, target_x)
-    return target_x, target_y, target_w
 
 def main():
     cwd = os.getcwd()
@@ -71,8 +46,7 @@ def main():
 
     # INIT ENTITIES
     ssl_ball = Ball()
-    ssl_goal = Goal()
-    ssl_robot_allie = Robot()
+    ssl_robot_ally = Robot()
     target = TargetPoint(x = 0, y = 0, w = 0)
 
     # UDP COMMUNICATION SETUP
@@ -131,7 +105,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 40
+    EXECUTION_TIME = 300
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -140,7 +114,12 @@ def main():
     eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
 
     # INIT VISION BLACKOUT STATE MACHINE
-    state = "search"
+    INITIAL_STATE = 1
+    STAGE = 4
+    state_machine = FSM(
+        stage = STAGE,
+        initial_state = INITIAL_STATE,
+        init_time = start)
 
     # INIT STATE MACHINE TIMER
     state_time = time.time()
@@ -150,13 +129,13 @@ def main():
         
         current_frame = Frame(timestamp = time.time())
         if myGUI.play:
-            ret, frame = cap.read()
+            ret, current_frame.input = cap.read()
             if not ret:
                 print("Check video capture path")
                 break
-            else: myGUI.updateGUI(frame)
+            else: myGUI.updateGUI(current_frame.input)
 
-        detections = trt_net.inference(myGUI.screen).detections
+        detections = trt_net.inference(current_frame.input).detections
 
         for detection in detections:
             """
@@ -177,7 +156,7 @@ def main():
                                                     right=xmax, 
                                                     bottom=ymax, 
                                                     weight_x=0.5,
-                                                    weight_y=0.2)
+                                                    weight_y=0.15)
 
                 # DRAW OBJECT POINT ON SCREEN
 
@@ -195,29 +174,6 @@ def main():
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
                 ssl_ball = current_frame.updateBall(x, y, score)
-              
-            if class_id==2:
-                # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
-                pixel_x, pixel_y = ssl_cam.goalAsPoint(
-                                                    left=xmin,
-                                                    top=ymin,
-                                                    right=xmax,
-                                                    bottom=ymax)
-                # DRAW OBJECT POINT ON SCREEN
-                if DRAW:
-                    myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
-                
-                # BACK PROJECT GOAL CENTER POSITION TO CAMERA 3D COORDINATES
-                object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
-                x, y = object_position[0], object_position[1]
-
-                if DRAW:
-                    caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
-                    myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
-                
-                # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-                x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_goal = current_frame.updateGoalCenter(x, y, score)
 
             if class_id==3:
                 #COMPUTE PIXEL FOR ROBOT ASSISTANT POSITION
@@ -241,113 +197,24 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_robot_allie = current_frame.updateRobot(x, y, score)
-              
-
-
+                ssl_robot_ally = current_frame.updateRobot(x, y, score)
+        
         # STATE MACHINE
-        # TO-DO: create state machine class
-        if state == "search":
-            target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
-            if current_frame.has_ball: 
-                state = "drive1"
+        target, ssl_robot = state_machine.stage4Passer(
+                                frame = current_frame, 
+                                ball = ssl_ball,
+                                ally = ssl_robot_ally,
+                                robot = ssl_robot)    
 
-        elif state == "drive1":
-            target.type = communication_proto.pb.protoPositionSSL.target
-            target.x, target.y = offsetTarget(ssl_ball.x, ssl_ball.y, 0.5)
-            target.w = ssl_ball.w
-            dist = math.sqrt(target.x**2+target.y**2)+0.001
-            if dist<0.05:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-                state = "stop1"
-                state_time = time.time()
-                target.type = communication_proto.pb.protoPositionSSL.stop
+        # UPDATE PROTO MESSAGE
+        eth_comm.setSSLMessage(target = target, robot = ssl_robot)
 
-        elif state == "stop1":
-            target.type = communication_proto.pb.protoPositionSSL.stop
-            if dist>0.05:
-                state = "drive1"
-            elif time.time()-state_time>0.5:
-                state = "align1"
-
-        elif state ==  "align1":
-            target.type = communication_proto.pb.protoPositionSSL.rotateControl
-            target.x, target.y, target.w = ssl_ball.x, ssl_ball.y, ssl_ball.w
-            if np.abs(target.w)<0.125:
-                state = "rotate"
-                state_time = time.time()
-
-        elif state == "rotate":
-            target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
-            target.x, target.y = ssl_ball.x, ssl_ball.y
-            if current_frame.has_ball and current_frame.has_robot:
-                _, _, target.w = directionVector(ssl_robot_allie.x, ssl_robot_allie.y, ssl_ball.x, ssl_ball.y)
-                if np.abs(target.w) < 0.125:
-                    state = "stop2"
-                    state_time = time.time()
-                    target.type = communication_proto.pb.protoPositionSSL.rotateInPoint
-            else:
-                target.w = rotationSign(ssl_robot.x, ssl_robot.y)*math.pi
-        
-        elif state == "stop2":
-            target.type = communication_proto.pb.protoPositionSSL.stop
-            _, _, target.w = directionVector(ssl_robot_allie.x, ssl_robot_allie.y, ssl_ball.x, ssl_ball.y)
-            if np.abs(target.w) > 0.125:
-                state = "rotate"
-                state_time = time.time()
-            elif time.time()-state_time > 0.2:
-                state = "drive2"
-        
-        elif state == "drive2":
-            target.type = communication_proto.pb.protoPositionSSL.target
-            _, _, target.w = directionVector(ssl_robot_allie.x, ssl_robot_allie.y, ssl_ball.x, ssl_ball.y)
-            target.x, target.y = ssl_ball.x, ssl_ball.y
-            dist = math.sqrt(target.x**2+target.y**2)+0.001
-            if dist<0.400 and not current_frame.has_ball:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-                    state = "dock"
-                    state_time = time.time()
-                    target.x, target.y = target.x, target.y
-        
-        elif state == "dock":
-            target.type = communication_proto.pb.protoPositionSSL.dock
-            _, _, target.w = directionVector(ssl_robot_allie.x, ssl_robot_allie.y, ssl_ball.x, ssl_ball.y)
-            if ssl_robot.front or not ssl_robot.charge:
-                ssl_robot.front = False
-                ssl_robot.charge = False
-                target.type = communication_proto.pb.protoPositionSSL.stop
-                if time.time()-state_time > 3.2:
-                    break            
-            elif time.time()-state_time > 3:
-                ssl_robot.front = True
-                ssl_robot.kick_strength = 10
-                state_time = time.time()
-                state = "backwards"
-
-        elif state == "backwards":
-            ssl_robot.front = False
-            target.type = communication_proto.pb.protoPositionSSL.dock
-            target.x, target.y, target.w = -6, 0, 0 
-            if time.time()-state_time>2:
-                state="endStage"
-
-        elif state == "endStage":
-            target.type = communication_proto.pb.protoPositionSSL.stop
-
-
-        eth_comm.setPositionMessage(
-                                x = target.x, 
-                                y = target.y,
-                                w = target.w,
-                                posType = target.type)
-        eth_comm.setKickMessage(
-                            front=ssl_robot.front, 
-                            charge=ssl_robot.charge, 
-                            kickStrength=ssl_robot.kick_strength)
+        # ACTION      
         eth_comm.sendSSLMessage()
+        print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
         
-        if state != "dock" and "backwards":
-            eth_comm.resetRobotPosition()
-
-        print(f'State: {state} | Target: {target.x:.3f}, {target.y:.3f}, {target.w:.3f}, {target.type}')
+        if state_machine.current_state == Stage4PasserStates.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
+            break
 
         # DISPLAY WINDOW
         frame_time = time.time()-start_time

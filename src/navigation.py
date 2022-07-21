@@ -39,6 +39,7 @@ class TargetPoint(GroundPoint):
         self.y = y
         self.w = w
         self.type = pb.protoPositionSSL.unknown
+        self.reset_odometry = True
 
     def get2XYCoordinatesVector(self, x1, y1, x2, y2):
         """
@@ -175,7 +176,7 @@ class TargetPoint(GroundPoint):
 
     def getTargetRelativeToLine2DCoordinates(self, x1 = 0, y1 = 0, x2 = 0, y2 = 0, relative_angle = 0, relative_distance = 0):
         """
-        Computes x,y coordinates and direction relative to the line p1->p2 with a given distance to p2:
+        Computes x, y coordinates and direction relative to the line p1->p2 with a given distance to p2:
         XY = R(relative_angle)@(p2-p1)*relative_distance/norm(p2-p1) + p2
 
         x1: x coordinate from initial point of the line
@@ -193,3 +194,31 @@ class TargetPoint(GroundPoint):
         target_x, target_y, target_w = self.getTargetCoordinatesRelativeToLinePoint(p1, p2, relative_angle, relative_distance)
         
         return target_x, target_y, target_w
+
+    def getSelfPoseFromGoalCorners(self, x1, y1, x2, y2):
+        theta = math.atan((x1-x2)/(y1-y2))
+
+        x0 = (x1 + x2)/2
+        y0 = (y1 + y2)/2
+
+        center_x = 4.5
+        center_y = 0
+
+        tx = center_x - (math.cos(theta)*x0 - math.sin(theta)*y0)
+        ty = center_y - (math.sin(theta)*x0 + math.cos(theta)*y0)
+
+        return tx, ty, theta
+    
+    def getSelfOrientationFromGoalLine(self, coef, intercept):
+        theta = math.atan((x1-x2)/(y1-y2))
+
+        x0 = (x1 + x2)/2
+        y0 = (y1 + y2)/2
+
+        center_x = 2.82
+        center_y = 0
+
+        tx = center_x - (math.cos(theta)*x0 - math.sin(theta)*y0)
+        ty = center_y - (math.sin(theta)*x0 + math.cos(theta)*y0)
+
+        return tx, ty, theta

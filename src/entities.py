@@ -7,7 +7,8 @@ class Robot():
                 id = 0,
                 height = 155,
                 diameter = 180,
-                camera_offset = 90
+                camera_offset = 90,
+                initial_pose = [0, 0, 0]
                 ):
         self.id = id
         self.height = height
@@ -16,52 +17,42 @@ class Robot():
 
         self.x = 0
         self.y = 0
-        self.w = 0
-        self.position = [self.x, self.y, self.w]
-        self.rotation = None
+        
+        self.tx = initial_pose[0]
+        self.ty = initial_pose[1]
+        self.w = initial_pose[2]
+        self.is_located = False
 
-        self.pose_confidence = 0
         self.camera_offset = camera_offset
 
         self.front = False
         self.chip = False
         self.charge = False
         self.kick_strength = 0
-
         self.dribbler = False
         self.dribbler_speed = 0
     
-    def isLocated(self):
-        if self.pose_confidence > 0.7:
-            return True
-        else:
-            return False
-
-    def getPose(self):
-        if self.isLocated():
-            print(f"Pose confidence is {self.pose_confidence}")
-            return self.position, self.pose_confidence
-        else:
-            print(f"Robot pose is not known")
-            return self.pose_confidence
-
-    def getId(self):
-        return self.id
-
-    def updatePoseConfidence(self, confidence):
-        self.pose_confidence = confidence
+    def updateSelfPose(self, x, y, w):
+        self.tx = x
+        self.ty = y
+        self.w = w
+        self.is_located = True
     
-    def setPose(self, position, euler_angles):
-        self.position = position
-        self.rotation = euler_angles[2][0]
-        self.updatePoseConfidence(confidence=1)
-    
+    def updateSelfOrientation(self, w):
+        self.w = w
+        self.is_located = True
+
     def cameraToRobotCoordinates(self, x, y):
         robot_x = (y + self.camera_offset)/1000
         robot_y = -x/1000
         robot_w = math.atan2(robot_y, robot_x)
 
         return robot_x, robot_y, robot_w
+    
+    def cameraToRobotRotation(self, w):
+        robot_w = w - math.pi/2
+
+        return robot_w
 
 class Ball():
     def __init__(
@@ -97,18 +88,22 @@ class Goal():
         self.height = height
         self.center_x = 0
         self.center_y = 0
+        self.left_x = 0
+        self.left_y = 0
+        self.right_x = 0
+        self.right_y = 0
         self.score = 0
 
 class Field():
     def __init__(
                 self,
-                field_width = 3760,
-                field_length = 5640,
-                penalty_area_width = 2000,
-                penalty_area_depth = 1000,
-                center_radius = 1000,
-                boundary_width = 180,
-                line_thickness = 20
+                field_width = 6.000,
+                field_length = 9.000,
+                penalty_area_width = 2.000,
+                penalty_area_depth = 1.000,
+                center_radius = 1.000,
+                boundary_width = 0.180,
+                line_thickness = 0.020
                 ):
         self.width = field_width
         self.length = field_length
@@ -117,12 +112,10 @@ class Field():
         self.boundary_width = boundary_width
         self.line_thickness = line_thickness
         self.center_radius = center_radius
-        self.goal = Goal()
-    
-    def getGoalCoordinates(self):
-        p1 = -self.goal.width/2, self.length/2
-        p2 = self.goal.width/2, self.length/2
-        return p1, p2
+        self.left_goal = Goal()
+        self.left_goal.center_x, self.left_goal.center_y = -self.length/2, 0
+        self.right_goal = Goal()
+        self.right_goal.center_x, self.right_goal.center_y = self.length/2, 0
     
 class Frame():
     def __init__(
@@ -149,6 +142,18 @@ class Frame():
         if score >= self.goal.score: 
             self.goal.center_x = x
             self.goal.center_y = y
+            self.has_goal = True
+            self.goal.score = score
+        return self.goal
+
+    def updateGoalCorners(self, left_corner_x, left_corner_y, right_corner_x, right_corner_y, score):
+        if score >= self.goal.score:
+            self.goal.left_x = left_corner_x
+            self.goal.left_y = left_corner_y
+            self.goal.right_x = right_corner_x
+            self.goal.right_y = right_corner_y
+            self.goal.center_x = (left_corner_x+right_corner_x)/2
+            self.goal.center_y = (left_corner_y+right_corner_y)/2
             self.has_goal = True
             self.goal.score = score
         return self.goal
