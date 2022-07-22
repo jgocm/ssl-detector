@@ -3,6 +3,8 @@ Object Detection and Localization for RoboCup Small Size League (SSL)
 
 This project was developed and tested on a 4GB NVIDIA Jetson Nano using [Jetpack 4.6.1](https://developer.nvidia.com/embedded/jetpack-sdk-461)
 
+Full paper can be found at arXiv: [An Embedded Monocular Vision Approach for Ground-Aware Objects Detection and Position Estimation](https://arxiv.org/abs/2207.09851)
+
 ## Overview
 In the [RoboCup Small Size League (SSL)](https://ssl.robocup.org/), teams are encouraged to propose solutions for executing basic soccer tasks inside the SSL field using only embedded sensing information for the [Vision Blackout Challenge](https://ssl.robocup.org/robocup-2022-technical-challenges/). We propose an embedded monocular vision approach for detecting objects and estimating relative positions inside the soccer field.
 
