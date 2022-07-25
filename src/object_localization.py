@@ -409,6 +409,11 @@ class KeypointRegression():
         left_corner, right_corner = self.goalCornersRegression(src, left, top, right, bottom, left_to_right_proportion)
         return left_corner, right_corner
 
+    def goalAsLine(self, src, left, top, right, bottom):
+        self.skip_frame = False
+        coef, intercept = self.goalLineRegression(src, left, top, right, bottom)
+        return coef, intercept
+
 class Camera():
     def __init__(
                 self,

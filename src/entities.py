@@ -152,6 +152,8 @@ class Frame():
             self.goal.left_y = left_corner_y
             self.goal.right_x = right_corner_x
             self.goal.right_y = right_corner_y
+            self.goal.center_x = (left_corner_x+right_corner_x)/2
+            self.goal.center_y = (left_corner_y+right_corner_y)/2
             self.has_goal = True
             self.goal.score = score
         return self.goal

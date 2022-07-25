@@ -1,12 +1,8 @@
-
 import math
 import cv2
 import numpy as np
 import tensorrt as trt
 import time
-import socket
-import argparse
-import sys
 import os
 
 # LOCAL IMPORTS
@@ -15,7 +11,7 @@ import object_detection
 import object_localization
 import communication_proto
 import interface
-from fsm import FSM, Stage4PasserStates
+from fsm import FSM, Stage1States
 from navigation import TargetPoint
 
 def main():
@@ -30,7 +26,7 @@ def main():
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
     DRAW = SHOW_DISPLAY
-
+    
     # ROBOT SETUP
     ROBOT_ID = 0
     ROBOT_HEIGHT = 155
@@ -40,14 +36,12 @@ def main():
                 id = ROBOT_ID,
                 height = ROBOT_HEIGHT,
                 diameter = ROBOT_DIAMETER,
-                camera_offset = CAMERA_TO_CENTER_OFFSET
-                )
-    ssl_robot.charge = True
-
+                camera_offset = CAMERA_TO_CENTER_OFFSET)
+    
     # INIT ENTITIES
     ssl_ball = Ball()
-    ssl_robot_ally = Robot()
-    target = TargetPoint(x = 0, y = 0, w = 0)
+    ssl_goal = Goal()
+    target = TargetPoint()
 
     # UDP COMMUNICATION SETUP
     HOST_ADDRES = "199.0.1.2"
@@ -58,8 +52,7 @@ def main():
         host_address=HOST_ADDRES,
         host_port=HOST_PORT,
         device_address=DEVICE_ADRESS,
-        device_port=DEVICE_PORT
-    )
+        device_port=DEVICE_PORT)
 
     # VIDEO CAPTURE CONFIGS
     cap = cv2.VideoCapture("/dev/video0")
@@ -69,20 +62,17 @@ def main():
     # USER INTERFACE SETUP
     myGUI = interface.GUI(
                         play = True,
-                        mode = "detection"
-                        )
+                        mode = "detection")
 
    # CAMERA PARAMETERS SETUP
     PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
-    PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/dist.txt"
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
     ssl_cam = object_localization.Camera(
                 camera_matrix=camera_matrix,
-                camera_initial_position=calibration_position
-                )
+                camera_initial_position=calibration_position)
     points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
     ssl_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
@@ -97,43 +87,38 @@ def main():
                 input_height = 300,
                 score_threshold = 0.5,
                 draw = False,
-                TRT_LOGGER = trt.Logger(trt.Logger.INFO)
-                )
+                TRT_LOGGER = trt.Logger(trt.Logger.INFO))
     trt_net.loadModel()
 
     # BALL TO PIXEL REGRESSION WEIGHTS
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
-    # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 300
-    config_time = time.time() - start
-    print(f"Configuration Time: {config_time:.2f}s")
-    avg_time = 0
-
-    # START ROBOT INITIAL POSITION
-    eth_comm.sendSourcePosition(x = 0, y = 0, w = 0)
-
     # INIT VISION BLACKOUT STATE MACHINE
     INITIAL_STATE = 1
-    STAGE = 4
+    STAGE = 1
     state_machine = FSM(
         stage = STAGE,
         initial_state = INITIAL_STATE,
         init_time = start)
 
-    # INIT STATE MACHINE TIMER
-    state_time = time.time()
+    # CONFIGURING AND LOAD DURATION
+    EXECUTION_TIME = 240
+    config_time = time.time() - start
+    print(f"Configuration Time: {config_time:.2f}s")
+    avg_time = 0
+    frame_nr = 1
 
     while cap.isOpened():
         start_time = time.time()
-        
+
         current_frame = Frame(timestamp = time.time())
         if myGUI.play:
             ret, current_frame.input = cap.read()
             if not ret:
                 print("Check video capture path")
                 break
-            else: myGUI.updateGUI(current_frame.input)
+            elif SHOW_DISPLAY: 
+                myGUI.updateGUI(current_frame.input)
 
         detections = trt_net.inference(current_frame.input).detections
 
@@ -147,19 +132,18 @@ def main():
 
             Labels are available at: ssl-detector/models/ssl_labels.txt
             """
-            class_id, score, xmin, xmax, ymin, ymax = detection  
-            if class_id==1:     # ball
+            class_id, score, xmin, xmax, ymin, ymax = detection
+            if class_id==1:
                 # COMPUTE PIXEL FOR BALL POSITION
                 pixel_x, pixel_y = ssl_cam.ballAsPoint(
-                                                    left=xmin, 
-                                                    top=ymin, 
-                                                    right=xmax, 
-                                                    bottom=ymax, 
-                                                    weight_x=0.5,
-                                                    weight_y=0.15)
+                                                left=xmin, 
+                                                top=ymin, 
+                                                right=xmax, 
+                                                bottom=ymax, 
+                                                weight_x=0.5,
+                                                weight_y=0.2)
 
                 # DRAW OBJECT POINT ON SCREEN
-
                 if DRAW:
                     myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
 
@@ -175,69 +159,49 @@ def main():
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
                 ssl_ball = current_frame.updateBall(x, y, score)
 
-            if class_id==3:
-                #COMPUTE PIXEL FOR ROBOT ASSISTANT POSITION
-                pixel_x, pixel_y = ssl_cam.robotAsPoint(
-                                                    left=xmin,
-                                                    top=ymin,
-                                                    right=xmax,
-                                                    bottom=ymax
-                )
-                #DRAW OBJECT PONIT ON SCREEN
-                if DRAW:
-                    myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
-                
-                # BACK PROJECT ROBOT POSITION TO CAMERA 3D COORDINATES
-                object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
-                x, y = object_position[0], object_position[1]
-
-                if DRAW:
-                    caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
-                    myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
-
-                # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-                x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_robot_ally = current_frame.updateRobot(x, y, score)
-        
         # STATE MACHINE
-        target, ssl_robot = state_machine.stage4Passer(
+        target = state_machine.stage1(
                                 frame = current_frame, 
-                                ball = ssl_ball,
-                                ally = ssl_robot_ally,
-                                robot = ssl_robot)    
-
+                                ball = ssl_ball, 
+                                robot = ssl_robot)
+    
         # UPDATE PROTO MESSAGE
         eth_comm.setSSLMessage(target = target, robot = ssl_robot)
-
-        # ACTION      
+        
+        # ACTION
         eth_comm.sendSSLMessage()
         print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
         
-        if state_machine.current_state == Stage4PasserStates.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
+        if state_machine.current_state == Stage1States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
             break
 
+        # SAVE FRAME
+        dir = cwd+f"/data/stage{STAGE}/frame{frame_nr}.jpg"
+        cv2.imwrite(dir, current_frame.input)
+        frame_nr += 1
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
         avg_time = 0.8*avg_time + 0.2*frame_time
         if SHOW_DISPLAY:
             key = cv2.waitKey(10) & 0xFF
-            quit = myGUI.commandHandler(key=key)   
+            quit = myGUI.commandHandler(key=key)
             if DRAW: 
                 myGUI.drawText(myGUI.screen, f"AVG FPS: {1/avg_time:.2f}s", (8, 13), 0.5)
             cv2.imshow(WINDOW_NAME, myGUI.screen)
             if quit:
-                eth_comm.sendTargetPosition(x=0, y=0, w=0)
+                eth_comm.sendStopMotion()
                 break
         else:
+
             if time.time()-config_time-start>EXECUTION_TIME:
                 print(f'Avg frame processing time:{avg_time}')
+                eth_comm.sendStopMotion()
+
                 break
 
     # RELEASE WINDOW AND DESTROY
     cap.release()
     cv2.destroyAllWindows()
 
-
 if __name__=="__main__":
     main()
-

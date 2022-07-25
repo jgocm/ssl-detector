@@ -47,7 +47,7 @@ def main():
     # INIT ENTITIES
     ssl_ball = Ball()
     ssl_goal = Goal()
-    ssl_robot_allie = Robot()
+    ssl_robot_ally = Robot()
     target = TargetPoint(x = 0, y = 0, w = 0)
 
     # UDP COMMUNICATION SETUP
@@ -106,7 +106,7 @@ def main():
     regression_weights = np.loadtxt(cwd+"/models/regression_weights.txt")
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 500
+    EXECUTION_TIME = 300
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -130,13 +130,13 @@ def main():
         
         current_frame = Frame(timestamp = time.time())
         if myGUI.play:
-            ret, frame = cap.read()
+            ret, current_frame.input = cap.read()
             if not ret:
                 print("Check video capture path")
                 break
-            else: myGUI.updateGUI(frame)
+            else: myGUI.updateGUI(current_frame.input)
 
-        detections = trt_net.inference(myGUI.screen).detections
+        detections = trt_net.inference(current_frame.input).detections
 
         for detection in detections:
             """
@@ -157,7 +157,7 @@ def main():
                                                     right=xmax, 
                                                     bottom=ymax, 
                                                     weight_x=0.5,
-                                                    weight_y=0.2)
+                                                    weight_y=0.15)
 
                 # DRAW OBJECT POINT ON SCREEN
 
@@ -220,14 +220,14 @@ def main():
 
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
-                ssl_robot_allie = current_frame.updateRobot(x, y, score)
+                ssl_robot_ally = current_frame.updateRobot(x, y, score)
 
         # STATE MACHINE
         target, ssl_robot = state_machine.stage4Receiver(
                                 frame = current_frame, 
                                 ball = ssl_ball,
                                 goal = ssl_goal,
-                                ally = ssl_robot_allie,
+                                ally = ssl_robot_ally,
                                 robot = ssl_robot)
 
         # UPDATE PROTO MESSAGE

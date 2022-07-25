@@ -524,7 +524,7 @@ class FSM():
                     final_state = self.moveNStates(1)
                 elif self.getStateDuration(frame.timestamp) > 3:
                     robot.front = True
-                    robot.kick_strength = 10
+                    robot.kick_strength = 12
             
             elif self.current_state == Stage4PasserStates.moveBackwards:
                 target.type = communication_proto.pb.protoPositionSSL.target
