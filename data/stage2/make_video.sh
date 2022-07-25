@@ -1,0 +1,1 @@
+ffmpeg -f image2 -i /home/vision-blackout/ssl-detector/data/stage2/frame%d.jpg stage2.mp4

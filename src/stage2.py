@@ -29,7 +29,7 @@ def main():
     SHOW_DISPLAY = False
 
     # DISPLAYS POSITIONS AND MARKERS ON SCREEN
-    DRAW = SHOW_DISPLAY
+    DRAW = True
 
     # ROBOT SETUP
     ROBOT_ID = 0
@@ -126,7 +126,7 @@ def main():
             if not ret:
                 print("Check video capture path")
                 break
-            elif SHOW_DISPLAY: 
+            elif DRAW: 
                 myGUI.updateGUI(current_frame.input)
 
         detections = trt_net.inference(current_frame.input).detections
@@ -209,7 +209,7 @@ def main():
 
         # SAVE FRAME
         dir = cwd+f"/data/stage{STAGE}/frame{frame_nr}.jpg"
-        cv2.imwrite(dir, current_frame.input)
+        cv2.imwrite(dir, myGUI.screen)
         frame_nr += 1
 
         # DISPLAY WINDOW
