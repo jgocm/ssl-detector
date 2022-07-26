@@ -106,7 +106,6 @@ def main():
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
-    frame_nr = 1
 
     while cap.isOpened():
         start_time = time.time()
@@ -175,10 +174,6 @@ def main():
         if state_machine.current_state == Stage1States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
             break
 
-        # SAVE FRAME
-        dir = cwd+f"/data/stage{STAGE}/frame{frame_nr}.jpg"
-        cv2.imwrite(dir, current_frame.input)
-        frame_nr += 1
         # DISPLAY WINDOW
         frame_time = time.time()-start_time
         avg_time = 0.8*avg_time + 0.2*frame_time
