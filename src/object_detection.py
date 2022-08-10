@@ -183,7 +183,7 @@ class DetectNet():
             if self.draw:
                 caption = "{0}({1:.2f})".format(self.labels[class_id - 1], score)
                 self.draw_rectangle(img, (xmin, ymin, xmax, ymax), self.colors[class_id - 1])
-                self.draw_caption(img, (xmin, ymax - 5), caption)
+                #self.draw_caption(img, (xmin, ymax - 5), caption)
         self.detections = detections
 
         # COMPUTE AVG FPS
@@ -242,7 +242,7 @@ if __name__ == "__main__":
         # DISPLAY WINDOW
         if DISPLAY_WINDOW:
             cv2.moveWindow(WINDOW_NAME, 100, 50)
-            cv2.imshow(WINDOW_NAME, frame)
+            cv2.imshow(WINDOW_NAME, img)
 
             key = cv2.waitKey(10) & 0xFF
             if key == ord("q"):

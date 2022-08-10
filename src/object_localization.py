@@ -1,3 +1,4 @@
+from re import A
 import numpy as np
 import cv2
 import math
@@ -684,16 +685,25 @@ if __name__=="__main__":
                         play = True,
                         mode = "detection"
                         )
-    
+    nr = 382
+    frame_has_goal = False
+
+    def line(x1, y1, x2, y2):
+        a = (y2-y1)/(x2-x1)
+        b = y2-a*x2
+        return a, b
+
     while True:
+        img = cv2.imread(f"/home/vision-blackout/ssl-detector/data/stage2_1/frame{nr}.jpg")
         if cap.isOpened():
            ret, frame = cap.read()
            if not ret:
                print("Check video capture path")
                break
-           else: img = frame
+           else:
+            myGUI.updateGUI(img)
         
-        detections = trt_net.inference(img).detections
+        detections = trt_net.inference(myGUI.screen).detections
 
         for detection in detections:
             class_id, score, xmin, xmax, ymin, ymax = detection
@@ -701,23 +711,64 @@ if __name__=="__main__":
             # BALL LOCALIZATION ON IMAGE
             if class_id==1:     # ball
                 # COMPUTE PIXEL FOR BALL POSITION                                                            
-                pixel_x, pixel_y = ssl_cam.ballAsPoint(
+                ball_pixel_x, ball_pixel_y = ssl_cam.ballAsPoint(
                                                     left = xmin, 
                                                     top = ymin, 
                                                     right = xmax, 
                                                     bottom = ymax,
                                                     weight_x = 0.5,
-                                                    weight_y = 0.2)
-
+                                                    weight_y = 0.15)
+                cv2.arrowedLine(myGUI.screen,
+                            (int(240), int(640)),
+                            (int(ball_pixel_x), int(ball_pixel_y)),
+                            (0,0,0),
+                            2)
                 # DRAW OBJECT POINT ON SCREEN
-                myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
+                myGUI.drawCrossMarker(myGUI.screen, 
+                                int(ball_pixel_x), 
+                                int(ball_pixel_y),
+                                text_size = 0.6)
+        
+            # GOAL LOCALIZATION ON IMAGE
+            if class_id==2:     # goal
+                # COMPUTE PIXEL FOR GOAL POSITION
+                frame_has_goal = True                     
+                goal_pixel_x, goal_pixel_y = ssl_cam.goalAsPoint(
+                                                    left = xmin, 
+                                                    top = ymin, 
+                                                    right = xmax, 
+                                                    bottom = ymax)
+                if frame_has_goal:
+                    cv2.arrowedLine(myGUI.screen,
+                                (int(goal_pixel_x), int(goal_pixel_y)),
+                                (int(ball_pixel_x), int(ball_pixel_y)),
+                                (0,0,0),
+                                2)
+                    a, b = line(int(goal_pixel_x), 
+                                int(goal_pixel_y),
+                                int(ball_pixel_x), 
+                                int(ball_pixel_y))
+                    cv2.line(myGUI.screen,
+                                (int(ball_pixel_x), int(ball_pixel_y)),
+                                (int((640-b)/a), int(640)),
+                                (0,0,0),
+                                2)                    
+                    
+                # DRAW OBJECT POINT ON SCREEN
+                myGUI.drawCrossMarker(myGUI.screen, int(goal_pixel_x), int(goal_pixel_y))
 
-                # BACK PROJECT BALL POSITION TO CAMERA 3D COORDINATES
-                object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
+                # BACK PROJECT GOAL POSITION TO CAMERA 3D COORDINATES
+                object_position = ssl_cam.pixelToCameraCoordinates(x=goal_pixel_x, y=goal_pixel_y, z_world=0)
                 x, y, z = (position[0] for position in object_position)
                 caption = f"Position:{x:.2f},{y:.2f}"
-                myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.35)
-
+                myGUI.drawText(myGUI.screen, caption, (int(goal_pixel_x-25), int(goal_pixel_y+30)), 0.6)
+            
+        # BACK PROJECT BALL POSITION TO CAMERA 3D COORDINATES
+        object_position = ssl_cam.pixelToCameraCoordinates(x=ball_pixel_x, y=ball_pixel_y, z_world=0)
+        x, y, z = (position[0] for position in object_position)
+        caption = f"Position:{x:.2f},{y:.2f}"
+        myGUI.drawText(myGUI.screen, caption, (int(ball_pixel_x-25), int(ball_pixel_y+30)), 0.6)
+        
         # DISPLAY WINDOW
         key = cv2.waitKey(10) & 0xFF
         quit = myGUI.commandHandler(key=key)
@@ -726,10 +777,10 @@ if __name__=="__main__":
         cv2.imshow(WINDOW_NAME, myGUI.screen)
         
         if key == ord('s'):
-            cv2.imwrite(cwd+"/experiments/13abr/point2d.jpg",myGUI.screen)
-        if quit:
+            cv2.imwrite(cwd+"/paper.jpg",myGUI.screen)
+        elif key == ord('q'):
+            print(f"frame nr: {nr}")
             break
-        else: myGUI.updateGUI(img)
         
     # RELEASE WINDOW AND DESTROY
     cap.release()
