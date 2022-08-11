@@ -53,30 +53,12 @@ class SocketUDP():
 
         self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
 
-    def sendRotateControl(self, x, y, w):
-        msg = self.setKickMessage()
-        msg.x = x
-        msg.y = y
-        msg.w = w
-        msg.posType = pb.protoPositionSSL.rotateControl
-
-        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
-
-    def sendBallDocking(self, x, y, w):
-        msg = self.setKickMessage()
-        msg.x = x
-        msg.y = y
-        msg.w = w
-        msg.posType = pb.protoPositionSSL.dock
-
-        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
-
     def sendTargetPosition(self, x, y, w):
         msg = self.setKickMessage()
         msg.x = x
         msg.y = y
         msg.w = w
-        msg.posType = pb.protoPositionSSL.target
+        msg.posType = pb.protoPositionSSL.driveToTarget
 
         self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
@@ -134,11 +116,12 @@ class SocketUDP():
 
         return self.msg
 
-    def sendSSLMessage(self, times = 5):
+    def sendSSLMessage(self, times = 3):
         for i in range(0, times):
             self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
 
 if __name__ == "__main__":
+    import time
     host_address = "199.0.1.2"
     host_port = 9601
     device_address = "199.0.1.1"
@@ -151,12 +134,14 @@ if __name__ == "__main__":
         device_port=device_port
     )
 
-    x = 0
+    x = 1
     y = 0
     w = 0
 
-    print(f"Sending X, Y,  W Position")
+    print(f"Sending X, Y, W Position")
     print(f"x = {x}, y = {y}, w = {w}")
-    
+    UDP.sendSourcePosition(0, 0, 0)
+
     while(1):
-        UDP.sendStopMotion()
+        UDP.sendTargetPosition(x, y, w)
+        time.sleep(0.033)
