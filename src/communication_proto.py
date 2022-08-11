@@ -104,6 +104,8 @@ class SocketUDP():
         self.msg.x = target.x
         self.msg.y = target.y
         self.msg.w = target.w
+        self.msg.max_speed = target.max_speed
+        self.msg.min_speed = target.min_speed
         self.msg.posType = target.type
         self.msg.resetOdometry = target.reset_odometry
 
@@ -135,15 +137,18 @@ if __name__ == "__main__":
         device_port=device_port
     )
 
-    x = 0
+    x = 3
     y = 0
-    w = 2*math.pi
+    w = 0
 
     print(f"Sending X, Y, W Position")
     print(f"x = {x}, y = {y}, w = {w}")
 
-    UDP.msg.posType = pb.protoPositionSSL.rotateOnSelf
+    UDP.msg.posType = pb.protoPositionSSL.driveToTarget
+    UDP.msg.x = x
+    UDP.msg.y = y
     UDP.msg.w = w
+    UDP.msg.max_speed = 2.5
 
     while(1):
         UDP.sendSSLMessage()

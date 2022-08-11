@@ -143,6 +143,7 @@ class FSM():
             elif self.current_state == Stage1States.searchBall:
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
                 target.w = math.pi
+                target.max_speed = 1.5
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
@@ -203,6 +204,7 @@ class FSM():
                 # search: rotate on self searching for ball
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
                 target.w = math.pi
+                target.max_speed = 1.5
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
@@ -341,7 +343,7 @@ class FSM():
                 target.reset_odometry = False
                 robot.charge = False
                 robot.front = True
-                robot.kick_strength = 40
+                robot.kick_strength = 60
                 if self.getStateDuration(frame.timestamp) > 3:
                     robot.front = False
                     robot.kick_strength = 0
