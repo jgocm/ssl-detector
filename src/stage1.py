@@ -102,7 +102,7 @@ def main():
         init_time = start)
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 240
+    EXECUTION_TIME = 100
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
@@ -187,7 +187,6 @@ def main():
                 eth_comm.sendStopMotion()
                 break
         else:
-
             if time.time()-config_time-start>EXECUTION_TIME:
                 print(f'Avg frame processing time:{avg_time}')
                 eth_comm.sendStopMotion()

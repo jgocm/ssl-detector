@@ -215,6 +215,7 @@ class FSM():
                     relative_angle = 0,
                     relative_distance = -0.5
                     )
+                robot.charge = True
                 if target.getDistance() < 0.05:
                     final_state = self.moveNStates(1)
             
@@ -284,8 +285,6 @@ class FSM():
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                robot.charge = True
-
                 if frame.has_goal:
                     final_state = self.moveNStates(2)
                 elif self.getStateDuration(frame.timestamp) > 0.5:
@@ -302,7 +301,6 @@ class FSM():
                         x2 = ball.x,
                         y2 = ball.y
                         )
-                robot.charge = True
                 if not frame.has_ball and target.getDistance()<0.400:
                     final_state = self.moveNStates(2)
 
@@ -316,7 +314,6 @@ class FSM():
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                robot.charge = True
                 if not frame.has_ball and target.getDistance()<0.400:
                     final_state = self.moveNStates(1)
 
@@ -339,15 +336,13 @@ class FSM():
                         y2 = ball.y
                         )
                 target.reset_odometry = False
-                robot.charge = True
-                if robot.front:
+                robot.front = True
+                robot.charge = False
+                robot.kick_strength = 40
+                if self.getStateDuration(frame.timestamp) > 3:
                     robot.front = False
-                    robot.charge = False
                     final_state = self.moveNStates(1)
-                elif self.getStateDuration(frame.timestamp) > 3:
-                    robot.front = True
-                    robot.kick_strength = 40
-                
+              
             elif self.current_state == Stage2States.finish:
                 target.type = communication_proto.pb.protoPositionSSL.stop
 
