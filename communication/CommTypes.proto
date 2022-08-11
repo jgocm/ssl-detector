@@ -19,12 +19,10 @@ message protoPositionSSL{
     enum PosType{
         unknown = 0;
         source = 1;
-        target = 2;
-        dock = 3;
-        rotateControl = 4;
-        rotateInPoint = 5;
-        rotateOnSelf = 6;
-        stop = 7;
+        driveToTarget = 2;
+        rotateInPoint = 3;
+        rotateOnSelf = 4;
+        stop = 5;
     }
     PosType posType = 4;
     bool front  = 5;
