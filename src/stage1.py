@@ -4,6 +4,7 @@ import numpy as np
 import tensorrt as trt
 import time
 import os
+import pandas as pd
 
 # LOCAL IMPORTS
 from entities import Robot, Goal, Ball, Frame
@@ -102,12 +103,15 @@ def main():
         init_time = start)
 
     # CONFIGURING AND LOAD DURATION
-    EXECUTION_TIME = 240
+    ret, init_src = cap.read()
+    trt_net.inference(init_src)
+    EXECUTION_TIME = 60
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
     avg_time = 0
     frame_nr = 1
     COLLECTING = False
+    data = []
 
     while cap.isOpened():
         start_time = time.time()
@@ -171,8 +175,16 @@ def main():
         
         # ACTION
         eth_comm.sendSSLMessage()
-        print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType} | speed: {eth_comm.msg.max_speed}, {eth_comm.msg.min_speed}')
-        
+        print(f'{state_machine.current_state} | {state_machine.getStateDuration(current_timestamp=current_frame.timestamp)} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.PosType.Name(eth_comm.msg.posType)} | speed: {eth_comm.msg.max_speed}, {eth_comm.msg.min_speed}')
+        data.append(dict(
+                        timestamp = current_frame.timestamp,
+                        state = state_machine.current_state,
+                        state_time = state_machine.getStateDuration(current_timestamp=current_frame.timestamp),
+                        x = eth_comm.msg.x,
+                        y = eth_comm.msg.y,
+                        w = eth_comm.msg.w,
+                        posType = eth_comm.msg.PosType.Name(eth_comm.msg.posType))) 
+
         if state_machine.current_state == Stage1States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
             break
 
@@ -199,10 +211,11 @@ def main():
             if time.time()-config_time-start>EXECUTION_TIME:
                 print(f'Avg frame processing time:{avg_time}')
                 eth_comm.sendStopMotion()
-
                 break
 
     # RELEASE WINDOW AND DESTROY
+    df = pd.DataFrame(data, columns=['timestamp','state','state_time','x','y','w','posType'])
+    df.to_csv(cwd+f'/data/lars2022/stage{STAGE}/{int(time.time())}.csv')
     cap.release()
     cv2.destroyAllWindows()
 
