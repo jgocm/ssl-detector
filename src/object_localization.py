@@ -1,4 +1,3 @@
-from re import A
 import numpy as np
 import cv2
 import math
@@ -105,7 +104,7 @@ class KeypointRegression():
                 elif blue_gradient > 200 and goal_line == True:
                     goal_line = False
                     # if more than 3 consecutive points are detected, it is probably not the goal line
-                    if len(line_points)<3:
+                    if len(line_points)<self.min_line_length:
                         for point in line_points:
                             goal_line_points.append(point)
                     break
