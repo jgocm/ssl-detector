@@ -32,4 +32,6 @@ message protoPositionSSL{
     bool dribbler = 9;
     double dribSpeed = 10;
     bool resetOdometry = 11;
+    double min_speed = 12;
+    double max_speed = 13;
 };

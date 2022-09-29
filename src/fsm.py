@@ -137,11 +137,13 @@ class FSM():
 
             if self.current_state == Stage1States.init:
                 target.type = communication_proto.pb.protoPositionSSL.stop
-                if self.getStateDuration(frame.timestamp) > 0.3:
+                if self.getStateDuration(frame.timestamp) > 0.1:
                     final_state = self.moveNStates(1)
 
             elif self.current_state == Stage1States.searchBall:
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
+                target.w = math.pi
+                target.max_speed = 1.5
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
@@ -165,7 +167,7 @@ class FSM():
                     x2 = ball.x,
                     y2 = ball.y,
                     relative_angle = 0,
-                    relative_distance = 0
+                    relative_distance = -0.12
                     )
                 target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.reset_odometry = False
@@ -201,6 +203,8 @@ class FSM():
             elif self.current_state == Stage2States.searchBall:
                 # search: rotate on self searching for ball
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
+                target.w = math.pi
+                target.max_speed = 1.5
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
@@ -250,7 +254,7 @@ class FSM():
                 if goal.center_x > 0:
                     target.w = math.pi/6
                 else:
-                    target.w = math.pi/2
+                    target.w = math.pi/6
 
                 if goal.center_y < 0:
                     target.w = -target.w
@@ -288,7 +292,7 @@ class FSM():
 
                 if frame.has_goal:
                     final_state = self.moveNStates(2)
-                elif self.getStateDuration(frame.timestamp) > 0.5:
+                elif self.getStateDuration(frame.timestamp) > 0.2:
                     final_state = self.moveNStates(1)
 
             
@@ -302,7 +306,6 @@ class FSM():
                         x2 = ball.x,
                         y2 = ball.y
                         )
-                robot.charge = True
                 if not frame.has_ball and target.getDistance()<0.400:
                     final_state = self.moveNStates(2)
 
@@ -316,7 +319,6 @@ class FSM():
                         x2 = goal.center_x,
                         y2 = goal.center_y
                         )
-                robot.charge = True
                 if not frame.has_ball and target.getDistance()<0.400:
                     final_state = self.moveNStates(1)
 
@@ -339,14 +341,13 @@ class FSM():
                         y2 = ball.y
                         )
                 target.reset_odometry = False
-                robot.charge = True
-                if robot.front:
+                robot.charge = False
+                robot.front = True
+                robot.kick_strength = 60
+                if self.getStateDuration(frame.timestamp) > 3:
                     robot.front = False
-                    robot.charge = False
+                    robot.kick_strength = 0
                     final_state = self.moveNStates(1)
-                elif self.getStateDuration(frame.timestamp) > 3:
-                    robot.front = True
-                    robot.kick_strength = 40
                 
             elif self.current_state == Stage2States.finish:
                 target.type = communication_proto.pb.protoPositionSSL.stop
@@ -377,6 +378,8 @@ class FSM():
             elif self.current_state == Stage4PasserStates.searchBall:
                 # search: rotate on self searching for ball
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
+                target.w = math.pi
+                target.max_speed = 1.5
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
@@ -407,12 +410,13 @@ class FSM():
                     )
                 if target.getDistance() > 0.05:
                     final_state = self.moveNStates(-1)
-                elif self.getStateDuration(frame.timestamp) > 0.5:
+                elif self.getStateDuration(frame.timestamp) > 0.2:
                     final_state = self.moveNStates(1)
             
             elif self.current_state == Stage4PasserStates.alignToRotationTarget:
                 # align1: adjust rotation to align with ball center
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
+                target.max_speed = 0.5
                 target.setPosition(ball.x, ball.y)
                 target.w = target.getDirection()
                 if np.abs(target.w) < 0.125:
@@ -426,7 +430,7 @@ class FSM():
                 if ally.x > 0:
                     target.w = math.pi/6
                 else:
-                    target.w = math.pi/2
+                    target.w = math.pi/6
 
                 if ally.y < 0:
                     target.w = -target.w
@@ -449,7 +453,7 @@ class FSM():
                     target.reset_odometry = False
 
                 dist = math.sqrt((ball.x - ally.x)**2 + (ball.y - ally.y)**2)
-                if (np.abs(target.w) < 0.025) and (dist < 0.5):
+                if (np.abs(target.w) < 0.025) and (dist < 4):
                     final_state = self.moveNStates(1)
 
             elif self.current_state == Stage4PasserStates.stopToPass:
@@ -465,7 +469,7 @@ class FSM():
 
                 if frame.has_robot:
                     final_state = self.moveNStates(2)
-                elif self.getStateDuration(frame.timestamp) > 0.5:
+                elif self.getStateDuration(frame.timestamp) > 0.3:
                     final_state = self.moveNStates(1)
 
             
@@ -515,16 +519,17 @@ class FSM():
                         x2 = ball.x,
                         y2 = ball.y
                         )
+                dist = math.sqrt(ally.x**2 + ally.y**2)
                 target.reset_odometry = False
-                robot.charge = True
-                if robot.front:
+                robot.charge = False
+                robot.front = True
+                robot.kick_strength = 6*dist + 8.4
+                if dist>3:
+                    robot.kick_strength = 30
+                if self.getStateDuration(frame.timestamp) > 3:
                     robot.front = False
-                    robot.charge = False
-                    target.reset_odometry = True
+                    robot.kick_strength = 0
                     final_state = self.moveNStates(1)
-                elif self.getStateDuration(frame.timestamp) > 3:
-                    robot.front = True
-                    robot.kick_strength = 12
             
             elif self.current_state == Stage4PasserStates.moveBackwards:
                 target.type = communication_proto.pb.protoPositionSSL.driveToTarget

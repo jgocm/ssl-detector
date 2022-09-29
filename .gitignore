@@ -129,6 +129,6 @@ dmypy.json
 .pyre/
 
 # TensorRT models
-.trt
+*.trt
 models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt
 models/ssdlite_mobilenet_v2_300x300_fp16.trt
