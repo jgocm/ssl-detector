@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     cwd = os.getcwd()
 
-    FRAME_NR = 44
+    FRAME_NR = 132
     IMG_PATH = cwd + f'/data/stage1/frame{FRAME_NR}.jpg'
     WINDOW_NAME = "BOUNDARY DETECTION"
     VERTICAL_LINES_NR = 1
@@ -65,7 +65,6 @@ if __name__ == "__main__":
                 else:
                     wall_points = []
         
-        inverse = 1
         for pixel in boundary_points:
             pixel_y, pixel_x = pixel
             if True: 
@@ -77,9 +76,8 @@ if __name__ == "__main__":
                 x, y, z = (position[0] for position in boundary_position)
                 caption = f"Position:{x:.2f},{y:.2f}"
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(segmented_img, caption, (int(pixel_x-50), int(pixel_y-15*inverse)), font, 0.5, (0,0,0), 2)
-                cv2.putText(segmented_img, caption, (int(pixel_x-50), int(pixel_y-15*inverse)), font, 0.5, (255,255,255), 1)
-                inverse *= -1
+                cv2.putText(segmented_img, caption, (int(pixel_x-50), int(pixel_y-15)), font, 0.5, (0,0,0), 2)
+                cv2.putText(segmented_img, caption, (int(pixel_x-50), int(pixel_y-15)), font, 0.5, (255,255,255), 1)
 
         cv2.imshow(WINDOW_NAME, segmented_img)
 
