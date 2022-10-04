@@ -1,15 +1,14 @@
 import numpy as np
 import cv2
 import os
-from object_localization import Camera
 
 class FieldDetection():
     def __init__(
             self,
-            vertical_lines_offset_percentage = 0.05,
+            vertical_lines_offset = 240,
             min_line_length = 1,
-            max_line_length = 10,
-            min_wall_length = 5
+            max_line_length = 20,
+            min_wall_length = 10
             ):
         # DEFINE COLORS:
         self.BLACK = [0, 0, 0]
@@ -18,13 +17,13 @@ class FieldDetection():
         self.RED = [0, 0, 255]
         self.WHITE = [255, 255, 255]
 
-        # minimum amount of pixels for line detection
+        # min/max amount of pixels for detection
         self.min_line_length = min_line_length
         self.max_line_length = max_line_length
         self.min_wall_length = min_wall_length
 
         # line scans offset
-        self.vertical_lines_offset = int(vertical_lines_offset_percentage * width)
+        self.vertical_lines_offset = int(vertical_lines_offset)
 
         self.mask_points = []
     
@@ -67,8 +66,8 @@ class FieldDetection():
         Make description here
         """
         # make copy from source image for segmentation
-        # segmented_img = src.copy()
-        segmented_img = src
+        segmented_img = src.copy()
+        # segmented_img = src
 
         # height and width from image resolution
         height, width = src.shape[0], src.shape[1]
@@ -117,18 +116,15 @@ class FieldDetection():
         field_line_points = []
 
         for line_x in range(0, width, self.vertical_lines_offset):
-            # kernel = [-1, 1]
             field_line = False
             line_points = []
             for pixel_y in range(height-1, 0, -1):
-                # gradient = kernel@src[pixel_y-1:pixel_y+1, line_x]
-                # check green->white line detection
-                # if gradient[0] < -200 and gradient[2] < -200 and field_line == False:
                 pixel = src[pixel_y, line_x]
                 if not self.isBlack(pixel):
+                    # check white->green border
                     if not self.isGreen(pixel) and field_line == False:
                         field_line = True
-                    # check white->green line detection
+                    # check white->green border
                     elif self.isGreen(pixel) and field_line == True:
                         field_line = False
                         # check white line length (width)
@@ -143,37 +139,14 @@ class FieldDetection():
 
         return field_line_points      
 
-    def goalLineDetection(self, src, left, top, right, bottom):
+    def detectFieldLinesAndBoundary(self, src):
         """
-        Make descripition here
+        Make description here
         """
-        # compute bounding box width and height
-        height, width = bottom-top, right-left
-
-        # points used for linear regression
-        goal_line_points = []
-
-        for line_x in range(left, right, self.vertical_lines_offset):         
-            # detect line points from edges
-            goal_line = False
-            kernel = [-1, 1]
-            line_points = []
-            for pixel_y in range(bottom, int((top+bottom)/2), -1):
-                blue = segmented_img[pixel_y-1:pixel_y+1, line_x][:,0]
-                blue_gradient = blue@kernel
-                if blue_gradient < -200 and goal_line == False:
-                    goal_line = True
-                elif blue_gradient > 200 and goal_line == True:
-                    goal_line = False
-                    # if more than 3 consecutive points are detected, it is probably not the goal line
-                    if len(line_points)<self.min_line_length:
-                        for point in line_points:
-                            goal_line_points.append(point)
-                    break
-                if goal_line == True:
-                    line_points.append([line_x, pixel_y])
-
-        return goal_line_points
+        segmented_img = self.segmentField(src)
+        boundary_points = self.fieldWallDetection(segmented_img)
+        field_line_points = self.fieldLineDetection(segmented_img)
+        return boundary_points, field_line_points     
 
 if __name__ == "__main__":
 
@@ -183,33 +156,31 @@ if __name__ == "__main__":
     STAGE = 2
     IMG_PATH = cwd + f'/data/stage{STAGE}/frame{FRAME_NR}.jpg'
     WINDOW_NAME = "BOUNDARY DETECTION"
-    VERTICAL_LINES_NR = 100
+    VERTICAL_LINES_NR = 1
 
     img = cv2.imread(IMG_PATH)
     height, width = img.shape[0], img.shape[1]
-    alpha = 0.5
+    alpha = 0.01
 
     # FIELD DETECTION TESTS
-    line_detector = FieldDetection(
+    field_detector = FieldDetection(
                     vertical_lines_offset_percentage=alpha,
-                    min_line_length=0,
+                    min_line_length=1,
                     max_line_length=20,
                     min_wall_length=10)
 
     while True:
-        segmented_img = line_detector.segmentField(img)
-        boundary_points = line_detector.fieldWallDetection(segmented_img)
-        line_points = line_detector.fieldLineDetection(segmented_img)
+        boundary_points, line_points = field_detector.detectFieldLinesAndBoundary(img)
 
         for point in boundary_points:
             pixel_y, pixel_x = point
-            segmented_img[pixel_y, pixel_x] = line_detector.RED
+            img[pixel_y, pixel_x] = field_detector.RED
 
         for point in line_points:
             pixel_y, pixel_x = point
-            segmented_img[pixel_y, pixel_x] = line_detector.RED
+            img[pixel_y, pixel_x] = field_detector.RED
             
-        cv2.imshow(WINDOW_NAME, segmented_img)
+        cv2.imshow(WINDOW_NAME, img)
 
         key = cv2.waitKey(-1) & 0xFF
         if key == ord('q'):

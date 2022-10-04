@@ -69,7 +69,7 @@ def main():
                         mode = "detection"
                         )
 
-   # CAMERA PARAMETERS SETUP
+    # CAMERA PARAMETERS SETUP
     PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
@@ -83,7 +83,6 @@ def main():
     points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
     ssl_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
 
-    # OBJECT DETECTION MODEL
     PATH_TO_MODEL = cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt"
     PATH_TO_LABELS = cwd+"/models/ssl_labels.txt"
     trt_net = object_detection.DetectNet(

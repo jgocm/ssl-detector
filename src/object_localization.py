@@ -604,6 +604,35 @@ class Camera():
 
         return uvPoint
     
+    def cameraToRobotCoordinates(self, x, y, camera_offset=90):
+        """
+        Converts x, y ground position from camera axis to robot axis
+        
+        Parameters:
+        x: x position from camera coordinates in millimeters
+        y: y position from camera coordinates in millimeters
+        camera_offset: camera to robot center distance in millimeters
+        -----------
+        Returns:
+        robot_x: x position from robot coordinates in meters
+        robot_y: y position from robot coordinates in meters
+        robot_w: direction from x, y coordinates in radians
+        """
+        robot_x = (y + camera_offset)/1000
+        robot_y = -x/1000
+        robot_w = math.atan2(robot_y, robot_x)
+
+        return robot_x, robot_y, robot_w
+
+    def pixelToRobotCoordinates(self, pixel_x, pixel_y, z_world):
+        # BACK PROJECT OBJECT POSITION TO CAMERA 3D COORDINATES
+        object_position = self.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
+        x, y = object_position[0], object_position[1]
+
+        # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
+        x, y, w = self.cameraToRobotCoordinates(x[0], y[0])
+        return x[0], y[0], w[0]
+
     def selfLocalizationFromGoalCorners(self, x1, y1, x2, y2):
         theta = math.atan((y2-y1)/(x1-x2))
         
