@@ -631,7 +631,7 @@ class Camera():
 
         # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
         x, y, w = self.cameraToRobotCoordinates(x[0], y[0])
-        return x[0], y[0], w[0]
+        return x, y, w
 
     def selfLocalizationFromGoalCorners(self, x1, y1, x2, y2):
         theta = math.atan((y2-y1)/(x1-x2))
