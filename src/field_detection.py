@@ -66,8 +66,8 @@ class FieldDetection():
         Make description here
         """
         # make copy from source image for segmentation
-        segmented_img = src.copy()
-        # segmented_img = src
+        # segmented_img = src.copy()
+        segmented_img = src
 
         # height and width from image resolution
         height, width = src.shape[0], src.shape[1]
@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
     # FIELD DETECTION TESTS
     field_detector = FieldDetection(
-                    vertical_lines_offset_percentage=alpha,
+                    vertical_lines_offset=1,
                     min_line_length=1,
                     max_line_length=20,
                     min_wall_length=10)
