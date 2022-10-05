@@ -6,6 +6,7 @@ try:
 except:
     print("Could not import tensorrt and its dependencies")
 import numpy as np
+import cv2
 import os
 
 class JetsonVision():
@@ -24,7 +25,7 @@ class JetsonVision():
 
     def __init__(
         self,
-        vertical_lines_offset = 240,
+        vertical_lines_offset = 320,
         model_path=PATH_TO_MODEL, 
         labels_path=PATH_TO_LABELS, 
         score_threshold = 0.5,
@@ -171,7 +172,6 @@ class JetsonVision():
         return processed_vision
         
 if __name__ == "__main__":
-    import cv2
     import time
 
     cwd = os.getcwd()

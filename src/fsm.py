@@ -1,6 +1,5 @@
 from enum import Enum
 import math
-from threading import currentThread
 from entities import Robot, Goal, Ball, Frame
 from navigation import TargetPoint
 import communication_proto
@@ -93,6 +92,9 @@ class FSM():
                 ):
         super(FSM, self).__init__()
         self.stage = Stage(stage)
+        self.target = TargetPoint()
+        self.ssl_robot = Robot()
+        
         if stage == 1:
             self.current_state = Stage1States(initial_state)
             self.last_state = Stage1States(initial_state)
@@ -114,10 +116,10 @@ class FSM():
         state_nr = self.current_state.value + n
         return state_nr
     
-    def stage1(self, frame = Frame(), ball = Ball(), robot = Robot()):
+    def stage1(self, frame = Frame(), ball = Ball(), goal = Goal(), robot = Robot()):
         """
         State Machine for Vision Blackout Stage 1:
-        1) Initiates stopped for 0.5 seconds
+        1) Initiates stopped for 0.1 seconds
         2) Robot rotates around its axis searching for the ball
         3) Sets ball as target point and drives to it
         4) After losing the ball, uses last seen position as target and navigates using inertial odometry only
@@ -129,6 +131,7 @@ class FSM():
         --------------------
         Returns:
         target: ball position and direction
+        robot: ssl robot commands
         """
         target = TargetPoint(x = 0, y = 0, w = 0)
     
@@ -186,7 +189,7 @@ class FSM():
             else:
                 break
         
-        return target
+        return target, robot
 
     def stage2(self, frame = Frame(), ball = Ball(), goal = Goal(), robot = Robot()):
         target = TargetPoint(x = 0, y = 0, w = 0)
