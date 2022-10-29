@@ -12,6 +12,15 @@ message protoSpeedSSL{
     double dribSpeed =9;
 };
 
+message protoOdometry{
+    double x = 1;
+    double y = 2;
+    double w = 3;
+    bool hasBall = 4;
+    double kickLoad = 5;
+    double battery = 6;
+};
+
 message protoPositionSSL{
     double x = 1;
     double y = 2;

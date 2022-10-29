@@ -17,6 +17,7 @@ class SocketUDP():
         self.device_address = device_address
         self.device_port = device_port
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_sock.bind(('', self.host_port))
         self.msg = pb.protoPositionSSL()
 
     def setHostUDP(self, address, port):
@@ -121,6 +122,14 @@ class SocketUDP():
     def sendSSLMessage(self, times = 3):
         for i in range(0, times):
             self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
+    
+    def recvSSLMessage(self):
+        msg = pb.protoOdometry()
+        data, _ = self.udp_sock.recvfrom(1024)
+        msg.ParseFromString(data)
+        movement = [msg.x, msg.y, msg.w]
+        return movement, msg.hasBall, msg.kickLoad, msg.battery
+
 
 if __name__ == "__main__":
     import time, math
