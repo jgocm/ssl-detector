@@ -174,16 +174,17 @@ if __name__ == "__main__":
 
     FRAME_NR = 7
     STAGE = 2
-    IMG_PATH = cwd + f'/data/stage{STAGE}/frame{FRAME_NR}.jpg'
-    WINDOW_NAME = "BOUNDARY DETECTION"
-    VERTICAL_LINES_NR = 1
 
-    img = cv2.imread(IMG_PATH)
-    height, width = img.shape[0], img.shape[1]
+    VERTICAL_LINES_NR = 1
 
     vision = JetsonVision(vertical_lines_offset=320)
 
     while True:
+        IMG_PATH = cwd + f'/data/stage{STAGE}/frame{FRAME_NR}.jpg'
+        WINDOW_NAME = "BOUNDARY DETECTION"
+        img = cv2.imread(IMG_PATH)
+        height, width = img.shape[0], img.shape[1]
+
         _, _, _, _, particle_filter_observations = vision.process(img, timestamp=time.time())
         boundary_ground_points, line_ground_points = particle_filter_observations
         print(boundary_ground_points)
@@ -191,5 +192,5 @@ if __name__ == "__main__":
         key = cv2.waitKey(-1) & 0xFF
         if key == ord('q'):
             break
-
-
+        else:
+            FRAME_NR=FRAME_NR+1
