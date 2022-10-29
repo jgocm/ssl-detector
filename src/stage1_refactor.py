@@ -12,7 +12,7 @@ def main():
 
     # START TIME
     start = time.time()
-    EXECUTION_TIME = 60
+    EXECUTION_TIME = 300
 
     # UDP COMMUNICATION SETUP
     eth_comm = communication_proto.SocketUDP()
