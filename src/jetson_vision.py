@@ -121,15 +121,11 @@ class JetsonVision():
             robot = self.trackRobot(score, xmin, xmax, ymin, ymax)
             self.tracked_robot = robot
         
-        return ball, goal, robot
-
     def detectAndTrackObjects(self, src):
         detections = self.object_detector.inference(src).detections
         
         for detection in detections:
-            ball, goal, robot = self.updateObjectTracking(detection)
-
-        return ball, goal, robot
+            self.updateObjectTracking(detection)
 
     def detectAndTrackFieldPoints(self, src):
         boundary_points, line_points = self.field_detector.detectFieldLinesAndBoundary(src)

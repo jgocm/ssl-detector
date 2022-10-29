@@ -42,7 +42,7 @@ def main():
     while cap.isOpened():
 
         # CAPTURE FRAME
-        timestamp = time.time()-config_time-start
+        timestamp = time.time()-config_time
         ret, frame = cap.read()
         if not ret:
             print("Check video capture path")
