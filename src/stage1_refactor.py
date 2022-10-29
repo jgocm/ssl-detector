@@ -35,7 +35,7 @@ def main():
 
     # CONFIGURE AND LOAD VISION SOURCE
     _, init_src = cap.read()
-    vision.process(init_src)
+    vision.process(init_src, 0)
     config_time = time.time() - start
     print(f"Configuration Time: {config_time:.2f}s")
 
@@ -74,7 +74,8 @@ def main():
                 {eth_comm.msg.PosType.Name(eth_comm.msg.posType)} \
             | speed: {eth_comm.msg.max_speed}, {eth_comm.msg.min_speed}')
 
-        if state_machine.current_state == Stage1States.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
+        if state_machine.current_state == Stage1States.finish and \
+            state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
             break
             
         # CHECK FOR DURATION TIMEOUT
