@@ -128,17 +128,24 @@ class JetsonVision():
             self.updateObjectTracking(detection)
 
     def detectAndTrackFieldPoints(self, src):
-        boundary_points, line_points = self.field_detector.detectFieldLinesAndBoundary(src)
+        if self.has_object_detection: # if running on jetson, use optimized version
+            boundary_points, line_points = self.field_detector.detectFieldLinesAndBoundaryMerged(src)
+        else:
+            boundary_points, line_points = self.field_detector.detectFieldLinesAndBoundary(src)
         
         boundary_ground_points = []
         for point in boundary_points:
             pixel_y, pixel_x = point
+            # paint pixel for debug and documentation
+            # src[pixel_y, pixel_x] = self.field_detector.RED
             x, y, w = self.jetson_cam.pixelToRobotCoordinates(pixel_x=pixel_x, pixel_y=pixel_y, z_world=0)
             boundary_ground_points.append([x, y, w])
         
         line_ground_points = []
         for point in line_points:
             pixel_y, pixel_x = point
+            # paint pixel for debug and documentation
+            # src[pixel_y, pixel_x] = self.field_detector.RED
             x, y, w = self.jetson_cam.pixelToRobotCoordinates(pixel_x=pixel_x, pixel_y=pixel_y, z_world=0)
             line_ground_points.append([x, y, w])
         
