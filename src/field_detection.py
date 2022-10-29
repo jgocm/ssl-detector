@@ -162,28 +162,9 @@ class FieldDetection():
         field_line_points = []
 
         for line_x in range(self.vertical_lines_offset, width, self.vertical_lines_offset):
-            field_line = False
-            line_points = []
             wall_points = []
             for pixel_y in range(height-1, 0, -1):
                 pixel = src[pixel_y, line_x]
-                if not self.isBlack(pixel):
-                    # check white->green border
-                    if not self.isGreen(pixel) and field_line == False:
-                        field_line = True
-                    # check white->green border
-                    elif self.isGreen(pixel) and field_line == True:
-                        field_line = False
-                        # check white line length (width)
-                        if len(line_points)>self.min_line_length and len(line_points)<self.max_line_length:
-                            line_y = [point[0] for point in line_points]
-                            point = int(np.mean(line_y)), line_x
-                            field_line_points.append(point)
-                        line_points = []
-
-                    if field_line == True:
-                        line_points.append([pixel_y, line_x])
-
                 if len(wall_points)>self.min_wall_length:
                     boundary_points.append(wall_points[0])
                     break

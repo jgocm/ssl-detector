@@ -8,6 +8,7 @@ except:
 import numpy as np
 import cv2
 import os
+import time
 
 class JetsonVision():
     cwd = os.getcwd()
@@ -168,9 +169,11 @@ class JetsonVision():
         """
         self.current_frame = Frame(timestamp=timestamp, input_source=src)
         if self.has_object_detection:
-            self.detectAndTrackObjects(self.current_frame.input)
-        particle_filter_observations = self.detectAndTrackFieldPoints(self.current_frame.input)
+            self.detectAndTrackObjects(self.current_frame.input) # 30ms
+        # 42ms with field lines detection, 8~9ms without it
+        particle_filter_observations = self.detectAndTrackFieldPoints(self.current_frame.input) 
         processed_vision = self.current_frame, self.tracked_ball, self.tracked_goal, self.tracked_robot, particle_filter_observations
+        # processed_vision = self.current_frame, self.tracked_ball, self.tracked_goal, self.tracked_robot
 
         return processed_vision
         
