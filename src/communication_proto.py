@@ -18,6 +18,7 @@ class SocketUDP():
         self.device_port = device_port
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_sock.bind(('', self.host_port))
+        self.udp_sock.settimeout(0)
         self.msg = pb.protoPositionSSL()
 
     def setHostUDP(self, address, port):
@@ -125,9 +126,16 @@ class SocketUDP():
     
     def recvSSLMessage(self):
         msg = pb.protoOdometry()
-        data, _ = self.udp_sock.recvfrom(1024)
-        msg.ParseFromString(data)
+        # multiple messages are received and accumulated on buffer during vision processing
+        # so read until buffer socket are no longer available
+        while True:
+            try:
+                data, _ = self.udp_sock.recvfrom(1024)
+                msg.ParseFromString(data)
+            except:
+                break 
         movement = [msg.x, msg.y, msg.w]
+        
         return movement, msg.hasBall, msg.kickLoad, msg.battery
 
 
