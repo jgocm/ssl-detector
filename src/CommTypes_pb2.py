@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='CommTypes.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x0f\x43ommTypes.proto\"\x9b\x01\n\rprotoSpeedSSL\x12\n\n\x02vx\x18\x01 \x01(\x01\x12\n\n\x02vy\x18\x02 \x01(\x01\x12\n\n\x02vw\x18\x03 \x01(\x01\x12\r\n\x05\x66ront\x18\x04 \x01(\x08\x12\x0c\n\x04\x63hip\x18\x05 \x01(\x08\x12\x0e\n\x06\x63harge\x18\x06 \x01(\x08\x12\x14\n\x0ckickStrength\x18\x07 \x01(\x01\x12\x10\n\x08\x64ribbler\x18\x08 \x01(\x08\x12\x11\n\tdribSpeed\x18\t \x01(\x01\"\xda\x02\n\x10protoPositionSSL\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01w\x18\x03 \x01(\x01\x12*\n\x07posType\x18\x04 \x01(\x0e\x32\x19.protoPositionSSL.PosType\x12\r\n\x05\x66ront\x18\x05 \x01(\x08\x12\x0c\n\x04\x63hip\x18\x06 \x01(\x08\x12\x0e\n\x06\x63harge\x18\x07 \x01(\x08\x12\x14\n\x0ckickStrength\x18\x08 \x01(\x01\x12\x10\n\x08\x64ribbler\x18\t \x01(\x08\x12\x11\n\tdribSpeed\x18\n \x01(\x01\x12\x15\n\rresetOdometry\x18\x0b \x01(\x08\"z\n\x07PosType\x12\x0b\n\x07unknown\x10\x00\x12\n\n\x06source\x10\x01\x12\n\n\x06target\x10\x02\x12\x08\n\x04\x64ock\x10\x03\x12\x11\n\rrotateControl\x10\x04\x12\x11\n\rrotateInPoint\x10\x05\x12\x10\n\x0crotateOnSelf\x10\x06\x12\x08\n\x04stop\x10\x07\x62\x06proto3')
+  serialized_pb=_b('\n\x0f\x43ommTypes.proto\"\x9b\x01\n\rprotoSpeedSSL\x12\n\n\x02vx\x18\x01 \x01(\x01\x12\n\n\x02vy\x18\x02 \x01(\x01\x12\n\n\x02vw\x18\x03 \x01(\x01\x12\r\n\x05\x66ront\x18\x04 \x01(\x08\x12\x0c\n\x04\x63hip\x18\x05 \x01(\x08\x12\x0e\n\x06\x63harge\x18\x06 \x01(\x08\x12\x14\n\x0ckickStrength\x18\x07 \x01(\x01\x12\x10\n\x08\x64ribbler\x18\x08 \x01(\x08\x12\x11\n\tdribSpeed\x18\t \x01(\x01\"d\n\rprotoOdometry\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01w\x18\x03 \x01(\x01\x12\x0f\n\x07hasBall\x18\x04 \x01(\x08\x12\x10\n\x08kickLoad\x18\x05 \x01(\x01\x12\x0f\n\x07\x62\x61ttery\x18\x06 \x01(\x01\"\xea\x02\n\x10protoPositionSSL\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01w\x18\x03 \x01(\x01\x12*\n\x07posType\x18\x04 \x01(\x0e\x32\x19.protoPositionSSL.PosType\x12\r\n\x05\x66ront\x18\x05 \x01(\x08\x12\x0c\n\x04\x63hip\x18\x06 \x01(\x08\x12\x0e\n\x06\x63harge\x18\x07 \x01(\x08\x12\x14\n\x0ckickStrength\x18\x08 \x01(\x01\x12\x10\n\x08\x64ribbler\x18\t \x01(\x08\x12\x11\n\tdribSpeed\x18\n \x01(\x01\x12\x15\n\rresetOdometry\x18\x0b \x01(\x08\x12\x11\n\tmin_speed\x18\x0c \x01(\x01\x12\x11\n\tmax_speed\x18\r \x01(\x01\"d\n\x07PosType\x12\x0b\n\x07unknown\x10\x00\x12\n\n\x06source\x10\x01\x12\x11\n\rdriveToTarget\x10\x02\x12\x11\n\rrotateInPoint\x10\x03\x12\x10\n\x0crotateOnSelf\x10\x04\x12\x08\n\x04stop\x10\x05\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -40,34 +40,26 @@ _PROTOPOSITIONSSL_POSTYPE = _descriptor.EnumDescriptor(
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='target', index=2, number=2,
+      name='driveToTarget', index=2, number=2,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='dock', index=3, number=3,
+      name='rotateInPoint', index=3, number=3,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='rotateControl', index=4, number=4,
+      name='rotateOnSelf', index=4, number=4,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='rotateInPoint', index=5, number=5,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='rotateOnSelf', index=6, number=6,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='stop', index=7, number=7,
+      name='stop', index=5, number=5,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=402,
-  serialized_end=524,
+  serialized_start=542,
+  serialized_end=642,
 )
 _sym_db.RegisterEnumDescriptor(_PROTOPOSITIONSSL_POSTYPE)
 
@@ -159,6 +151,72 @@ _PROTOSPEEDSSL = _descriptor.Descriptor(
 )
 
 
+_PROTOODOMETRY = _descriptor.Descriptor(
+  name='protoOdometry',
+  full_name='protoOdometry',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='x', full_name='protoOdometry.x', index=0,
+      number=1, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='y', full_name='protoOdometry.y', index=1,
+      number=2, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='w', full_name='protoOdometry.w', index=2,
+      number=3, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='hasBall', full_name='protoOdometry.hasBall', index=3,
+      number=4, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='kickLoad', full_name='protoOdometry.kickLoad', index=4,
+      number=5, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='battery', full_name='protoOdometry.battery', index=5,
+      number=6, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=177,
+  serialized_end=277,
+)
+
+
 _PROTOPOSITIONSSL = _descriptor.Descriptor(
   name='protoPositionSSL',
   full_name='protoPositionSSL',
@@ -243,6 +301,20 @@ _PROTOPOSITIONSSL = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='min_speed', full_name='protoPositionSSL.min_speed', index=11,
+      number=12, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='max_speed', full_name='protoPositionSSL.max_speed', index=12,
+      number=13, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -256,13 +328,14 @@ _PROTOPOSITIONSSL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=178,
-  serialized_end=524,
+  serialized_start=280,
+  serialized_end=642,
 )
 
 _PROTOPOSITIONSSL.fields_by_name['posType'].enum_type = _PROTOPOSITIONSSL_POSTYPE
 _PROTOPOSITIONSSL_POSTYPE.containing_type = _PROTOPOSITIONSSL
 DESCRIPTOR.message_types_by_name['protoSpeedSSL'] = _PROTOSPEEDSSL
+DESCRIPTOR.message_types_by_name['protoOdometry'] = _PROTOODOMETRY
 DESCRIPTOR.message_types_by_name['protoPositionSSL'] = _PROTOPOSITIONSSL
 
 protoSpeedSSL = _reflection.GeneratedProtocolMessageType('protoSpeedSSL', (_message.Message,), dict(
@@ -271,6 +344,13 @@ protoSpeedSSL = _reflection.GeneratedProtocolMessageType('protoSpeedSSL', (_mess
   # @@protoc_insertion_point(class_scope:protoSpeedSSL)
   ))
 _sym_db.RegisterMessage(protoSpeedSSL)
+
+protoOdometry = _reflection.GeneratedProtocolMessageType('protoOdometry', (_message.Message,), dict(
+  DESCRIPTOR = _PROTOODOMETRY,
+  __module__ = 'CommTypes_pb2'
+  # @@protoc_insertion_point(class_scope:protoOdometry)
+  ))
+_sym_db.RegisterMessage(protoOdometry)
 
 protoPositionSSL = _reflection.GeneratedProtocolMessageType('protoPositionSSL', (_message.Message,), dict(
   DESCRIPTOR = _PROTOPOSITIONSSL,

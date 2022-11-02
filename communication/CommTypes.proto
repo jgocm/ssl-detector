@@ -12,6 +12,15 @@ message protoSpeedSSL{
     double dribSpeed =9;
 };
 
+message protoOdometry{
+    double x = 1;
+    double y = 2;
+    double w = 3;
+    bool hasBall = 4;
+    double kickLoad = 5;
+    double battery = 6;
+};
+
 message protoPositionSSL{
     double x = 1;
     double y = 2;
@@ -19,12 +28,10 @@ message protoPositionSSL{
     enum PosType{
         unknown = 0;
         source = 1;
-        target = 2;
-        dock = 3;
-        rotateControl = 4;
-        rotateInPoint = 5;
-        rotateOnSelf = 6;
-        stop = 7;
+        driveToTarget = 2;
+        rotateInPoint = 3;
+        rotateOnSelf = 4;
+        stop = 5;
     }
     PosType posType = 4;
     bool front  = 5;
@@ -34,4 +41,6 @@ message protoPositionSSL{
     bool dribbler = 9;
     double dribSpeed = 10;
     bool resetOdometry = 11;
+    double min_speed = 12;
+    double max_speed = 13;
 };

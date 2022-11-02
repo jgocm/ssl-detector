@@ -1,6 +1,5 @@
 from enum import Enum
 import math
-from threading import currentThread
 from entities import Robot, Goal, Ball, Frame
 from navigation import TargetPoint
 import communication_proto
@@ -93,6 +92,9 @@ class FSM():
                 ):
         super(FSM, self).__init__()
         self.stage = Stage(stage)
+        self.target = TargetPoint()
+        self.ssl_robot = Robot()
+        
         if stage == 1:
             self.current_state = Stage1States(initial_state)
             self.last_state = Stage1States(initial_state)
@@ -114,10 +116,10 @@ class FSM():
         state_nr = self.current_state.value + n
         return state_nr
     
-    def stage1(self, frame = Frame(), ball = Ball(), robot = Robot()):
+    def stage1(self, frame = Frame(), ball = Ball(), goal = Goal(), robot = Robot()):
         """
         State Machine for Vision Blackout Stage 1:
-        1) Initiates stopped for 0.5 seconds
+        1) Initiates stopped for 0.1 seconds
         2) Robot rotates around its axis searching for the ball
         3) Sets ball as target point and drives to it
         4) After losing the ball, uses last seen position as target and navigates using inertial odometry only
@@ -129,6 +131,7 @@ class FSM():
         --------------------
         Returns:
         target: ball position and direction
+        robot: ssl robot commands
         """
         target = TargetPoint(x = 0, y = 0, w = 0)
     
@@ -137,11 +140,13 @@ class FSM():
 
             if self.current_state == Stage1States.init:
                 target.type = communication_proto.pb.protoPositionSSL.stop
-                if self.getStateDuration(frame.timestamp) > 0.3:
+                if self.getStateDuration(frame.timestamp) > 0.1:
                     final_state = self.moveNStates(1)
 
             elif self.current_state == Stage1States.searchBall:
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
+                target.w = math.pi
+                target.max_speed = 1.5
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
@@ -154,7 +159,7 @@ class FSM():
                     relative_angle = 0,
                     relative_distance = 0
                     )
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 if not frame.has_ball and target.getDistance() < 0.400:
                     final_state = self.moveNStates(1)
 
@@ -165,9 +170,9 @@ class FSM():
                     x2 = ball.x,
                     y2 = ball.y,
                     relative_angle = 0,
-                    relative_distance = 0
+                    relative_distance = -0.12
                     )
-                target.type = communication_proto.pb.protoPositionSSL.dock
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.reset_odometry = False
                 if self.getStateDuration(current_timestamp=frame.timestamp) > 3:
                     final_state = self.moveNStates(1)
@@ -184,7 +189,7 @@ class FSM():
             else:
                 break
         
-        return target
+        return target, robot
 
     def stage2(self, frame = Frame(), ball = Ball(), goal = Goal(), robot = Robot()):
         target = TargetPoint(x = 0, y = 0, w = 0)
@@ -201,12 +206,14 @@ class FSM():
             elif self.current_state == Stage2States.searchBall:
                 # search: rotate on self searching for ball
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
+                target.w = math.pi
+                target.max_speed = 1.5
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
             elif self.current_state == Stage2States.driveToRotationPoint:
                 # drive1: goes in ball direction preparing to rotate in point
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
@@ -237,7 +244,7 @@ class FSM():
             
             elif self.current_state == Stage2States.alignToRotationTarget:
                 # align1: adjust rotation to align with ball center
-                target.type = communication_proto.pb.protoPositionSSL.rotateControl
+                target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
                 target.setPosition(ball.x, ball.y)
                 target.w = target.getDirection()
                 if np.abs(target.w) < 0.125:
@@ -251,7 +258,7 @@ class FSM():
                 if goal.center_x > 0:
                     target.w = math.pi/6
                 else:
-                    target.w = math.pi/2
+                    target.w = math.pi/6
 
                 if goal.center_y < 0:
                     target.w = -target.w
@@ -287,13 +294,13 @@ class FSM():
                         )
                 if frame.has_goal:
                     final_state = self.moveNStates(2)
-                elif self.getStateDuration(frame.timestamp) > 0.5:
+                elif self.getStateDuration(frame.timestamp) > 0.2:
                     final_state = self.moveNStates(1)
 
             
             elif self.current_state == Stage2States.driveToBall:
                 # drive3: drives to ball position towards goal direction
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.setPosition(x = ball.x, y = ball.y)
                 _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = 0,
@@ -306,7 +313,7 @@ class FSM():
 
             elif self.current_state == Stage2States.driveTowardsGoal:
                 # drive3: drives to ball position towards goal direction
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.setPosition(x = ball.x, y = ball.y)
                 _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = 0,
@@ -319,7 +326,7 @@ class FSM():
 
             elif self.current_state == Stage2States.dockAndShoot:
                 # dock: drives to last target ball using inertial odometry and shoots to goal
-                target.type = communication_proto.pb.protoPositionSSL.dock
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.setPosition(x = ball.x, y = ball.y)
                 if self.last_state == Stage2States.driveTowardsGoal:
                     _, _, target.w = target.get2XYCoordinatesVector(
@@ -336,6 +343,7 @@ class FSM():
                         y2 = ball.y
                         )
                 target.reset_odometry = False
+<<<<<<< HEAD
                 robot.front = True
                 robot.charge = False
                 robot.kick_strength = 40
@@ -343,6 +351,16 @@ class FSM():
                     robot.front = False
                     final_state = self.moveNStates(1)
               
+=======
+                robot.charge = False
+                robot.front = True
+                robot.kick_strength = 60
+                if self.getStateDuration(frame.timestamp) > 3:
+                    robot.front = False
+                    robot.kick_strength = 0
+                    final_state = self.moveNStates(1)
+                
+>>>>>>> origin/particle_filter_development
             elif self.current_state == Stage2States.finish:
                 target.type = communication_proto.pb.protoPositionSSL.stop
 
@@ -372,12 +390,14 @@ class FSM():
             elif self.current_state == Stage4PasserStates.searchBall:
                 # search: rotate on self searching for ball
                 target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
+                target.w = math.pi
+                target.max_speed = 1.5
                 if frame.has_ball:
                     final_state = self.moveNStates(1)
 
             elif self.current_state == Stage4PasserStates.driveToRotationPoint:
                 # drive1: goes in ball direction preparing to rotate in point
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
@@ -402,12 +422,13 @@ class FSM():
                     )
                 if target.getDistance() > 0.05:
                     final_state = self.moveNStates(-1)
-                elif self.getStateDuration(frame.timestamp) > 0.5:
+                elif self.getStateDuration(frame.timestamp) > 0.2:
                     final_state = self.moveNStates(1)
             
             elif self.current_state == Stage4PasserStates.alignToRotationTarget:
                 # align1: adjust rotation to align with ball center
-                target.type = communication_proto.pb.protoPositionSSL.rotateControl
+                target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
+                target.max_speed = 0.5
                 target.setPosition(ball.x, ball.y)
                 target.w = target.getDirection()
                 if np.abs(target.w) < 0.125:
@@ -421,7 +442,7 @@ class FSM():
                 if ally.x > 0:
                     target.w = math.pi/6
                 else:
-                    target.w = math.pi/2
+                    target.w = math.pi/6
 
                 if ally.y < 0:
                     target.w = -target.w
@@ -444,7 +465,7 @@ class FSM():
                     target.reset_odometry = False
 
                 dist = math.sqrt((ball.x - ally.x)**2 + (ball.y - ally.y)**2)
-                if (np.abs(target.w) < 0.025) and (dist < 0.5):
+                if (np.abs(target.w) < 0.025) and (dist < 4):
                     final_state = self.moveNStates(1)
 
             elif self.current_state == Stage4PasserStates.stopToPass:
@@ -460,13 +481,13 @@ class FSM():
 
                 if frame.has_robot:
                     final_state = self.moveNStates(2)
-                elif self.getStateDuration(frame.timestamp) > 0.5:
+                elif self.getStateDuration(frame.timestamp) > 0.3:
                     final_state = self.moveNStates(1)
 
             
             elif self.current_state == Stage4PasserStates.driveToBall:
                 # drive3: drives to ball position towards goal direction
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.setPosition(x = ball.x, y = ball.y)
                 _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = 0,
@@ -480,7 +501,7 @@ class FSM():
 
             elif self.current_state == Stage4PasserStates.driveTowardsAlly:
                 # drive3: drives to ball position towards goal direction
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.setPosition(x = ball.x, y = ball.y)
                 _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = 0,
@@ -494,7 +515,7 @@ class FSM():
 
             elif self.current_state == Stage4PasserStates.dockAndPass:
                 # dock: drives to last target ball using inertial odometry and shoots to goal
-                target.type = communication_proto.pb.protoPositionSSL.dock
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.setPosition(x = ball.x, y = ball.y)
                 if self.last_state == Stage4PasserStates.driveTowardsAlly:
                     _, _, target.w = target.get2XYCoordinatesVector(
@@ -510,19 +531,20 @@ class FSM():
                         x2 = ball.x,
                         y2 = ball.y
                         )
+                dist = math.sqrt(ally.x**2 + ally.y**2)
                 target.reset_odometry = False
-                robot.charge = True
-                if robot.front:
+                robot.charge = False
+                robot.front = True
+                robot.kick_strength = 6*dist + 8.4
+                if dist>3:
+                    robot.kick_strength = 30
+                if self.getStateDuration(frame.timestamp) > 3:
                     robot.front = False
-                    robot.charge = False
-                    target.reset_odometry = True
+                    robot.kick_strength = 0
                     final_state = self.moveNStates(1)
-                elif self.getStateDuration(frame.timestamp) > 3:
-                    robot.front = True
-                    robot.kick_strength = 12
             
             elif self.current_state == Stage4PasserStates.moveBackwards:
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.x = -1
                 target.reset_odometry = False
 
@@ -562,7 +584,7 @@ class FSM():
                     final_state = self.moveNStates(1)
             
             elif self.current_state == Stage4ReceiverStates.alignToBall:
-                target.type = communication_proto.pb.protoPositionSSL.rotateControl
+                target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
                 target.setPosition(ball.x, ball.y)
                 target.w = target.getDirection()
                 if np.abs(target.w) < 0.125 and frame.has_robot:
@@ -582,7 +604,7 @@ class FSM():
                     final_state = self.moveNStates(1)
             
             elif self.current_state == Stage4ReceiverStates.driveToReceivingPoint:
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
@@ -611,14 +633,14 @@ class FSM():
                     final_state = self.moveNStates(1)           
 
             elif self.current_state == Stage4ReceiverStates.alignToReceive:
-                target.type = communication_proto.pb.protoPositionSSL.rotateControl
+                target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
                 target.setPosition(ball.x, ball.y)
                 target.w = target.getDirection()
                 if np.abs(target.w) < 0.05 and frame.has_robot:
                     final_state = self.moveNStates(1)
             
             elif self.current_state == Stage4ReceiverStates.waitPass:
-                target.type = communication_proto.pb.protoPositionSSL.rotateControl
+                target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
                 target.setPosition(ball.x, ball.y)
                 target.w = target.getDirection()
 
@@ -627,7 +649,7 @@ class FSM():
             
             elif self.current_state == Stage4ReceiverStates.moveBackwards:
                 if self.getStateDuration(frame.timestamp)>2:
-                    target.type = communication_proto.pb.protoPositionSSL.target
+                    target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                     target.x = -1
                     target.reset_odometry = False
                 else:
@@ -644,7 +666,7 @@ class FSM():
 
             elif self.current_state == Stage4ReceiverStates.driveToRotationPoint:
                 # drive1: goes in ball direction preparing to rotate in point
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.x, target.y, target.w = target.getTargetRelativeToLine2DCoordinates(
                     x1 = 0,
                     y1 = 0,
@@ -674,7 +696,7 @@ class FSM():
             
             elif self.current_state == Stage4ReceiverStates.alignToRotationTarget:
                 # align1: adjust rotation to align with ball center
-                target.type = communication_proto.pb.protoPositionSSL.rotateControl
+                target.type = communication_proto.pb.protoPositionSSL.rotateOnSelf
                 target.setPosition(ball.x, ball.y)
                 target.w = target.getDirection()
                 if np.abs(target.w) < 0.125:
@@ -732,7 +754,7 @@ class FSM():
             
             elif self.current_state == Stage4ReceiverStates.driveToBall:
                 # drive3: drives to ball position towards goal direction
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.setPosition(x = ball.x, y = ball.y)
                 _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = 0,
@@ -746,7 +768,7 @@ class FSM():
 
             elif self.current_state == Stage4ReceiverStates.driveTowardsGoal:
                 # drive3: drives to ball position towards goal direction
-                target.type = communication_proto.pb.protoPositionSSL.target
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.setPosition(x = ball.x, y = ball.y)
                 _, _, target.w = target.get2XYCoordinatesVector(
                         x1 = 0,
@@ -760,7 +782,7 @@ class FSM():
 
             elif self.current_state == Stage4ReceiverStates.dockAndShoot:
                 # dock: drives to last target ball using inertial odometry and shoots to goal
-                target.type = communication_proto.pb.protoPositionSSL.dock
+                target.type = communication_proto.pb.protoPositionSSL.driveToTarget
                 target.setPosition(x = ball.x, y = ball.y)
                 if self.last_state == Stage4ReceiverStates.driveTowardsGoal:
                     _, _, target.w = target.get2XYCoordinatesVector(

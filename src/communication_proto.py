@@ -17,6 +17,8 @@ class SocketUDP():
         self.device_address = device_address
         self.device_port = device_port
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_sock.bind(('', self.host_port))
+        self.udp_sock.settimeout(0)
         self.msg = pb.protoPositionSSL()
 
     def setHostUDP(self, address, port):
@@ -53,30 +55,12 @@ class SocketUDP():
 
         self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
 
-    def sendRotateControl(self, x, y, w):
-        msg = self.setKickMessage()
-        msg.x = x
-        msg.y = y
-        msg.w = w
-        msg.posType = pb.protoPositionSSL.rotateControl
-
-        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
-
-    def sendBallDocking(self, x, y, w):
-        msg = self.setKickMessage()
-        msg.x = x
-        msg.y = y
-        msg.w = w
-        msg.posType = pb.protoPositionSSL.dock
-
-        self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
-
     def sendTargetPosition(self, x, y, w):
         msg = self.setKickMessage()
         msg.x = x
         msg.y = y
         msg.w = w
-        msg.posType = pb.protoPositionSSL.target
+        msg.posType = pb.protoPositionSSL.driveToTarget
 
         self.udp_sock.sendto(msg.SerializeToString(), (self.device_address, self.device_port))
 
@@ -122,6 +106,8 @@ class SocketUDP():
         self.msg.x = target.x
         self.msg.y = target.y
         self.msg.w = target.w
+        self.msg.max_speed = target.max_speed
+        self.msg.min_speed = target.min_speed
         self.msg.posType = target.type
         self.msg.resetOdometry = target.reset_odometry
 
@@ -134,11 +120,28 @@ class SocketUDP():
 
         return self.msg
 
-    def sendSSLMessage(self, times = 5):
+    def sendSSLMessage(self, times = 3):
         for i in range(0, times):
             self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
+    
+    def recvSSLMessage(self):
+        msg = pb.protoOdometry()
+        # multiple messages are received and accumulated on buffer during vision processing
+        # so read until buffer socket are no longer available
+        while True:
+            try:
+                data, _ = self.udp_sock.recvfrom(1024)
+                msg.ParseFromString(data)
+            except:
+                break 
+        movement = [msg.x, msg.y, msg.w]
+        
+        return movement, msg.hasBall, msg.kickLoad, msg.battery
+
 
 if __name__ == "__main__":
+    import time, math
+
     host_address = "199.0.1.2"
     host_port = 9601
     device_address = "199.0.1.1"
@@ -151,12 +154,19 @@ if __name__ == "__main__":
         device_port=device_port
     )
 
-    x = 0
+    x = 3
     y = 0
     w = 0
 
-    print(f"Sending X, Y,  W Position")
+    print(f"Sending X, Y, W Position")
     print(f"x = {x}, y = {y}, w = {w}")
-    
+
+    UDP.msg.posType = pb.protoPositionSSL.driveToTarget
+    UDP.msg.x = x
+    UDP.msg.y = y
+    UDP.msg.w = w
+    UDP.msg.max_speed = 2.5
+
     while(1):
-        UDP.sendStopMotion()
+        UDP.sendSSLMessage()
+        time.sleep(0.033)

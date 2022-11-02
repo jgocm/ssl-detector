@@ -33,12 +33,16 @@ class TargetPoint(GroundPoint):
                 self,
                 x = 0,
                 y = 0,
-                w = 0
+                w = 0,
+                max_speed = 2.5,
+                min_speed = 0
                 ):
+        self.type = pb.protoPositionSSL.unknown
         self.x = x
         self.y = y
         self.w = w
-        self.type = pb.protoPositionSSL.unknown
+        self.max_speed = max_speed
+        self.min_speed = min_speed
         self.reset_odometry = True
 
     def get2XYCoordinatesVector(self, x1, y1, x2, y2):
@@ -201,7 +205,7 @@ class TargetPoint(GroundPoint):
         x0 = (x1 + x2)/2
         y0 = (y1 + y2)/2
 
-        center_x = 4.5
+        center_x = 2.82
         center_y = 0
 
         tx = center_x - (math.cos(theta)*x0 - math.sin(theta)*y0)

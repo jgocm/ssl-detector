@@ -68,6 +68,7 @@ class Ball():
 
     def updatePosition(self, x, y):
         self.x, self.y, self.w = x, y, math.atan2(y, x)
+        return self
     
     def getDistance(self):
         return math.sqrt(self.x**2 + self.y**2)
@@ -97,8 +98,8 @@ class Goal():
 class Field():
     def __init__(
                 self,
-                field_width = 6.000,
-                field_length = 9.000,
+                field_width = 3.760,
+                field_length = 5.640,
                 penalty_area_width = 2.000,
                 penalty_area_depth = 1.000,
                 center_radius = 1.000,
@@ -120,8 +121,9 @@ class Field():
 class Frame():
     def __init__(
                 self,
-                timestamp = 0):
-        self.input = None
+                timestamp = 0,
+                input_source = None):
+        self.input = input_source
         self.ball = Ball()
         self.goal = Goal()
         self.robot = Robot()
