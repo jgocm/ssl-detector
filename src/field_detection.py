@@ -72,7 +72,7 @@ class FieldDetection():
         # height and width from image resolution
         height, width = src.shape[0], src.shape[1]
 
-        for line_x in range(self.vertical_lines_offset, width, self.vertical_lines_offset):
+        for line_x in range(self.vertical_lines_offset+5, width, self.vertical_lines_offset):
              # segment vertical lines
             for pixel_y in range(0, height):
                 pixel = src[pixel_y, line_x]
@@ -91,7 +91,7 @@ class FieldDetection():
         # wall detection points
         boundary_points = []
 
-        for line_x in range(self.vertical_lines_offset, width, self.vertical_lines_offset):
+        for line_x in range(self.vertical_lines_offset+5, width, self.vertical_lines_offset):
             wall_points = []
             for pixel_y in range(height-1, 0, -1):
                 pixel = src[pixel_y, line_x]
@@ -115,7 +115,7 @@ class FieldDetection():
         # field lines detection points
         field_line_points = []
 
-        for line_x in range(self.vertical_lines_offset, width, self.vertical_lines_offset):
+        for line_x in range(self.vertical_lines_offset+5, width, self.vertical_lines_offset):
             field_line = False
             line_points = []
             for pixel_y in range(height-1, 0, -1):
@@ -161,7 +161,7 @@ class FieldDetection():
         # field lines detection points
         field_line_points = []
 
-        for line_x in range(self.vertical_lines_offset, width, self.vertical_lines_offset):
+        for line_x in range(self.vertical_lines_offset+5, width, self.vertical_lines_offset):
             wall_points = []
             for pixel_y in range(height-1, 0, -1):
                 pixel = src[pixel_y, line_x]

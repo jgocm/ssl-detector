@@ -34,7 +34,10 @@ class JetsonVision():
         camera_matrix = camera_matrix,
         camera_initial_position=calibration_position,
         points2d_path = PATH_TO_2D_POINTS,
-        points3d_path = PATH_TO_3D_POINTS   
+        points3d_path = PATH_TO_3D_POINTS,
+        debug = False,
+        enable_field_detection = True,
+        min_wall_length = 10   
         ):
 
         try:
@@ -59,7 +62,8 @@ class JetsonVision():
         self.jetson_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
         
         self.field_detector = FieldDetection(
-            vertical_lines_offset = vertical_lines_offset
+            vertical_lines_offset = vertical_lines_offset,
+            min_wall_length = min_wall_length
             )
         
         self.field = Field()
@@ -67,6 +71,9 @@ class JetsonVision():
         self.tracked_ball = Ball()
         self.tracked_goal = Goal()
         self.tracked_robot = Robot()
+
+        self.debug_mode = debug
+        self.has_field_detection = enable_field_detection
 
     def trackBall(self, score, xmin, xmax, ymin, ymax):
         # UPDATES BALL BASED ON DETECTION SCORE
@@ -138,7 +145,8 @@ class JetsonVision():
         for point in boundary_points:
             pixel_y, pixel_x = point
             # paint pixel for debug and documentation
-            # src[pixel_y, pixel_x] = self.field_detector.RED
+            if self.debug_mode:
+                src[pixel_y, pixel_x] = self.field_detector.RED
             x, y, w = self.jetson_cam.pixelToRobotCoordinates(pixel_x=pixel_x, pixel_y=pixel_y, z_world=0)
             boundary_ground_points.append([x, y, w])
         
@@ -146,7 +154,8 @@ class JetsonVision():
         for point in line_points:
             pixel_y, pixel_x = point
             # paint pixel for debug and documentation
-            # src[pixel_y, pixel_x] = self.field_detector.RED
+            if self.debug_mode:
+                src[pixel_y, pixel_x] = self.field_detector.RED
             x, y, w = self.jetson_cam.pixelToRobotCoordinates(pixel_x=pixel_x, pixel_y=pixel_y, z_world=0)
             line_ground_points.append([x, y, w])
         
@@ -171,7 +180,10 @@ class JetsonVision():
         if self.has_object_detection:
             self.detectAndTrackObjects(self.current_frame.input) # 30ms
         # 42ms with field lines detection, 8~9ms without it
-        particle_filter_observations = self.detectAndTrackFieldPoints(self.current_frame.input) 
+        if self.has_field_detection:
+            particle_filter_observations = self.detectAndTrackFieldPoints(self.current_frame.input)
+        else:
+            particle_filter_observations = []
         processed_vision = self.current_frame, self.tracked_ball, self.tracked_goal, self.tracked_robot, particle_filter_observations
         # processed_vision = self.current_frame, self.tracked_ball, self.tracked_goal, self.tracked_robot
 
@@ -187,14 +199,14 @@ if __name__ == "__main__":
 
     VERTICAL_LINES_NR = 1
 
-    vision = JetsonVision(vertical_lines_offset=320)
+    vision = JetsonVision(vertical_lines_offset=320, 
+                        debug=True)
 
     while True:
         IMG_PATH = cwd + f'/data/stage{STAGE}/frame{FRAME_NR}.jpg'
         WINDOW_NAME = "BOUNDARY DETECTION"
         img = cv2.imread(IMG_PATH)
         height, width = img.shape[0], img.shape[1]
-
         _, _, _, _, particle_filter_observations = vision.process(img, timestamp=time.time())
         boundary_ground_points, line_ground_points = particle_filter_observations
         print(boundary_ground_points)
