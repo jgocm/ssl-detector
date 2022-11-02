@@ -343,15 +343,6 @@ class FSM():
                         y2 = ball.y
                         )
                 target.reset_odometry = False
-<<<<<<< HEAD
-                robot.front = True
-                robot.charge = False
-                robot.kick_strength = 40
-                if self.getStateDuration(frame.timestamp) > 3:
-                    robot.front = False
-                    final_state = self.moveNStates(1)
-              
-=======
                 robot.charge = False
                 robot.front = True
                 robot.kick_strength = 60
@@ -360,7 +351,6 @@ class FSM():
                     robot.kick_strength = 0
                     final_state = self.moveNStates(1)
                 
->>>>>>> origin/particle_filter_development
             elif self.current_state == Stage2States.finish:
                 target.type = communication_proto.pb.protoPositionSSL.stop
 
