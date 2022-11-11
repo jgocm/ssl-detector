@@ -1,6 +1,7 @@
 import cv2
 import os
 import time
+import numpy as np
 import communication_proto
 
 if __name__ == "__main__":
@@ -19,23 +20,23 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     linha_nr = 1
-    frame_nr = 1
 
     while True:
-        odometry, hasBall, kickLoad, battery = eth_comm.recvSSLMessage()
+        odometry, hasBall, kickLoad, battery, count = eth_comm.recvSSLMessage()
 
         if battery>14:
             # CAPTURE FRAME
             _, frame = cap.read()
 
             # SAVE FRAME
-            dir = cwd+f"/data/linha{linha_nr}/{frame_nr}.jpg"
+            dir = cwd+f"/data/linha{linha_nr}/{count}.jpg"
             cv2.imwrite(dir, frame)
 
             # SAVE ODOMETRY DATA
+            np.savetxt(cwd+f"/data/linha{linha_nr}/{count}.txt", odometry)
 
-            # ADD FRAME COUNTER
-            frame_nr += 1
-        
+            # PRINT FOR DEBUG
+            print(f"odometry: {odometry} | count: {count:.0f}")
+
     cap.release()
     cv2.destroyAllWindows()

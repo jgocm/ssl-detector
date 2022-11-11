@@ -136,7 +136,7 @@ class SocketUDP():
                 break 
         movement = [msg.x, msg.y, msg.w]
         
-        return movement, msg.hasBall, msg.kickLoad, msg.battery
+        return movement, msg.hasBall, msg.kickLoad, msg.battery, msg.count
 
 
 if __name__ == "__main__":
@@ -176,6 +176,6 @@ if __name__ == "__main__":
     
     else:
         while True:
-            odometry, hasBall, kickLoad, battery = UDP.recvSSLMessage()
+            odometry, hasBall, kickLoad, battery, count = UDP.recvSSLMessage()
             if battery>15:
-                print(f"{odometry}, {hasBall}, {kickLoad:.3f}, {battery:.3f}")
+                print(f"{odometry}, {hasBall}, {kickLoad:.3f}, {battery:.3f}, {count}")
