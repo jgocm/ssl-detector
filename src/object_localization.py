@@ -623,6 +623,41 @@ class Camera():
         robot_w = math.atan2(robot_y, robot_x)
 
         return robot_x, robot_y, robot_w
+    
+    def robotToCameraCoordinates(self, x, y, camera_offset=90):
+        """
+        Converts x, y ground position from robot axis to camera axis
+        
+        Parameters:
+        x: x position from robot coordinates in millimeters
+        y: y position from robot coordinates in millimeters
+        camera_offset: camera to robot center distance in millimeters
+        -----------
+        Returns:
+        camera_x: x position from camera coordinates in meters
+        camera_y: y position from camera coordinates in meters
+        """
+        camera_x = -1000*y
+        camera_y = 1000*x - camera_offset
+
+        return camera_x, camera_y        
+
+    def robotToPixelCoordinates(self, x, y, camera_offset=90):
+        """
+        Converts x, y ground position from robot axis to a pixel position on screen
+        
+        Parameters:
+        x: x position from robot coordinates in millimeters
+        y: y position from robot coordinates in millimeters
+        camera_offset: camera to robot center distance in millimeters
+        -----------
+        Returns:
+        pixel_x: x position on screen
+        pixel_y: y position on screen
+        """
+        camera_x, camera_y = self.robotToCameraCoordinates(x, y, camera_offset)
+        pixel_x, pixel_y = self.cameraToPixelCoordinates(camera_x, camera_y, 0)
+        return pixel_x, pixel_y
 
     def pixelToRobotCoordinates(self, pixel_x, pixel_y, z_world):
         # BACK PROJECT OBJECT POSITION TO CAMERA 3D COORDINATES
