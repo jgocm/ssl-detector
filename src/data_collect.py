@@ -24,7 +24,7 @@ if __name__ == "__main__":
     while True:
         odometry, hasBall, kickLoad, battery = eth_comm.recvSSLMessage()
 
-        if battery>=0:
+        if battery>14:
             # CAPTURE FRAME
             _, frame = cap.read()
 

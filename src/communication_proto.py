@@ -154,19 +154,28 @@ if __name__ == "__main__":
         device_port=device_port
     )
 
-    x = 3
-    y = 0
-    w = 0
+    SEND = False
 
-    print(f"Sending X, Y, W Position")
-    print(f"x = {x}, y = {y}, w = {w}")
+    if SEND:
+        x = 3
+        y = 0
+        w = 0
 
-    UDP.msg.posType = pb.protoPositionSSL.driveToTarget
-    UDP.msg.x = x
-    UDP.msg.y = y
-    UDP.msg.w = w
-    UDP.msg.max_speed = 2.5
+        print(f"Sending X, Y, W Position")
+        print(f"x = {x}, y = {y}, w = {w}")
 
-    while(1):
-        UDP.sendSSLMessage()
-        time.sleep(0.033)
+        UDP.msg.posType = pb.protoPositionSSL.driveToTarget
+        UDP.msg.x = x
+        UDP.msg.y = y
+        UDP.msg.w = w
+        UDP.msg.max_speed = 2.5
+
+        while(1):
+            UDP.sendSSLMessage()
+            time.sleep(0.033)
+    
+    else:
+        while True:
+            odometry, hasBall, kickLoad, battery = UDP.recvSSLMessage()
+            if battery>15:
+                print(f"{odometry}, {hasBall}, {kickLoad:.3f}, {battery:.3f}")
