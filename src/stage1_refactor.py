@@ -67,13 +67,7 @@ def main():
         
         # ACTION
         eth_comm.sendSSLMessage()
-        print(f'{state_machine.current_state} \
-            | {state_machine.getStateDuration(current_timestamp=current_frame.timestamp)} \
-            | Target: {eth_comm.msg.x:.3f}, \
-                {eth_comm.msg.y:.3f}, \
-                {eth_comm.msg.w:.3f}, \
-                {eth_comm.msg.PosType.Name(eth_comm.msg.posType)} \
-            | odometry: {odometry[0]}')
+        print(f'{state_machine.current_state} | {state_machine.getStateDuration(current_timestamp=current_frame.timestamp):.3f} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.PosType.Name(eth_comm.msg.posType)} | odometry: {odometry[0]}')
 
         if state_machine.current_state == Stage1States.finish and \
             state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:

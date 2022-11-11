@@ -154,10 +154,10 @@ if __name__ == "__main__":
         device_port=device_port
     )
 
-    SEND = False
+    SEND = True
 
     if SEND:
-        x = 3
+        x = 1
         y = 0
         w = 0
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         UDP.msg.x = x
         UDP.msg.y = y
         UDP.msg.w = w
-        UDP.msg.max_speed = 2.5
+        UDP.msg.max_speed = 1
 
         while(1):
             UDP.sendSSLMessage()
