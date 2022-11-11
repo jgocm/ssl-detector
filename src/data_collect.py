@@ -32,6 +32,8 @@ if __name__ == "__main__":
             dir = cwd+f"/data/linha{linha_nr}/{frame_nr}.jpg"
             cv2.imwrite(dir, frame)
 
+            # SAVE ODOMETRY DATA
+
             # ADD FRAME COUNTER
             frame_nr += 1
         

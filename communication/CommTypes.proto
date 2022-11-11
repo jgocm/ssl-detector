@@ -19,6 +19,7 @@ message protoOdometry{
     bool hasBall = 4;
     double kickLoad = 5;
     double battery = 6;
+    double count = 7;
 };
 
 message protoPositionSSL{
