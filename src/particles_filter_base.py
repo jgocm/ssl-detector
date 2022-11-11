@@ -226,7 +226,7 @@ class ParticleFilter:
 
             if particle.is_out_of_field(x_max=self.x_max, y_max=self.y_max):
                 print("Particle Out of Field Boundaries")
-                particle.weight = 0
+                particle.weight = 0        
 
     def compute_observation(self, particle):
         boundary_points = self.vision.detect_boundary_points(
@@ -295,10 +295,6 @@ class ParticleFilter:
         :param measurements: Measurements.
         :param landmarks: Landmark positions.
         """
-
-        # Propagate the particles state according to the current movements
-        self.propagate_particles(movement)
-
         weights = []
         for particle in self.particles:
             # Compute current particle's weight based on likelihood
@@ -320,11 +316,14 @@ class ParticleFilter:
             #                 self.n_particles, 
             #                 self.resampling_algorithm)
             # for i in range(self.n_particles):
-            #     self.particles[i].from_weighted_sample(samples[i])       
+            #     self.particles[i].from_weighted_sample(samples[i])
+
+        # Propagate the particles state according to the current movement
+        self.propagate_particles(movement) 
 
 
 if __name__ == "__main__":
     from entities import Ball, Goal, Robot, Field
 
-    # 1. FIX FIELD CONFIGS
+    # FIX FIELD CONFIGS
     field = Field()

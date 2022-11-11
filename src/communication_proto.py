@@ -154,7 +154,7 @@ if __name__ == "__main__":
         device_port=device_port
     )
 
-    SEND = True
+    SEND = False
 
     if SEND:
         x = 1
