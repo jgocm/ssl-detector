@@ -20,6 +20,7 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     linha_nr = 1
+    frame_nr = 1
 
     while True:
         odometry, hasBall, kickLoad, battery, count = eth_comm.recvSSLMessage()
@@ -31,6 +32,9 @@ if __name__ == "__main__":
             # SAVE FRAME
             dir = cwd+f"/data/linha{linha_nr}/{count}.jpg"
             cv2.imwrite(dir, frame)
+
+            # ADD FRAME NR
+            frame_nr += 1
 
             # SAVE ODOMETRY DATA
             np.savetxt(cwd+f"/data/linha{linha_nr}/{count}.txt", odometry)
