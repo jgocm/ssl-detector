@@ -19,7 +19,7 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    linha_nr = 1
+    quadrado_nr = 1
     frame_nr = 1
 
     while True:
@@ -30,15 +30,15 @@ if __name__ == "__main__":
             _, frame = cap.read()
 
             # SAVE FRAME
-            dir = cwd+f"/data/linha{linha_nr}/{count}.jpg"
+            dir = cwd+f"/data/quadrado{quadrado_nr}/{frame_nr}_{count}.jpg"
             cv2.imwrite(dir, frame)
 
+            # SAVE ODOMETRY DATA
+            np.savetxt(cwd+f"/data/quadrado{quadrado_nr}/{frame_nr}_{count}.txt", odometry)
+            
             # ADD FRAME NR
             frame_nr += 1
-
-            # SAVE ODOMETRY DATA
-            np.savetxt(cwd+f"/data/linha{linha_nr}/{count}.txt", odometry)
-
+            
             # PRINT FOR DEBUG
             print(f"odometry: {odometry} | count: {count:.0f}")
 
