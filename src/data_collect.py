@@ -19,7 +19,7 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    quadrado_nr = 1.5
+    quadrado_nr = 2
     frame_nr = 1
 
     while True:
