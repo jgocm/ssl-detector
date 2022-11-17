@@ -2,6 +2,7 @@ import numpy as np
 import math
 from jetson_vision import JetsonVision
 from particles_resampler import Resampler
+from particle_vision import ParticleVision
 
 class Particle:
     '''
@@ -26,6 +27,7 @@ class Particle:
         self.y = self.state[1]
         self.theta = ((self.state[2] + 180) % 360) - 180
         self.weight = weight
+        self.vision = ParticleVision()
 
     def from_weighted_sample(self, sample):
         self = Particle(initial_state=sample[1], weight=sample[0])
@@ -33,16 +35,20 @@ class Particle:
     def as_weighted_sample(self):
         return [self.weight,[self.x, self.y, self.theta]]
 
-    def is_out_of_field(self, x_max, y_max):
+    def is_out_of_field(self, field):
         '''
         Check if particle is out of field boundaries
         
         param: current field configurations
         return: True if particle is out of field boundaries
         '''
-        if np.abs(self.x) > x_max:
+        if self.x > field.x_max:
             return True
-        elif np.abs(self.y) > y_max:
+        elif self.y > field.y_max:
+            return True
+        elif self.x < field.x_min:
+            return True
+        elif self.y < field.y_min:
             return True
         else:
             return False
@@ -71,12 +77,8 @@ class ParticleFilter:
         self.n_particles = number_of_particles
         self.particles = []
 
-        # State related settings
+        # Field related settings
         self.state_dimension = len(Particle().state)
-        self.x_max = field.length/2 + field.boundary_width
-        self.x_min = -self.x_max
-        self.y_max = field.width/2 + field.boundary_width
-        self.y_min = -self.y_max
         self.field = field
 
         # Particle sensors
@@ -119,8 +121,8 @@ class ParticleFilter:
         for i in range(self.n_particles):
             particle = Particle(
                 initial_state=[
-                    np.random.uniform(self.x_min, self.x_max),
-                    np.random.uniform(self.y_min, self.y_max),
+                    np.random.uniform(self.field.x_min, self.field.x_max),
+                    np.random.uniform(self.field.y_min, self.field.y_max),
                     np.random.uniform(-180, 180)],
                 weight=weight)
 
@@ -149,7 +151,7 @@ class ParticleFilter:
         for i in range(self.n_particles):
             initial_state = np.random.normal(mean_vector, standard_deviation_vector, self.state_dimension).tolist()
             particle = Particle(initial_state=initial_state, weight=weight)
-            while particle.is_out_of_field(x_max=self.x_max, y_max=self.y_max):
+            while particle.is_out_of_field(self.field):
                 # Get state sample
                 initial_state = np.random.normal(mean_vector, standard_deviation_vector, self.state_dimension).tolist()
                 particle = Particle(initial_state=initial_state, weight=weight)
@@ -224,7 +226,7 @@ class ParticleFilter:
         for particle in self.particles:
             particle.move(movement)
 
-            if particle.is_out_of_field(x_max=self.x_max, y_max=self.y_max):
+            if particle.is_out_of_field(self.field):
                 print("Particle Out of Field Boundaries")
                 particle.weight = 0        
 
@@ -246,7 +248,7 @@ class ParticleFilter:
         :return Likelihood
         """
         # Check if particle is out of field boundaries
-        if particle.is_out_of_field(x_max=self.x_max, y_max=self.y_max):
+        if particle.is_out_of_field(self.field):
             return 0
         
         else:

@@ -48,6 +48,7 @@ if __name__ == "__main__":
     x = list(odometry_df['X'])
     y = list(odometry_df['Y'])
 
-    print(max(movement_df['Distance']))
+    # print(max(movement_df['Distance']))
+    print(fnames)
     plt.scatter(x, y)
     plt.show()

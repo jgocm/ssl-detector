@@ -147,6 +147,7 @@ class JetsonVision():
             # paint pixel for debug and documentation
             if self.debug_mode:
                 src[pixel_y, pixel_x] = self.field_detector.RED
+                cv2.drawMarker(src, (pixel_x, pixel_y), color=self.field_detector.RED)
             x, y, w = self.jetson_cam.pixelToRobotCoordinates(pixel_x=pixel_x, pixel_y=pixel_y, z_world=0)
             boundary_ground_points.append([x, y, w])
         
@@ -154,7 +155,8 @@ class JetsonVision():
         for point in line_points:
             pixel_y, pixel_x = point
             # paint pixel for debug and documentation
-            if self.debug_mode:
+            # if self.debug_mode:
+            if False:
                 src[pixel_y, pixel_x] = self.field_detector.RED
             x, y, w = self.jetson_cam.pixelToRobotCoordinates(pixel_x=pixel_x, pixel_y=pixel_y, z_world=0)
             line_ground_points.append([x, y, w])
@@ -191,21 +193,23 @@ class JetsonVision():
         
 if __name__ == "__main__":
     import time
+    from glob import glob
 
     cwd = os.getcwd()
 
-    FRAME_NR = 7
-    STAGE = 2
-
-    VERTICAL_LINES_NR = 1
+    frame_nr = 1
+    quadrado_nr = 1
 
     vision = JetsonVision(vertical_lines_offset=320, 
                         debug=True)
 
-    while True:
-        IMG_PATH = cwd + f'/data/stage{STAGE}/frame{FRAME_NR}.jpg'
+    while frame_nr<500:
+        dir = cwd + f"/data/quadrado{quadrado_nr}/{frame_nr}_*.jpg"
+        file = glob(dir)
+        print(file[0])
+
         WINDOW_NAME = "BOUNDARY DETECTION"
-        img = cv2.imread(IMG_PATH)
+        img = cv2.imread(file[-1])
         height, width = img.shape[0], img.shape[1]
         _, _, _, _, particle_filter_observations = vision.process(img, timestamp=time.time())
         boundary_ground_points, line_ground_points = particle_filter_observations
@@ -215,4 +219,4 @@ if __name__ == "__main__":
         if key == ord('q'):
             break
         else:
-            FRAME_NR=FRAME_NR+1
+            frame_nr=frame_nr+1
