@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     cwd = os.getcwd()
 
-    quadrado_nr = 2.5
+    quadrado_nr = 2
     frame_nr = 1
 
     fnames = []
@@ -42,10 +42,12 @@ if __name__ == "__main__":
     
     odometry_df = pd.DataFrame(odometry, columns=['X', 'Y', 'Theta'])
     movement_df = pd.DataFrame(movement, columns=['X', 'Y', 'Theta'])
+    movement_df['Distance'] = [math.sqrt(a[0]**2 + a[1]**2) for a in movement]
 
 
     x = list(odometry_df['X'])
     y = list(odometry_df['Y'])
 
+    print(max(movement_df['Distance']))
     plt.scatter(x, y)
     plt.show()
