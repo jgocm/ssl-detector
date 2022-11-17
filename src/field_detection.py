@@ -29,7 +29,7 @@ class FieldDetection():
     
     def isBlack(self, src):
         blue, green, red = src
-        if green < 50 and red < 50 and blue < 50:
+        if green < 70 and red < 70 and blue < 70:
             return True
         else:
             return False

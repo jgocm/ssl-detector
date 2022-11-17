@@ -65,9 +65,7 @@ class ParticleFilter:
                 number_of_particles,
                 field,
                 process_noise,
-                measurement_noise,
-                vertical_lines_offset,
-                resampling_algorithm
+                measurement_noise
                 ):
 
         if number_of_particles < 1:
@@ -81,15 +79,11 @@ class ParticleFilter:
         self.state_dimension = len(Particle().state)
         self.field = field
 
-        # Particle sensors
-        self.vision = JetsonVision(vertical_lines_offset=vertical_lines_offset)
-
         # Set noise
         self.process_noise = process_noise
         self.measurement_noise = measurement_noise
 
         # Resampling
-        self.resampling_algorithm = resampling_algorithm
         self.resampler = Resampler()
 
     def initialize_particles_from_seed_position(self, seed_x, seed_y, max_distance):
@@ -227,16 +221,16 @@ class ParticleFilter:
             particle.move(movement)
 
             if particle.is_out_of_field(self.field):
-                print("Particle Out of Field Boundaries")
+                # print("Particle Out of Field Boundaries")
                 particle.weight = 0        
 
     def compute_observation(self, particle):
-        boundary_points = self.vision.detect_boundary_points(
+        boundary_points = particle.vision.detect_boundary_points(
                                     particle.x, 
                                     particle.y, 
                                     particle.theta, 
                                     self.field)
-        
+        print(f'weight: {particle.weight}, position:{particle.state}, detection:{boundary_points}')
         return boundary_points
 
     def compute_likelihood(self, measurements, particle):
@@ -325,7 +319,77 @@ class ParticleFilter:
 
 
 if __name__ == "__main__":
-    from entities import Ball, Goal, Robot, Field
+    from entities import Field
+    from jetson_vision import JetsonVision
+    import time
+    import os
+    import cv2
+    from glob import glob
 
-    # FIX FIELD CONFIGS
+    cwd = os.getcwd()
+
+    # SET EMBEDDED VISION
+    vision = JetsonVision(vertical_lines_offset=320, 
+                        debug=True)
+
+    # SET FIELD DIMENSIONS
     field = Field()
+    field.redefineFieldLimits(x_max=4, y_max=3, x_min=-0.5, y_min=-3)
+
+    # INITIALIZE PARTICLES FILTER
+    robot_tracker = ParticleFilter(
+            number_of_particles=5,
+            field=field,
+            process_noise = [1, 1, 1],
+            measurement_noise = [1, 1])
+
+
+    # FILE COUNTERS
+    # first squared path starts moving on frame 137
+    frame_nr = 134
+    quadrado_nr = 1
+
+    # INITIAL POSITION
+    initial_position_dir = glob(cwd + f"/data/quadrado{quadrado_nr}/1_*.txt")
+    initial_position = np.loadtxt(initial_position_dir[0])
+    seed_x, seed_y, seed_radius = initial_position[0], initial_position[1], 0.5
+    robot_tracker.initialize_particles_from_seed_position(seed_x, seed_y, seed_radius)
+
+    while frame_nr<500:
+        # LOAD FRAME
+        WINDOW_NAME = "PARTICLES FILTER DEVELOPMENT"
+        frame_dir = cwd + f"/data/quadrado{quadrado_nr}/{frame_nr}_*.jpg"
+        file = glob(frame_dir)
+        img = cv2.imread(file[-1])
+        # height, width = img.shape[0], img.shape[1]
+
+        # LOAD ODOMETRY DATA
+        if frame_nr>134:
+            last_position = current_position
+        else:
+            last_position = initial_position
+        odometry_dir = cwd + f"/data/quadrado{quadrado_nr}/{frame_nr}_*.txt"
+        file = glob(odometry_dir)
+        current_position = np.loadtxt(file[-1])
+        movement = current_position - last_position
+        
+        # MAKE VISION OBSERVATION
+        _, _, _, _, particle_filter_observations = vision.process(img, timestamp=time.time())
+        boundary_ground_points, line_ground_points = particle_filter_observations
+
+        # SHOW ON SCREEN
+        cv2.imshow(WINDOW_NAME, img)
+
+        # UPDATE PARTICLES FILTER
+        print(f'odometry: {current_position}, observation: {boundary_ground_points}')
+        if len(boundary_ground_points)>0:
+            robot_tracker.update(movement, boundary_ground_points)
+
+        key = cv2.waitKey(-1) & 0xFF
+        if key == ord('q'):
+            break
+        else:
+            frame_nr=frame_nr+1
+
+
+

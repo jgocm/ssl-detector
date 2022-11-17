@@ -8,7 +8,7 @@ from enum import Enum
 import copy
 
 # Helper functions
-from .resampling_utils import *
+from resampling_utils import *
 
 
 class ResamplingAlgorithms(Enum):

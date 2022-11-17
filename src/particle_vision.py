@@ -1,5 +1,6 @@
 import math
 from entities import Field
+import numpy as np
 
 class ParticleVision:
     '''
@@ -96,14 +97,15 @@ class ParticleVision:
         w: robot global orientation in degrees
         field: a field object with properties x_max, y_max, x_min, y_min
         ------------------------
-        returns:
+        returns a numpy array containing:
         boundary_x: boundary point x position relative to robot axis
         boundary_y: boundary point y position relative to robot axis
         '''
         line_dir = w
         interception_x, interception_y = self.intercept_field_boundaries(x, y, line_dir, field)
         interception_x, interception_y = self.convert_to_local(interception_x, interception_y, x, y, w)
-        return interception_x, interception_y
+        w = math.atan2(interception_y, interception_x)
+        return np.array([interception_x, interception_y, w])
 
 if __name__ == "__main__":
     
@@ -114,6 +116,6 @@ if __name__ == "__main__":
     field = Field()
     field.redefineFieldLimits(x_max=4, y_max=3, x_min=-0.5, y_min=-3)
 
-    boundary_points = vision.detect_boundary_points(0, 0, 37, field)
+    boundary_points = vision.detect_boundary_points(3, -2, 180, field)
     print(boundary_points)
     
