@@ -25,7 +25,7 @@ class Particle:
         self.state = initial_state
         self.x = self.state[0]
         self.y = self.state[1]
-        self.theta = ((self.state[2] + 180) % 360) - 180
+        self.theta = self.state[2]
         self.weight = weight
         self.vision = ParticleVision()
 
@@ -53,11 +53,25 @@ class Particle:
         else:
             return False
 
+    def limitW(self):
+        if (self.theta > math.pi):
+            self.theta -= 2*math.pi
+            return True
+            
+        elif (self.theta < -math.pi):
+            self.theta += 2*math.pi
+            return True
+        
+        else:
+            return False
+
     def move(self, movement):
         self.state = [sum(x) for x in zip(self.state, movement)]
         self.x = self.state[0]
         self.y = self.state[1]
-        self.theta = ((self.state[2] + 180) % 360) - 180
+        self.theta = self.state[2]
+        while self.limitW():
+            self.state[2] = self.theta
 
 class ParticleFilter:
     def __init__(
@@ -94,8 +108,8 @@ class ParticleFilter:
         weight = 1.0/self.n_particles
         for i in range(self.n_particles):
             radius = np.random.uniform(0, max_distance)
-            direction = np.random.uniform(0, 360)
-            orientation = np.random.uniform(0, 360)
+            direction = np.random.uniform(-math.pi, math.pi)
+            orientation = np.random.uniform(-math.pi, math.pi)
             x = seed_x + radius*math.cos(direction)
             y = seed_y + radius*math.sin(direction)
             particle = Particle(initial_state=[x, y, orientation], weight=weight)
@@ -117,7 +131,7 @@ class ParticleFilter:
                 initial_state=[
                     np.random.uniform(self.field.x_min, self.field.x_max),
                     np.random.uniform(self.field.y_min, self.field.y_max),
-                    np.random.uniform(-180, 180)],
+                    np.random.uniform(-math.pi, math.pi)],
                 weight=weight)
 
             particles.append(particle)
@@ -230,7 +244,7 @@ class ParticleFilter:
                                     particle.y, 
                                     particle.theta, 
                                     self.field)
-        print(f'weight: {particle.weight}, position:{particle.state}, detection:{boundary_points}')
+        print(f'weight: {particle.weight}, position:{particle.x:.3f}, {particle.y:.3f}, {particle.theta:.3f}, detection:{boundary_points[0]:.5f}')
         return boundary_points
 
     def compute_likelihood(self, measurements, particle):
@@ -306,7 +320,7 @@ class ParticleFilter:
         # Resample if needed
         if self.needs_resampling():
             mean_state = self.get_average_state()
-            self.initialize_particles_gaussian(mean_vector=mean_state, standard_deviation_vector=[0.1, 0.1, 30])
+            self.initialize_particles_gaussian(mean_vector=mean_state, standard_deviation_vector=[0.1, 0.1, math.radians(30)])
             # samples = self.resampler.resample(
             #                 self.particles_as_weigthed_samples(), 
             #                 self.n_particles, 

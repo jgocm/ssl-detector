@@ -16,7 +16,7 @@ class ParticleVision:
         self.vertical_scan_angles = [0]
 
     def project_line(self, x, y, theta):
-        coef = math.tan(math.radians(theta))
+        coef = math.tan(theta)
         intercept = y - coef*x
         return coef, intercept
 
@@ -45,30 +45,30 @@ class ParticleVision:
 
     def intercept_field_boundaries(self, x, y, line_dir, field):
         a, b = self.project_line(x, y, line_dir)
-
-        if 0 == line_dir:
+        angle = math.degrees(line_dir)
+        if 0 == angle:
             x1, y1 = self.intercept_right_boundary(a, b, field)
             return x1, y1
-        elif 90 == line_dir:
+        elif 90 == angle:
             x1, y1 = self.intercept_upper_boundary(a, b, field)
             return x1, y1
-        elif 180 == line_dir or -180 == line_dir:
+        elif 180 == angle or -180 == angle:
             x1, y1 = self.intercept_left_boundary(a, b, field)
             return x1, y1
-        elif -90 == line_dir:
+        elif -90 == angle:
             x1, y1 = self.intercept_lower_boundary(a, b, field)
             return x1, y1
 
-        elif 0 < line_dir and line_dir < 90:
+        elif 0 < angle and angle < 90:
             x1, y1 = self.intercept_right_boundary(a, b, field)
             x2, y2 = self.intercept_upper_boundary(a, b, field)
-        elif 90 < line_dir and line_dir < 180:
+        elif 90 < angle and angle < 180:
             x1, y1 = self.intercept_left_boundary(a, b, field)
             x2, y2 = self.intercept_upper_boundary(a, b, field)
-        elif -180 < line_dir and line_dir < -90:
+        elif -180 < angle and angle < -90:
             x1, y1 = self.intercept_left_boundary(a, b, field)
             x2, y2 = self.intercept_lower_boundary(a, b, field)
-        elif -90 < line_dir and line_dir < 0:
+        elif -90 < angle and angle < 0:
             x1, y1 = self.intercept_right_boundary(a, b, field)
             x2, y2 = self.intercept_lower_boundary(a, b, field)
 
@@ -80,7 +80,6 @@ class ParticleVision:
     def convert_to_local(self, global_x, global_y, robot_x, robot_y, theta):
         x = global_x - robot_x
         y = global_y - robot_y
-        theta = math.radians(theta)
         x, y = x*math.cos(theta) + y*math.sin(theta),\
             -x*math.sin(theta) + y*math.cos(theta)
 
@@ -94,7 +93,7 @@ class ParticleVision:
         params:
         x: robot global x position in meters
         y: robot global y position in meters
-        w: robot global orientation in degrees
+        w: robot global orientation in radians
         field: a field object with properties x_max, y_max, x_min, y_min
         ------------------------
         returns a numpy array containing:
@@ -116,6 +115,6 @@ if __name__ == "__main__":
     field = Field()
     field.redefineFieldLimits(x_max=4, y_max=3, x_min=-0.5, y_min=-3)
 
-    boundary_points = vision.detect_boundary_points(3, -2, 180, field)
+    boundary_points = vision.detect_boundary_points(3, -2, math.pi, field)
     print(boundary_points)
     
