@@ -1,6 +1,7 @@
 import cv2
 import os
 import time
+import csv
 import numpy as np
 import communication_proto
 from ssl_vision_parser import SSLClient, FieldInformation
@@ -58,8 +59,9 @@ if __name__ == "__main__":
     frame_nr = 1
 
     # DATA FOR LOGS
+    fields = ['FRAME_NR', 'ROBOT_ID', 'ROBOT X', 'ROBOT Y', 'ROBOT THETA', 'BALL X', 'BALL Y', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX']
+    CAMERA_ID = 2       # USING ONLY NEGATIVE Y CAMERA
     ROBOT_ID = 0
-    CAMERA_ID = 2       # USING ONLY NEGATIVE SIDE CAMERA
     data_log = []
 
     while True:
@@ -104,7 +106,7 @@ if __name__ == "__main__":
             data = serialize_data_to_log(frame_nr, ssl_vision_robot, ssl_vision_ball, jetson_vision_ball)
             print(f"hasBall: {hasBall} | robot: {ssl_vision_robot} | ball: {ssl_vision_ball}, {jetson_vision_ball}")
 
-        # SAVE DETECTIONS ON LOG IF ROBOT HAS BALL ON SENSOR
+        # ADD DETECTIONS TO LOG IF ROBOT HAS BALL ON SENSOR
         if valid and hasBall:
             # SAVE RAW FRAME
             dir = cwd+f"/data/object_localization/{frame_nr}.jpg"
@@ -115,7 +117,16 @@ if __name__ == "__main__":
 
             # ADD FRAME NR
             frame_nr += 1
+        
+        # FINISH AND SAVE LOG IF ROBOT IS TURNED OFF (OR RESET)
+        if battery<14:
+            break
 
-    print(data_log)
+    dir = cwd+f"/data/object_localization/log.csv"
+    with open(dir, 'w') as f:
+        write = csv.writer(f)
+        write.writerow(fields)
+        write.writerows(data_log)
+
     cap.release()
     cv2.destroyAllWindows()
