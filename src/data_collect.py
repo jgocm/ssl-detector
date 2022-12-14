@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     # INIT SSL CLIENT
     c = SSLClient()
-    c.forceConnect(ip = '172.20.30.184', port = 10006)
+    c.forceConnect(ip = '172.20.30.190', port = 10006)
     field = FieldInformation()
 
     # FRAME NR COUNTER
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         detections = trt_net.inference(img).detections
         for detection in detections:
             class_id, score, xmin, xmax, ymin, ymax = detection
-            if class_id==1: 
+            if class_id==1:
                 jetson_vision_ball = [xmin, xmax, ymin, ymax]
 
         # CHECK IF ALL FIELDS ARE AVAILABLE
