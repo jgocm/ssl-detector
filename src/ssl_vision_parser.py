@@ -49,7 +49,7 @@ class FieldInformation:
         tempRobot['orientation'] = yellowRobot.orientation
         self.cameras[cameraId][teamColor].append(tempRobot)
 
-    def getAll(self, cameraId = 2):
+    def getAll(self, cameraId = 0):
         # field : {
         #     t_capture : float
         #     balls : []
@@ -136,6 +136,7 @@ class SSLClient:
 
     def receive(self):
         """Receive package and decode."""
+        # TODO: fix wrapper for geometry packets
 
         data, _ = self.sock.recvfrom(1024)
         try:
@@ -155,7 +156,12 @@ def main():
         if ret:
             field.update(pkg.detection)
             f = field.getAll(pkg.detection.camera_id)
-            print(f)
+            for ball in f['balls']:
+                if ball['y'] < 0:
+                    print(f'camera: {pkg.detection.camera_id}')
+            for robot_yellow in f['yellowRobots']:
+                if robot_yellow['y'] < 0:
+                    print(f'robot yellow {robot_yellow}')
 
 if __name__ == '__main__':
     main()
