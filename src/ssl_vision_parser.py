@@ -49,7 +49,7 @@ class FieldInformation:
         tempRobot['orientation'] = yellowRobot.orientation
         self.cameras[cameraId][teamColor].append(tempRobot)
 
-    def getAll(self, cameraId = 0):
+    def getAll(self, cameraId = 2):
         # field : {
         #     t_capture : float
         #     balls : []
@@ -68,17 +68,17 @@ class FieldInformation:
         field['blueRobots'] = []
         field['yellowRobots'] = []
 
-        for camera in self.cameras.values():
-            for ball in camera['balls']:
-                field['balls'].append(ball)
+        camera = self.cameras[cameraId]
+        for ball in camera['balls']:
+            field['balls'].append(ball)
 
-            for robot in camera['blueRobots']:
-                field['blueRobots'].append(robot)
+        for robot in camera['blueRobots']:
+            field['blueRobots'].append(robot)
 
-            for robot in camera['yellowRobots']:
-                field['yellowRobots'].append(robot)
+        for robot in camera['yellowRobots']:
+            field['yellowRobots'].append(robot)
 
-        field['t_capture'] = self.cameras[cameraId]['t_capture']
+        field['t_capture'] = camera['t_capture']
 
         field['blueRobots'] = sorted(field['blueRobots'], key=lambda d: d['id'])
         field['yellowRobots'] = sorted(field['yellowRobots'], key=lambda d: d['id'])
@@ -138,8 +138,11 @@ class SSLClient:
         """Receive package and decode."""
 
         data, _ = self.sock.recvfrom(1024)
-        decoded_data = ssl_vision_wrapper_pb2.SSL_WrapperPacket().FromString(data)
-        return decoded_data
+        try:
+            decoded_data = ssl_vision_wrapper_pb2.SSL_WrapperPacket().FromString(data)
+            return True, decoded_data
+        except:
+            return False, None
 
 def main():
     c = SSLClient(port=10006)
@@ -148,11 +151,11 @@ def main():
     field = FieldInformation()
 
     while True:
-        pkg = c.receive()
-        print(pkg)
-        field.update(pkg.detection)
-        f = field.getAll()
-        print(f)
+        ret, pkg = c.receive()
+        if ret:
+            field.update(pkg.detection)
+            f = field.getAll(pkg.detection.camera_id)
+            print(f)
 
 if __name__ == '__main__':
     main()
