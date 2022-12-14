@@ -41,16 +41,16 @@ if __name__ == "__main__":
             # SAVE ODOMETRY DATA
             np.savetxt(cwd+f"/data/quadrado{quadrado_nr}/{frame_nr}_{count}.txt", odometry)
 
-            pkg = c.receive()
-            field.update(pkg.detection)
-            f = field.getAll()
-            # TODO: Salvar no log
-            
             # ADD FRAME NR
             frame_nr += 1
+
+        pkg = c.receive()
+        field.update(pkg.detection)
+        f = field.getAll()
+        # TODO: Salvar no log
             
-            # PRINT FOR DEBUG
-            print(f"odometry: {odometry} | count: {count:.0f}")
+        # PRINT FOR DEBUG
+        print(f"odometry: {odometry} | count: {count:.0f}")
 
     cap.release()
     cv2.destroyAllWindows()

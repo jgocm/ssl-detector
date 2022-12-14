@@ -123,6 +123,17 @@ class SSLClient:
         self.sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, 
                 socket.inet_aton(self.ip) + socket.inet_aton(host))
 
+    def forceConnect(self, ip = '172.20.30.184', port = 10006):
+        """Binds the client to its own ip and port."""
+
+        if not isinstance(ip, str):
+            raise ValueError('IP type should be string type')
+        if not isinstance(port, int):
+            raise ValueError('Port type should be int type')
+
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self.sock.bind((ip, port))
+
     def receive(self):
         """Receive package and decode."""
 
@@ -131,13 +142,14 @@ class SSLClient:
         return decoded_data
 
 def main():
-    c = SSLClient()
-    c.connect()
-
+    c = SSLClient(port=10006)
+    c.forceConnect()
+    print("connected")
     field = FieldInformation()
 
     while True:
         pkg = c.receive()
+        print(pkg)
         field.update(pkg.detection)
         f = field.getAll()
         print(f)
