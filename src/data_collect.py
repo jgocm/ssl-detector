@@ -44,7 +44,7 @@ if __name__ == "__main__":
     trt_net = DetectNet(
                 model_path=cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt", 
                 labels_path=cwd+"/models/ssl_labels.txt", 
-                score_threshold = 0.6,
+                score_threshold = 0.8,
                 draw = False,
                 display_fps = False
                 )
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # INIT SSL CLIENT
     c = SSLClient()
-    c.forceConnect(ip = '172.20.30.190', port = 10006)
+    c.forceConnect(ip = '172.20.30.161', port = 10006)
     field = FieldInformation()
 
     # FRAME NR COUNTER
@@ -63,6 +63,7 @@ if __name__ == "__main__":
     CAMERA_ID = 2       # USING ONLY NEGATIVE Y CAMERA
     ROBOT_ID = 0
     data_log = []
+    lastHasBall = False
 
     while True:
         # INIT DETECTION OBJECTS
@@ -107,7 +108,7 @@ if __name__ == "__main__":
             print(f"hasBall: {hasBall} | robot: {ssl_vision_robot} | ball: {ssl_vision_ball}, {jetson_vision_ball}")
 
         # ADD DETECTIONS TO LOG IF ROBOT HAS BALL ON SENSOR
-        if valid and hasBall:
+        if valid and hasBall and not lastHasBall:
             # SAVE RAW FRAME
             dir = cwd+f"/data/object_localization/{frame_nr}.jpg"
             cv2.imwrite(dir, frame)
@@ -117,7 +118,8 @@ if __name__ == "__main__":
 
             # ADD FRAME NR
             frame_nr += 1
-        
+        lastHasBall = hasBall
+
         # FINISH AND SAVE LOG IF ROBOT IS TURNED OFF (OR RESET)
         if battery<14:
             break
