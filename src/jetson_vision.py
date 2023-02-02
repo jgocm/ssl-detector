@@ -197,13 +197,13 @@ if __name__ == "__main__":
 
     cwd = os.getcwd()
 
-    frame_nr = 1
+    frame_nr = 137
     quadrado_nr = 1
 
-    vision = JetsonVision(vertical_lines_offset=320, 
+    vision = JetsonVision(vertical_lines_offset=80, 
                         debug=True)
 
-    while frame_nr<500:
+    while True:
         dir = cwd + f"/data/quadrado{quadrado_nr}/{frame_nr}_*.jpg"
         file = glob(dir)
         print(file[0])

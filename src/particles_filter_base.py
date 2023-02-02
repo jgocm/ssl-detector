@@ -244,7 +244,7 @@ class ParticleFilter:
                                     particle.y, 
                                     particle.theta, 
                                     self.field)
-        print(f'weight: {particle.weight}, position:{particle.x:.3f}, {particle.y:.3f}, {particle.theta:.3f}, detection:{boundary_points[0]:.5f}')
+        # print(f'weight: {particle.weight}, position:{particle.x:.3f}, {particle.y:.3f}, {particle.theta:.3f}, detection:{boundary_points[0]:.5f}')
         return boundary_points
 
     def compute_likelihood(self, measurements, particle):
@@ -292,6 +292,7 @@ class ParticleFilter:
         '''
         for particle in self.particles:
             if particle.weight>0.9:
+                print(f"Best particle: {particle.x:.3f}, {particle.y:.3f}, {particle.theta:.3f}")
                 return True
         
         else: return False
@@ -352,7 +353,7 @@ if __name__ == "__main__":
 
     # INITIALIZE PARTICLES FILTER
     robot_tracker = ParticleFilter(
-            number_of_particles=5,
+            number_of_particles=25,
             field=field,
             process_noise = [1, 1, 1],
             measurement_noise = [1, 1])
@@ -404,6 +405,3 @@ if __name__ == "__main__":
             break
         else:
             frame_nr=frame_nr+1
-
-
-

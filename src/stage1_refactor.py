@@ -52,9 +52,6 @@ def main():
         processed_vision = vision.process(frame, timestamp)
         current_frame, tracked_ball, tracked_goal, tracked_robot, particle_filter_observations = processed_vision
 
-        # COMPUTE SELF-LOCALIZATION
-        odometry = eth_comm.recvSSLMessage()
-
         # STATE MACHINE
         target, ssl_robot = state_machine.stage1(
                                 frame = current_frame, 

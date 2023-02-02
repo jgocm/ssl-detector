@@ -656,8 +656,9 @@ class Camera():
         pixel_y: y position on screen
         """
         camera_x, camera_y = self.robotToCameraCoordinates(x, y, camera_offset)
-        pixel_x, pixel_y = self.cameraToPixelCoordinates(camera_x, camera_y, 0)
-        return pixel_x, pixel_y
+        pixel = self.cameraToPixelCoordinates(x=camera_x, y=camera_y, z_world=0)
+        pixel_x, pixel_y = pixel[0], pixel[1]
+        return pixel_x[0], pixel_y[0]
 
     def pixelToRobotCoordinates(self, pixel_x, pixel_y, z_world):
         # BACK PROJECT OBJECT POSITION TO CAMERA 3D COORDINATES
