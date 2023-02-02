@@ -73,16 +73,15 @@ if __name__ == "__main__":
         odometry, hasBall, kickLoad, battery, count = eth_comm.recvSSLMessage()
 
         # RECEIVE DETECTIONS FROM SSL VISION
-        ret, pkg = c.receive()
-        if ret:
-            field.update(pkg.detection)
-            if pkg.detection.camera_id==CAMERA_ID:
-                f = field.getAll(CAMERA_ID)
-                for robot in f['yellowRobots']:
-                    if robot['id'] == ROBOT_ID:
-                        ssl_vision_robot = robot
-                for ball in f['balls']:
-                    ssl_vision_ball = ball
+        pkg = c.getLastMsg()
+        field.update(pkg.detection)
+        if pkg.detection.camera_id==CAMERA_ID:
+            f = field.getAll(CAMERA_ID)
+            for robot in f['yellowRobots']:
+                if robot['id'] == ROBOT_ID:
+                    ssl_vision_robot = robot
+            for ball in f['balls']:
+                ssl_vision_ball = ball
 
         # CAPTURE FRAME
         if cap.isOpened():

@@ -5,7 +5,6 @@ import cv2
 import os
 
 from jetson_vision import JetsonVision
-from interface import GUI
 
 def convert_to_local(global_x, global_y, robot_x, robot_y, robot_w):
     diff_x = global_x-robot_x

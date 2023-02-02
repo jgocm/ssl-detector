@@ -145,6 +145,13 @@ class SSLClient:
         except:
             return False, None
 
+    def getLastMsg(self):
+        while True:
+            ret, decoded_data = self.receive()
+            if ret==False: 
+                return decoded_data
+                break
+
 def main():
     c = SSLClient(port=10006)
     c.forceConnect()

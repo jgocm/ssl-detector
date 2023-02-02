@@ -200,7 +200,7 @@ if __name__ == "__main__":
     frame_nr = 137
     quadrado_nr = 1
 
-    vision = JetsonVision(vertical_lines_offset=80, 
+    vision = JetsonVision(vertical_lines_offset=320, 
                         debug=True)
 
     while True:
