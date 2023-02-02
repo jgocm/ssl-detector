@@ -137,20 +137,17 @@ class SSLClient:
     def receive(self):
         """Receive package and decode."""
         # TODO: fix wrapper for geometry packets
-
-        data, _ = self.sock.recvfrom(1024)
-        try:
-            decoded_data = ssl_vision_wrapper_pb2.SSL_WrapperPacket().FromString(data)
-            return True, decoded_data
-        except:
-            return False, None
-
-    def getLastMsg(self):
+        decoded_data = None
+        has_package = False
         while True:
-            ret, decoded_data = self.receive()
-            if ret==False: 
-                return decoded_data
-                break
+            try:
+                data, _ = self.sock.recvfrom(1024)
+                decoded_data = ssl_vision_wrapper_pb2.SSL_WrapperPacket().FromString(data)
+                has_package = True
+            except:
+                break 
+
+        return has_package, decoded_data
 
 def main():
     c = SSLClient(port=10006)
