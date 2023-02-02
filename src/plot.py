@@ -9,8 +9,8 @@ from jetson_vision import JetsonVision
 def convert_to_local(global_x, global_y, robot_x, robot_y, robot_w):
     diff_x = global_x-robot_x
     diff_y = global_y-robot_y
-    local_x = diff_x*np.cos(robot_w) - diff_y*np.sin(robot_w)
-    local_y = diff_x*np.sin(robot_w) + diff_y*np.cos(robot_w)
+    local_x = diff_x*np.cos(robot_w) + diff_y*np.sin(robot_w)
+    local_y = -diff_x*np.sin(robot_w) + diff_y*np.cos(robot_w)
     return local_x, local_y
 
 def log_to_relative_points(df):
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                                                 camera_offset=90)
         
         # DRAW ON SCREEN FOR DEBUG                                      
-        draw_cross_marker(img, int(jetson_pixel_x), int(jetson_pixel_y), color=(0,255,0))
+        # draw_cross_marker(img, int(jetson_pixel_x), int(jetson_pixel_y), color=(0,255,0))
         draw_cross_marker(img, int(pixel_x), int(pixel_y))
         draw_text(img, f'SSL Vision:{ssl_vision_relative_ball[0]:.3f}, {ssl_vision_relative_ball[1]:.3f}', (10, 55), 1)
         draw_text(img, f'Jetson Vision:{jetson_vision_relative_ball.x:.3f}, {jetson_vision_relative_ball.y:.3f}', (10, 80), 1)
