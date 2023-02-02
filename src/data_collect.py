@@ -6,6 +6,7 @@ import numpy as np
 import communication_proto
 from ssl_vision_parser import SSLClient, FieldInformation
 from object_detection import DetectNet
+from jetson_vision import JetsonVision
 import plot
 
 def serialize_data_to_log(frame_nr, ssl_vision_robot, ssl_vision_ball, jetson_vision_ball):
@@ -41,15 +42,8 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    # INIT OBJECT DETECTION 
-    trt_net = DetectNet(
-                model_path=cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt", 
-                labels_path=cwd+"/models/ssl_labels.txt", 
-                score_threshold = 0.8,
-                draw = False,
-                display_fps = False
-                )
-    trt_net.loadModel()
+    # INIT EMBEDDED VISION 
+    vision = JetsonVision(draw=True, enable_field_detection=False, score_threshold=0.8)
 
     # INIT SSL CLIENT
     c = SSLClient()
@@ -94,7 +88,7 @@ if __name__ == "__main__":
            else: img = frame.copy()
         
         # DETECT OBJECT'S BOUNDING BOXES
-        detections = trt_net.inference(img).detections
+        detections = vision.object_detector.inference(img).detections
         for detection in detections:
             class_id, score, xmin, xmax, ymin, ymax = detection
             if class_id==1:
@@ -107,6 +101,26 @@ if __name__ == "__main__":
         if valid:
             data = serialize_data_to_log(frame_nr, ssl_vision_robot, ssl_vision_ball, jetson_vision_ball)
             print(f"hasBall: {hasBall} | robot: {ssl_vision_robot} | ball: {ssl_vision_ball}, {jetson_vision_ball}")
+            
+            # DISPLAY ON SCREEN FOR DEBUG
+            xmin, xmax, ymin, ymax = jetson_vision_ball
+            jetson_vision_relative_ball = vision.trackBall(1, xmin, xmax, ymin, ymax)
+            ssl_vision_relative_ball = plot.convert_to_local(
+                ssl_vision_ball['x'], 
+                ssl_vision_ball['y'],
+                ssl_vision_robot['x'],
+                ssl_vision_robot['y'],
+                ssl_vision_robot['orientation'])
+            pixel_x, pixel_y = vision.jetson_cam.robotToPixelCoordinates(
+                                                x=ssl_vision_relative_ball[0], 
+                                                y=ssl_vision_relative_ball[1], 
+                                                camera_offset=90)
+            plot.draw_cross_marker(img, int(pixel_x), int(pixel_y))
+            plot.draw_text(img, f'SSL Vision:{ssl_vision_relative_ball[0]:.3f}, {ssl_vision_relative_ball[1]:.3f}', (10, 55), 1)
+            plot.draw_text(img, f'Jetson Vision:{jetson_vision_relative_ball.x:.3f}, {jetson_vision_relative_ball.y:.3f}', (10, 80), 1)
+            plot.draw_text(img, f'frame nr: {frame_nr}', (10, 30), 0.8)
+
+        cv2.imshow("BALL LOCALIZATION DATASET", img)
 
         # ADD DETECTIONS TO LOG IF ROBOT HAS BALL ON SENSOR
         if valid and hasBall and not lastHasBall:
