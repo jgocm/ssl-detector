@@ -32,9 +32,9 @@ def log_to_relative_points(df):
 
 def plot_comparison(df_raw, df_clean):
     local_x, local_y = log_to_relative_points(df_raw)
-    clean_local_x, clean_local_y = log_to_relative_points(df_clean)
+    # clean_local_x, clean_local_y = log_to_relative_points(df_clean)
     plt.scatter(local_x, local_y)
-    plt.scatter(clean_local_x, clean_local_y)
+    # plt.scatter(clean_local_x, clean_local_y)
     plt.show()
 
 def draw_text(img, caption, box, size=0.6):
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     df_raw = pd.read_csv('/home/rc-blackout/ssl-detector/data/object_localization/log.csv', sep=',')
     df_clean = pd.read_csv('/home/rc-blackout/ssl-detector/data/object_localization/log_clean.csv', sep=',')
     ball_x, ball_y = log_to_relative_points(df_raw)
-    # plot_comparison(df_raw, df_clean)
+    plot_comparison(df_raw, df_clean)
     
     # READ BBOX LOG FILES 
     xmin = df_raw['X_MIN'].to_list()
