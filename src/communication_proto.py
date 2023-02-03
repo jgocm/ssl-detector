@@ -128,15 +128,17 @@ class SocketUDP():
         msg = pb.protoOdometry()
         # multiple messages are received and accumulated on buffer during vision processing
         # so read until buffer socket are no longer available
+        has_msg = False
         while True:
             try:
                 data, _ = self.udp_sock.recvfrom(1024)
                 msg.ParseFromString(data)
+                has_msg = True
             except:
                 break 
         movement = [msg.x, msg.y, msg.w]
         
-        return movement, msg.hasBall, msg.kickLoad, msg.battery, msg.count
+        return has_msg, movement, msg.hasBall, msg.kickLoad, msg.battery, msg.count
 
 
 if __name__ == "__main__":

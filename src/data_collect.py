@@ -145,5 +145,5 @@ if __name__ == "__main__":
         write.writerow(fields)
         write.writerows(data_log)
 
-    cap.release()
-    cv2.destroyAllWindows()
+    # cap.release()
+    # cv2.destroyAllWindows()

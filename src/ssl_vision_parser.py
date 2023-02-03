@@ -87,7 +87,7 @@ class FieldInformation:
 
 class SSLClient:
     
-    def __init__(self, ip = '224.5.23.2', port=10006):
+    def __init__(self, ip = '172.20.30.191', port=10006):
         """
         Init SSLClient object.
 
@@ -123,7 +123,7 @@ class SSLClient:
         self.sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, 
                 socket.inet_aton(self.ip) + socket.inet_aton(host))
 
-    def forceConnect(self, ip = '172.20.30.184', port = 10006):
+    def forceConnect(self, ip = '172.20.30.191', port = 10006):
         """Binds the client to its own ip and port."""
 
         if not isinstance(ip, str):
@@ -139,13 +139,13 @@ class SSLClient:
         # TODO: fix wrapper for geometry packets
         decoded_data = None
         has_package = False
-        while True:
-            try:
-                data, _ = self.sock.recvfrom(1024)
-                decoded_data = ssl_vision_wrapper_pb2.SSL_WrapperPacket().FromString(data)
-                has_package = True
-            except:
-                break 
+        # while True:
+        try:
+            data, _ = self.sock.recvfrom(1024)
+            decoded_data = ssl_vision_wrapper_pb2.SSL_WrapperPacket().FromString(data)
+            has_package = True
+        except:
+            has_package = False 
 
         return has_package, decoded_data
 
@@ -162,7 +162,7 @@ def main():
             f = field.getAll(pkg.detection.camera_id)
             for ball in f['balls']:
                 if ball['y'] < 0:
-                    print(f'camera: {pkg.detection.camera_id}')
+                    print(f'camera: {pkg.detection.camera_id}, ball:{ball}')
             for robot_yellow in f['yellowRobots']:
                 if robot_yellow['y'] < 0:
                     print(f'robot yellow {robot_yellow}')
