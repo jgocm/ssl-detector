@@ -669,6 +669,15 @@ class Camera():
         x, y, w = self.cameraToRobotCoordinates(x[0], y[0])
         return x, y, w
 
+    def xyToPolarCoordinates(self, x, y):
+        '''
+        Converts an x, y relative position to relative polar coordinates (distance and bearing angle), as suggested in: 
+            Monte Carlo Localization for Robocup 3D Soccer Simulation League - 2016
+        '''
+        distance = np.sqrt(x**2 + y**2)
+        theta = np.rad2deg(np.arctan2(y, x))
+        return [distance, theta]
+
     def selfLocalizationFromGoalCorners(self, x1, y1, x2, y2):
         theta = math.atan((y2-y1)/(x1-x2))
         

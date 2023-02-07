@@ -219,7 +219,9 @@ if __name__ == "__main__":
         height, width = img.shape[0], img.shape[1]
         _, _, _, _, particle_filter_observations = vision.process(img, timestamp=time.time())
         boundary_ground_points, line_ground_points = particle_filter_observations
-        print(boundary_ground_points)
+        for point in boundary_ground_points:
+            point = vision.jetson_cam.xyToPolarCoordinates(point[0], point[1])
+            print(point)
         cv2.imshow(WINDOW_NAME, img)
         key = cv2.waitKey(-1) & 0xFF
         if key == ord('q'):
