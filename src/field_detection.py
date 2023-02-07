@@ -5,7 +5,8 @@ import os
 class FieldDetection():
     def __init__(
             self,
-            vertical_lines_offset = 240,
+            vertical_lines_offset = 320,
+            vertical_lines_nr = 1,
             min_line_length = 1,
             max_line_length = 20,
             min_wall_length = 10
@@ -23,10 +24,26 @@ class FieldDetection():
         self.min_wall_length = min_wall_length
 
         # line scans offset
-        self.vertical_lines_offset = int(vertical_lines_offset)
+        self.vertical_lines = []
+        self.vertical_lines_nr = vertical_lines_nr
+        self.arrangeVerticalLinesUniform(vertical_lines_offset, img_width=640)
 
         self.mask_points = []
     
+    def arrangeVerticalLinesUniform(self, vertical_lines_offset = 320, img_width = 640):
+        vertical_lines = []
+        for line_x in range(vertical_lines_offset, self.vertical_lines_nr*vertical_lines_offset+1, vertical_lines_offset):
+            if line_x>5 and line_x<img_width-5: vertical_lines.append(line_x)
+            else: print(f"Detection line out of resolution bounds! Vertical position:Line {line_x}")
+        self.vertical_lines = vertical_lines
+
+    def arrangeVerticalLinesRandom(self, img_width = 640):
+        vertical_lines = []
+        for i in range(self.vertical_lines_nr):
+            line_x = int(np.random.uniform(5, img_width-5))
+            vertical_lines.append(line_x)
+        self.vertical_lines = vertical_lines
+
     def isBlack(self, src):
         blue, green, red = src
         if green < 70 and red < 70 and blue < 70:
@@ -72,15 +89,15 @@ class FieldDetection():
         # height and width from image resolution
         height, width = src.shape[0], src.shape[1]
 
-        for line_x in range(self.vertical_lines_offset+5, width, self.vertical_lines_offset):
-             # segment vertical lines
+        for line_x in self.vertical_lines:
+            # segment vertical lines
             for pixel_y in range(0, height):
                 pixel = src[pixel_y, line_x]
                 color = self.segmentPixel(pixel)
                 segmented_img[pixel_y, line_x] = color
 
         return segmented_img        
-            
+    
     def fieldWallDetection(self, src):
         """
         Make descripition here
@@ -91,7 +108,7 @@ class FieldDetection():
         # wall detection points
         boundary_points = []
 
-        for line_x in range(self.vertical_lines_offset+5, width, self.vertical_lines_offset):
+        for line_x in self.vertical_lines:
             wall_points = []
             for pixel_y in range(height-1, 0, -1):
                 pixel = src[pixel_y, line_x]
@@ -115,7 +132,7 @@ class FieldDetection():
         # field lines detection points
         field_line_points = []
 
-        for line_x in range(self.vertical_lines_offset+5, width, self.vertical_lines_offset):
+        for line_x in self.vertical_lines:
             field_line = False
             line_points = []
             for pixel_y in range(height-1, 0, -1):
@@ -161,7 +178,7 @@ class FieldDetection():
         # field lines detection points
         field_line_points = []
 
-        for line_x in range(self.vertical_lines_offset+5, width, self.vertical_lines_offset):
+        for line_x in self.vertical_lines:
             wall_points = []
             for pixel_y in range(height-1, 0, -1):
                 pixel = src[pixel_y, line_x]
@@ -177,27 +194,30 @@ class FieldDetection():
 
 
 if __name__ == "__main__":
+    from glob import glob
 
     cwd = os.getcwd()
 
     FRAME_NR = 5
-    STAGE = 2
-    IMG_PATH = cwd + f'/data/stage{STAGE}/frame{FRAME_NR}.jpg'
+    QUADRADO = 1
     WINDOW_NAME = "BOUNDARY DETECTION"
     VERTICAL_LINES_NR = 1
 
-    img = cv2.imread(IMG_PATH)
-    height, width = img.shape[0], img.shape[1]
-    alpha = 0.01
-
     # FIELD DETECTION TESTS
     field_detector = FieldDetection(
-                    vertical_lines_offset=1,
+                    vertical_lines_offset=320,
+                    vertical_lines_nr=1,
                     min_line_length=1,
                     max_line_length=20,
                     min_wall_length=10)
+    print(field_detector.vertical_lines)
 
     while True:
+        IMG_PATH = cwd + f"/data/quadrado{QUADRADO}/{FRAME_NR}_*.jpg"
+        file = glob(IMG_PATH)
+        img = cv2.imread(file[-1])
+
+        field_detector.arrangeVerticalLinesRandom()
         boundary_points, line_points = field_detector.detectFieldLinesAndBoundary(img)
 
         for point in boundary_points:
@@ -213,6 +233,8 @@ if __name__ == "__main__":
         key = cv2.waitKey(-1) & 0xFF
         if key == ord('q'):
             break
+        else:
+            FRAME_NR += 1
 
     # RELEASE WINDOW AND DESTROY
     cv2.destroyAllWindows()

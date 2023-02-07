@@ -27,6 +27,7 @@ class JetsonVision():
     def __init__(
         self,
         vertical_lines_offset = 320,
+        vertical_lines_nr = 1,
         model_path=PATH_TO_MODEL, 
         labels_path=PATH_TO_LABELS, 
         score_threshold = 0.5,
@@ -37,6 +38,7 @@ class JetsonVision():
         points3d_path = PATH_TO_3D_POINTS,
         debug = False,
         enable_field_detection = True,
+        enable_randomized_observations = False,
         min_wall_length = 10   
         ):
 
@@ -63,8 +65,10 @@ class JetsonVision():
         
         self.field_detector = FieldDetection(
             vertical_lines_offset = vertical_lines_offset,
+            vertical_lines_nr = vertical_lines_nr,
             min_wall_length = min_wall_length
             )
+        self.enable_randomized_observations = enable_randomized_observations
         
         self.field = Field()
         self.current_frame = Frame()
@@ -183,6 +187,7 @@ class JetsonVision():
             self.detectAndTrackObjects(self.current_frame.input) # 30ms
         # 42ms with field lines detection, 8~9ms without it
         if self.has_field_detection:
+            if self.enable_randomized_observations: self.field_detector.arrangeVerticalLinesRandom()
             particle_filter_observations = self.detectAndTrackFieldPoints(self.current_frame.input)
         else:
             particle_filter_observations = []
@@ -200,13 +205,14 @@ if __name__ == "__main__":
     frame_nr = 137
     quadrado_nr = 1
 
-    vision = JetsonVision(vertical_lines_offset=320, 
+    vision = JetsonVision(
+                        vertical_lines_offset=320,
+                        enable_randomized_observations=True,
                         debug=True)
 
     while True:
         dir = cwd + f"/data/quadrado{quadrado_nr}/{frame_nr}_*.jpg"
         file = glob(dir)
-        print(file[0])
 
         WINDOW_NAME = "BOUNDARY DETECTION"
         img = cv2.imread(file[-1])

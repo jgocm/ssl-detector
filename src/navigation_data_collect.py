@@ -5,7 +5,6 @@ import csv
 import numpy as np
 import communication_proto
 from ssl_vision_parser import SSLClient, FieldInformation
-from object_detection import DetectNet
 from jetson_vision import JetsonVision
 import plot
 
