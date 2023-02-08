@@ -5,144 +5,130 @@ import csv
 import numpy as np
 import communication_proto
 from ssl_vision_parser import SSLClient, FieldInformation
+from object_detection import DetectNet
 from jetson_vision import JetsonVision
 import plot
+import tensorrt as trt
 
-def serialize_data_to_log(frame_nr, ssl_vision_robot, ssl_vision_ball, jetson_vision_ball):
-    # VISION BLACKOUT ROBOT POSITION
-    id = ssl_vision_robot['id']
-    robot_x = ssl_vision_robot['x']
-    robot_y = ssl_vision_robot['y']
-    robot_theta = ssl_vision_robot['orientation']
+def serialize_data_to_log(frame_nr, id, robot_odometry, robot_position, has_goal, jetson_vision_goal, timestamp):
+    # ODOMETRY ENCODING
+    odometry_x = robot_odometry[0]   
+    odometry_y = robot_odometry[1]   
+    odometry_theta = robot_odometry[2]
 
-    # ON-FIELD BALL GROUND TRUTH POSITION
-    ball_x = ssl_vision_ball['x']
-    ball_y = ssl_vision_ball['y']    
+    # POSITION ENCODING
+    position_x = robot_position[0]   
+    position_y = robot_position[1]   
+    position_theta = robot_position[2]    
 
     # DETECTED BALL BOUNDING BOX
-    xmin, xmax, ymin, ymax = jetson_vision_ball
+    xmin, xmax, ymin, ymax = jetson_vision_goal
 
-    data = [frame_nr, id, robot_x, robot_y, robot_theta, ball_x, ball_y,  xmin, xmax, ymin, ymax]
+    data = [frame_nr, id, odometry_x, odometry_y, odometry_theta, \
+        position_x, position_y, position_theta, \
+        has_goal, xmin, xmax, ymin, ymax, timestamp]
     return data
 
+def get_bbox(vision, img):
+    detections = vision.object_detector.inference(img).detections
+    jetson_vision_goal = None
+    for detection in detections:
+        class_id, score, xmin, xmax, ymin, ymax = detection
+        if class_id==2:
+            jetson_vision_goal = [xmin, xmax, ymin, ymax]   
+
+    return jetson_vision_goal
 
 if __name__ == "__main__":
     cwd = os.getcwd()
 
-    # START TIME
-    start = time.time()
-    EXECUTION_TIME = 300
-
     # UDP COMMUNICATION SETUP
     eth_comm = communication_proto.SocketUDP()
-
+   
     # VIDEO CAPTURE CONFIGS
+    DISPLAY_WINDOW = False
+    WINDOW_NAME = 'SELF LOCALIZATION DATASET'
     cap = cv2.VideoCapture("/dev/video0")
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # INIT EMBEDDED VISION 
-    vision = JetsonVision(draw=True, enable_field_detection=False, score_threshold=0.8)
-
-    # INIT SSL CLIENT
-    c = SSLClient()
-    c.forceConnect(ip = '172.20.30.161', port = 10006)
-    field = FieldInformation()
+    vision = JetsonVision(draw=False, enable_field_detection=False, score_threshold=0.6)
 
     # FRAME NR COUNTER
     frame_nr = 1
 
     # DATA FOR LOGS
-    fields = ['FRAME_NR', 'ROBOT_ID', 'ROBOT X', 'ROBOT Y', 'ROBOT THETA', 'BALL X', 'BALL Y', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX']
-    CAMERA_ID = 2       # USING ONLY NEGATIVE Y CAMERA
+    QUADRADO_NR = 15
     ROBOT_ID = 0
+    fields = ['FRAME_NR', 'ROBOT_ID', 'ODOMETRY X', 'ODOMETRY Y', 'ODOMETRY THETA', 'POSITION X', 'POSITION Y', 'POSITION THETA', \
+        'HAS GOAL', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX']
     data_log = []
-    lastHasBall = False
+    start_time = time.time()
+    save_frames = True   
 
     while True:
-        # INIT DETECTION OBJECTS
-        ssl_vision_robot, ssl_vision_ball, jetson_vision_ball = None, None, None
-
         # RECEIVE MSG FROM MCU
-        odometry, hasBall, kickLoad, battery, count = eth_comm.recvSSLMessage()
+        ret_robot, robot_odometry, hasBall, kickLoad, battery, count, robot_position = eth_comm.recvSSLMessage()
 
-        # RECEIVE DETECTIONS FROM SSL VISION
-        ret, pkg = c.receive()
-        if ret:
-            field.update(pkg.detection)
-            if pkg.detection.camera_id==CAMERA_ID:
-                f = field.getAll(CAMERA_ID)
-                for robot in f['yellowRobots']:
-                    if robot['id'] == ROBOT_ID:
-                        ssl_vision_robot = robot
-                for ball in f['balls']:
-                    ssl_vision_ball = ball
+        # SAVE TIMESTAMP BEFORE CAPTURING FRAME
+        timestamp = time.time() - start_time
 
         # CAPTURE FRAME
         if cap.isOpened():
-           ret, frame = cap.read()
-           if not ret:
+           ret_camera, frame = cap.read()
+           if not ret_camera:
                print("Check video capture path")
                break
-           else: img = frame.copy()
-        
+           else: img = frame
+
         # DETECT OBJECT'S BOUNDING BOXES
-        detections = vision.object_detector.inference(img).detections
-        for detection in detections:
-            class_id, score, xmin, xmax, ymin, ymax = detection
-            if class_id==1:
-                jetson_vision_ball = [xmin, xmax, ymin, ymax]
+        jetson_vision_goal = get_bbox(vision, img)
 
         # CHECK IF ALL FIELDS ARE AVAILABLE
-        valid = (ssl_vision_robot is not None) and (ssl_vision_ball is not None) and (jetson_vision_ball is not None)
+        has_goal = (jetson_vision_goal is not None)
 
-        # PRINT FOR DEBUG
-        if valid:
-            data = serialize_data_to_log(frame_nr, ssl_vision_robot, ssl_vision_ball, jetson_vision_ball)
-            print(f"hasBall: {hasBall} | robot: {ssl_vision_robot} | ball: {ssl_vision_ball}, {jetson_vision_ball}")
-            
-            # DISPLAY ON SCREEN FOR DEBUG
-            xmin, xmax, ymin, ymax = jetson_vision_ball
-            jetson_vision_relative_ball = vision.trackBall(1, xmin, xmax, ymin, ymax)
-            ssl_vision_relative_ball = plot.convert_to_local(
-                ssl_vision_ball['x'], 
-                ssl_vision_ball['y'],
-                ssl_vision_robot['x'],
-                ssl_vision_robot['y'],
-                ssl_vision_robot['orientation'])
-            pixel_x, pixel_y = vision.jetson_cam.robotToPixelCoordinates(
-                                                x=ssl_vision_relative_ball[0], 
-                                                y=ssl_vision_relative_ball[1], 
-                                                camera_offset=90)
-            plot.draw_cross_marker(img, int(pixel_x), int(pixel_y))
-            plot.draw_text(img, f'SSL Vision:{ssl_vision_relative_ball[0]:.3f}, {ssl_vision_relative_ball[1]:.3f}', (10, 55), 1)
-            plot.draw_text(img, f'Jetson Vision:{jetson_vision_relative_ball.x:.3f}, {jetson_vision_relative_ball.y:.3f}', (10, 80), 1)
-            plot.draw_text(img, f'frame nr: {frame_nr}', (10, 30), 0.8)
+        # UPDATE DATA AND PRINT FOR DEBUG
+        if not has_goal:
+            jetson_vision_goal = [0, 0, 0, 0]
 
-        cv2.imshow("BALL LOCALIZATION DATASET", img)
+        data = serialize_data_to_log(frame_nr, ROBOT_ID, robot_odometry, robot_position, has_goal, jetson_vision_goal, timestamp)
+
+        # DISPLAY WINDOW FOR DEBUG
+        if DISPLAY_WINDOW:
+            cv2.moveWindow(WINDOW_NAME, 100, 50)
+            cv2.imshow(WINDOW_NAME, img)
+
+            key = cv2.waitKey(10) & 0xFF
+            if key == ord('q'):
+                break
 
         # ADD DETECTIONS TO LOG IF ROBOT HAS BALL ON SENSOR
-        if valid and hasBall and not lastHasBall:
+        if save_frames:
             # SAVE RAW FRAME
-            dir = cwd+f"/data/object_localization/{frame_nr}.jpg"
+            dir = cwd+f"/data/quadrado{QUADRADO_NR}/{frame_nr}.jpg"
             cv2.imwrite(dir, frame)
 
-            # APPEND DATA TO LOG
-            data_log.append(data)
+        # PRINT SAVED FRAME
+        print(f"FRAME NR: {frame_nr} | ODOMETRY: {robot_odometry} | VISION: {robot_position} | HAS_GOAL: {has_goal}, {jetson_vision_goal} | TIME: {timestamp}")
 
-            # ADD FRAME NR
-            frame_nr += 1
-        lastHasBall = hasBall
+        # APPEND DATA TO LOG
+        data_log.append(data)
+
+        # ADD FRAME NR
+        frame_nr += 1
 
         # FINISH AND SAVE LOG IF ROBOT IS TURNED OFF (OR RESET)
-        if battery<14:
+        if hasBall:
+            print("FINISH CAPTURE!")
             break
-
-    dir = cwd+f"/data/object_localization/log.csv"
+        
+    dir = cwd+f"/data/quadrado{QUADRADO_NR}/log.csv"
     with open(dir, 'w') as f:
         write = csv.writer(f)
         write.writerow(fields)
         write.writerows(data_log)
 
-    # cap.release()
-    # cv2.destroyAllWindows()
+    # RELEASE WINDOW AND DESTROY
+    cap.release()
+    cv2.destroyAllWindows()

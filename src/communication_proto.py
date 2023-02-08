@@ -125,7 +125,7 @@ class SocketUDP():
             self.udp_sock.sendto(self.msg.SerializeToString(), (self.device_address, self.device_port))
     
     def recvSSLMessage(self):
-        msg = pb.protoOdometry()
+        msg = pb.protoOdometrySSL()
         # multiple messages are received and accumulated on buffer during vision processing
         # so read until buffer socket are no longer available
         has_msg = False
@@ -137,8 +137,9 @@ class SocketUDP():
             except:
                 break 
         movement = [msg.x, msg.y, msg.w]
+        vision = [msg.vision_x, msg.vision_y, msg.vision_w]
         
-        return has_msg, movement, msg.hasBall, msg.kickLoad, msg.battery, msg.count
+        return has_msg, movement, msg.hasBall, msg.kickLoad, msg.battery, msg.count, vision
 
 
 if __name__ == "__main__":
@@ -178,6 +179,6 @@ if __name__ == "__main__":
     
     else:
         while True:
-            odometry, hasBall, kickLoad, battery, count = UDP.recvSSLMessage()
+            has_msg, odometry, hasBall, kickLoad, battery, count, position = UDP.recvSSLMessage()
             if battery>15:
-                print(f"{odometry}, {hasBall}, {kickLoad:.3f}, {battery:.3f}, {count}")
+                print(f"{odometry}, {hasBall}, {kickLoad:.3f}, {battery:.3f}, {count}, {position}")

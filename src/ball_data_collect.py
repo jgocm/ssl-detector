@@ -92,7 +92,7 @@ if __name__ == "__main__":
         jetson_vision_ball = get_bbox(vision, img)
 
         # RECEIVE MSG FROM MCU
-        ret_robot, odometry, hasBall, kickLoad, battery, count = eth_comm.recvSSLMessage()
+        ret_robot, odometry, hasBall, kickLoad, battery, count, vision = eth_comm.recvSSLMessage()
 
         # RECEIVE DETECTIONS FROM SSL VISION
         ret_ssl_vision, pkg = c.receive()
