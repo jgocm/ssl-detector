@@ -56,15 +56,15 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # INIT EMBEDDED VISION 
-    vision = JetsonVision(draw=True, enable_field_detection=False, score_threshold=0.8)
+    vision = JetsonVision(draw=True, enable_field_detection=False, score_threshold=0.3)
 
     # INIT SSL CLIENT
     c = SSLClient()
-    c.forceConnect(ip = '172.20.30.161', port = 10006)
+    c.forceConnect(ip = '172.20.30.145', port = 10006)
     field = FieldInformation()
 
     # FRAME NR COUNTER
-    frame_nr = 1
+    frame_nr = 49
 
     # DATA FOR LOGS
     fields = ['FRAME_NR', 'ROBOT_ID', 'ROBOT X', 'ROBOT Y', 'ROBOT THETA', 'BALL X', 'BALL Y', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX']
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         jetson_vision_ball = get_bbox(vision, img)
 
         # RECEIVE MSG FROM MCU
-        ret_robot, odometry, hasBall, kickLoad, battery, count, vision = eth_comm.recvSSLMessage()
+        ret_robot, odometry, hasBall, kickLoad, battery, count, _ = eth_comm.recvSSLMessage()
 
         # RECEIVE DETECTIONS FROM SSL VISION
         ret_ssl_vision, pkg = c.receive()
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         # ADD DETECTIONS TO LOG IF ROBOT HAS BALL ON SENSOR
         if valid and ((hasBall and not lastHasBall) or saveFrame):
             # SAVE RAW FRAME
-            dir = cwd+f"/data/object_localization/{frame_nr}.jpg"
+            dir = cwd+f"/data/object_localization/test/{frame_nr}.jpg"
             cv2.imwrite(dir, frame)
 
             # PRINT SAVED FRAME
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         if not ret_robot and not DISPLAY_WINDOW:
             break
         
-    dir = cwd+f"/data/object_localization/log.csv"
+    dir = cwd+f"/data/object_localization/test/log.csv"
     with open(dir, 'w') as f:
         write = csv.writer(f)
         write.writerow(fields)

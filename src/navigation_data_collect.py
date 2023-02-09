@@ -35,7 +35,7 @@ def get_bbox(vision, img):
     for detection in detections:
         class_id, score, xmin, xmax, ymin, ymax = detection
         if class_id==2:
-            jetson_vision_goal = [xmin, xmax, ymin, ymax]   
+            jetson_vision_goal = [xmin, xmax, ymin, ymax]
 
     return jetson_vision_goal
 
