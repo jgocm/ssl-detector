@@ -37,12 +37,28 @@ class FieldDetection():
             else: print(f"Detection line out of resolution bounds! Vertical position:Line {line_x}")
         self.vertical_lines = vertical_lines
 
-    def arrangeVerticalLinesRandom(self, img_width = 640):
+    def arrangeVerticalLinesRandom(self, img_width = 640, detections = []):
         vertical_lines = []
         for i in range(self.vertical_lines_nr):
             line_x = int(np.random.uniform(5, img_width-5))
+            while self.isInsideBoundingBox(line_x, detections): 
+                line_x = int(np.random.uniform(5, img_width-5))
             vertical_lines.append(line_x)
         self.vertical_lines = vertical_lines
+
+    def isInsideBoundingBox(self, x, detections):
+        for detection in detections:
+            score, xmin, xmax, ymin, ymax = detection
+            if (x < xmax and x > xmin): return True
+        return False
+
+    def updateMask(self, boundary_points):
+        # TODO: make better approach for mask setting
+        self.mask_points = boundary_points
+
+    def isOutOfField(self, detection):
+        # TODO: make better approach for out-of-field-checking
+        return False
 
     def isBlack(self, src):
         blue, green, red = src
@@ -213,9 +229,8 @@ if __name__ == "__main__":
     print(field_detector.vertical_lines)
 
     while True:
-        IMG_PATH = cwd + f"/data/quadrado{QUADRADO}/{FRAME_NR}_*.jpg"
-        file = glob(IMG_PATH)
-        img = cv2.imread(file[-1])
+        IMG_PATH = cwd + f"/data/quadrado{QUADRADO}/{FRAME_NR}.jpg"
+        img = cv2.imread(IMG_PATH)
 
         field_detector.arrangeVerticalLinesRandom()
         boundary_points, line_points = field_detector.detectFieldLinesAndBoundary(img)

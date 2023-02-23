@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import math
 import time
-from sklearn import linear_model
+# from sklearn import linear_model
 
 class KeypointRegression():
     def __init__(
@@ -555,6 +555,11 @@ class Camera():
         tvec = -np.matmul(np.linalg.inv(rmtx),np.matrix(camera_position))
 
         return tvec, rmtx
+
+    def setPoseFrom3DModel(self, height, angle):
+        camera_position = np.array([[0], [0], [height]])
+        euler_angles = np.array([[angle], [0], [0]])
+        self.setPoseFromFile(camera_position, euler_angles)
 
     def pixelToCameraCoordinates(self, x, y, z_world=0):
         uvPoint = np.array([(x,y,1)])

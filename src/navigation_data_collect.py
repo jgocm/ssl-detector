@@ -62,7 +62,7 @@ if __name__ == "__main__":
     QUADRADO_NR = 15
     ROBOT_ID = 0
     fields = ['FRAME_NR', 'ROBOT_ID', 'ODOMETRY X', 'ODOMETRY Y', 'ODOMETRY THETA', 'POSITION X', 'POSITION Y', 'POSITION THETA', \
-        'HAS GOAL', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX']
+        'HAS GOAL', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX', 'TIMESTAMP']
     data_log = []
     start_time = time.time()
     save_frames = True   
