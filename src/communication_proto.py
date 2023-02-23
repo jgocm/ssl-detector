@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
         print(f"Sending X, Y, W Position")
         print(f"x = {x}, y = {y}, w = {w}")
-
+        
         UDP.msg.posType = pb.protoPositionSSL.driveToTarget
         UDP.msg.x = x
         UDP.msg.y = y
@@ -175,6 +175,7 @@ if __name__ == "__main__":
 
         while(1):
             UDP.sendSSLMessage()
+            print(f"{UDP.msg.posType}, {UDP.msg.x}, {UDP.msg.y}, {UDP.msg.w}")
             time.sleep(0.033)
     
     else:
