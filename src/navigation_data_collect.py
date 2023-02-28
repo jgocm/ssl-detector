@@ -59,10 +59,12 @@ if __name__ == "__main__":
     frame_nr = 1
 
     # DATA FOR LOGS
-    QUADRADO_NR = 15
+    QUADRADO_NR = 2
     ROBOT_ID = 0
-    fields = ['FRAME_NR', 'ROBOT_ID', 'ODOMETRY X', 'ODOMETRY Y', 'ODOMETRY THETA', 'POSITION X', 'POSITION Y', 'POSITION THETA', \
-        'HAS GOAL', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX']
+    fields = ['FRAME_NR', 'ROBOT_ID', \
+        'ODOMETRY X', 'ODOMETRY Y', 'ODOMETRY THETA', \
+        'POSITION X', 'POSITION Y', 'POSITION THETA', \
+        'HAS GOAL', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX', 'TIMESTAMP']
     data_log = []
     start_time = time.time()
     save_frames = True   
@@ -110,7 +112,7 @@ if __name__ == "__main__":
             cv2.imwrite(dir, frame)
 
         # PRINT SAVED FRAME
-        print(f"FRAME NR: {frame_nr} | ODOMETRY: {robot_odometry} | VISION: {robot_position} | HAS_GOAL: {has_goal}, {jetson_vision_goal} | TIME: {timestamp}")
+        print(f"FRAME NR: {frame_nr} | ODOMETRY: {robot_odometry} | VISION: {robot_position} | HAS_GOAL: {int(has_goal)}, {jetson_vision_goal} | TIME: {timestamp}")
 
         # APPEND DATA TO LOG
         data_log.append(data)
