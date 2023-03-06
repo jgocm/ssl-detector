@@ -139,6 +139,41 @@ class JetsonVision():
         for detection in detections:
             self.updateObjectTracking(detection)
 
+    def sobel(self, src, pixel):
+        pixel_y, pixel_x = pixel
+        A = src[pixel_y-1:pixel_y+2, pixel_x-1:pixel_x+2]
+        gray = cv2.cvtColor(A, cv2.COLOR_RGB2GRAY)
+        kernel_x = np.array([
+            [-1, 0, 1],
+            [-2, 0, 2],
+            [-1, 0, 1]
+        ])
+        kernel_y = np.array([
+            [-1, -2, -1],
+            [0, 0, 0],
+            [1, 2, 1]
+        ])
+        #import pdb;pdb.set_trace()
+        Gx = sum(sum(kernel_x*gray))
+        Gy = sum(sum(kernel_y*gray))
+        magnitude = np.sqrt(Gx**2 + Gy**2)
+        orientation = np.arctan2(Gy, Gx)
+        pt1, pt2 = self.project_boundary_line(pixel_y, pixel_x, orientation+np.pi/2)
+        #print(f'pt1: {pt1}, pt2: {pt2}')
+        cv2.line(src, pt1, pt2, color=(0,255,0), thickness=2)
+
+        return magnitude, np.rad2deg(orientation)
+
+    def project_boundary_line(self, y1, x1, orientation, is_degree = False):
+        #import pdb;pdb.set_trace()
+        if is_degree: orientation = np.deg2rad(orientation)
+        a = np.tan(orientation)
+        b = (y1-1) - a*(x1-1)
+        x2 = int(x1+50)
+        y2 = int(a*x2 + b)
+        return (x1, y1), (x2, y2)
+
+
     def detectAndTrackFieldPoints(self, src):
         if self.has_object_detection: # if running on jetson, use optimized version
             boundary_points, line_points = self.field_detector.detectFieldLinesAndBoundaryMerged(src)
@@ -152,6 +187,7 @@ class JetsonVision():
             if self.debug_mode:
                 src[pixel_y, pixel_x] = self.field_detector.RED
                 cv2.drawMarker(src, (pixel_x, pixel_y), color=self.field_detector.RED)
+                print(f"sobel: {self.sobel(src, point)}")
             x, y, w = self.jetson_cam.pixelToRobotCoordinates(pixel_x=pixel_x, pixel_y=pixel_y, z_world=0)
             boundary_ground_points.append([x, y, w])
         
@@ -202,7 +238,7 @@ if __name__ == "__main__":
 
     cwd = os.getcwd()
 
-    frame_nr = 137
+    frame_nr = 324
     quadrado_nr = 1
 
     vision = JetsonVision(
@@ -211,11 +247,10 @@ if __name__ == "__main__":
                         debug=True)
 
     while True:
-        dir = cwd + f"/data/quadrado{quadrado_nr}/{frame_nr}_*.jpg"
-        file = glob(dir)
+        dir = cwd + f"/data/quadrado{quadrado_nr}/{frame_nr}.jpg"
 
         WINDOW_NAME = "BOUNDARY DETECTION"
-        img = cv2.imread(file[-1])
+        img = cv2.imread(dir)
         height, width = img.shape[0], img.shape[1]
         _, _, _, _, particle_filter_observations = vision.process(img, timestamp=time.time())
         boundary_ground_points, line_ground_points = particle_filter_observations
