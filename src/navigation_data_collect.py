@@ -10,7 +10,7 @@ from jetson_vision import JetsonVision
 import plot
 import tensorrt as trt
 
-def serialize_data_to_log(frame_nr, id, robot_odometry, robot_position, has_goal, jetson_vision_goal, timestamp):
+def serialize_data_to_log(frame_nr, id, robot_odometry, robot_position, robot_speed, has_goal, jetson_vision_goal, timestamp):
     # ODOMETRY ENCODING
     odometry_x = robot_odometry[0]   
     odometry_y = robot_odometry[1]   
@@ -19,13 +19,19 @@ def serialize_data_to_log(frame_nr, id, robot_odometry, robot_position, has_goal
     # POSITION ENCODING
     position_x = robot_position[0]   
     position_y = robot_position[1]   
-    position_theta = robot_position[2]    
+    position_theta = robot_position[2]
+
+    # ODOMETRY ENCODING
+    speed_x = robot_speed[0]   
+    speed_y = robot_speed[1]   
+    speed_w = robot_speed[2]
 
     # DETECTED BALL BOUNDING BOX
     xmin, xmax, ymin, ymax = jetson_vision_goal
 
     data = [frame_nr, id, odometry_x, odometry_y, odometry_theta, \
         position_x, position_y, position_theta, \
+        speed_x, speed_y, speed_w, \
         has_goal, xmin, xmax, ymin, ymax, timestamp]
     return data
 
@@ -59,11 +65,12 @@ if __name__ == "__main__":
     frame_nr = 1
 
     # DATA FOR LOGS
-    QUADRADO_NR = 2
+    QUADRADO_NR = 1
     ROBOT_ID = 0
     fields = ['FRAME_NR', 'ROBOT_ID', \
         'ODOMETRY X', 'ODOMETRY Y', 'ODOMETRY THETA', \
         'POSITION X', 'POSITION Y', 'POSITION THETA', \
+        'SPEED X', 'SPEED Y', 'SPEED W', \
         'HAS GOAL', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX', 'TIMESTAMP']
     data_log = []
     start_time = time.time()
@@ -71,7 +78,7 @@ if __name__ == "__main__":
 
     while True:
         # RECEIVE MSG FROM MCU
-        ret_robot, robot_odometry, hasBall, kickLoad, battery, count, robot_position = eth_comm.recvSSLMessage()
+        ret_robot, robot_odometry, hasBall, kickLoad, battery, count, robot_position, robot_speed = eth_comm.recvSSLMessage()
 
         # SAVE TIMESTAMP BEFORE CAPTURING FRAME
         timestamp = time.time() - start_time
@@ -94,7 +101,7 @@ if __name__ == "__main__":
         if not has_goal:
             jetson_vision_goal = [0, 0, 0, 0]
 
-        data = serialize_data_to_log(frame_nr, ROBOT_ID, robot_odometry, robot_position, has_goal, jetson_vision_goal, timestamp)
+        data = serialize_data_to_log(frame_nr, ROBOT_ID, robot_odometry, robot_position, robot_speed, has_goal, jetson_vision_goal, timestamp)
 
         # DISPLAY WINDOW FOR DEBUG
         if DISPLAY_WINDOW:
@@ -112,7 +119,7 @@ if __name__ == "__main__":
             cv2.imwrite(dir, frame)
 
         # PRINT SAVED FRAME
-        print(f"FRAME NR: {frame_nr} | ODOMETRY: {robot_odometry} | VISION: {robot_position} | HAS_GOAL: {int(has_goal)}, {jetson_vision_goal} | TIME: {timestamp}")
+        print(f"FRAME NR: {frame_nr} | ODOMETRY: {robot_odometry} | POSITION: {robot_position} | SPEED: {robot_speed} | HAS_GOAL: {int(has_goal)} | TIME: {timestamp}")
 
         # APPEND DATA TO LOG
         data_log.append(data)

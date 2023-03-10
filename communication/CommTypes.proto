@@ -23,6 +23,9 @@ message protoOdometrySSL{
     double vision_x = 8;
     double vision_y = 9;
     double vision_w = 10;
+    double vx = 11;
+    double vy = 12;
+    double vw = 13;
 };
 
 message protoPositionSSL{
