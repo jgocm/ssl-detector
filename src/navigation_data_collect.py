@@ -59,7 +59,7 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     # INIT EMBEDDED VISION 
-    vision = JetsonVision(draw=False, enable_field_detection=False, score_threshold=0.6)
+    vision = JetsonVision(draw=False, enable_field_detection=False, score_threshold=0.3)
 
     # FRAME NR COUNTER
     frame_nr = 1
