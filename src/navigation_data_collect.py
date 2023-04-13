@@ -85,7 +85,8 @@ if __name__ == "__main__":
         'HAS GOAL', 'X_MIN', 'X_MAX', 'Y_MIN', 'Y_MAX', 'TIMESTAMP']
     data_log = []
     start_time = time.time()
-    save_frames = True   
+    save_frames = True
+    should_finish = False
 
     while True:
         # RECEIVE MSG FROM MCU
@@ -140,6 +141,8 @@ if __name__ == "__main__":
 
         # FINISH AND SAVE LOG IF ROBOT IS TURNED OFF (OR RESET)
         if hasBall:
+            should_finish = True
+        if should_finish and battery<15:
             print("FINISH CAPTURE!")
             break
         
