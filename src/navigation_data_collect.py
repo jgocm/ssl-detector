@@ -45,6 +45,17 @@ def get_bbox(vision, img):
 
     return jetson_vision_goal
 
+def get_dataset_dir(cwd, path_type, path_nr):
+    dir = cwd+'/data'
+    if path_type == 'SQUARE':
+        dir+=f'/sqr_0{path_nr}'
+    elif path_type == 'RANDOM':
+        dir+='/rnd_0{path_nr}'
+    elif path_type == 'GAME':
+        dir+='/igs_0{path_nr}'
+    return dir
+    
+
 if __name__ == "__main__":
     cwd = os.getcwd()
 
@@ -65,7 +76,7 @@ if __name__ == "__main__":
     frame_nr = 1
 
     # DATA FOR LOGS
-    QUADRADO_NR = 1
+    dataset_dir = get_dataset_dir(cwd, 'SQUARE', 1)
     ROBOT_ID = 0
     fields = ['FRAME_NR', 'ROBOT_ID', \
         'ODOMETRY X', 'ODOMETRY Y', 'ODOMETRY THETA', \
@@ -115,7 +126,7 @@ if __name__ == "__main__":
         # ADD DETECTIONS TO LOG IF ROBOT HAS BALL ON SENSOR
         if save_frames:
             # SAVE RAW FRAME
-            dir = cwd+f"/data/quadrado{QUADRADO_NR}/{frame_nr}.jpg"
+            dir = dataset_dir + f"/{frame_nr}.png"
             cv2.imwrite(dir, frame)
 
         # PRINT SAVED FRAME
@@ -132,7 +143,7 @@ if __name__ == "__main__":
             print("FINISH CAPTURE!")
             break
         
-    dir = cwd+f"/data/quadrado{QUADRADO_NR}/log.csv"
+    dir = dataset_dir + "/log.csv"
     with open(dir, 'w') as f:
         write = csv.writer(f)
         write.writerow(fields)
