@@ -50,9 +50,11 @@ def get_dataset_dir(cwd, path_type, path_nr):
     if path_type == 'SQUARE':
         dir+=f'/sqr_0{path_nr}'
     elif path_type == 'RANDOM':
-        dir+='/rnd_0{path_nr}'
+        dir+=f'/rnd_0{path_nr}'
     elif path_type == 'GAME':
-        dir+='/igs_0{path_nr}'
+        dir+=f'/igs_0{path_nr}'
+    else:
+        dir+='/'+path_type+f'_0{path_nr}'
     return dir
     
 
@@ -76,7 +78,7 @@ if __name__ == "__main__":
     frame_nr = 1
 
     # DATA FOR LOGS
-    dataset_dir = get_dataset_dir(cwd, 'SQUARE', 1)
+    dataset_dir = get_dataset_dir(cwd, 'test', 2)
     ROBOT_ID = 0
     fields = ['FRAME_NR', 'ROBOT_ID', \
         'ODOMETRY X', 'ODOMETRY Y', 'ODOMETRY THETA', \
