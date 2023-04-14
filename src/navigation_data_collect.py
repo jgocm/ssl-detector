@@ -78,7 +78,7 @@ if __name__ == "__main__":
     frame_nr = 1
 
     # DATA FOR LOGS
-    dataset_dir = get_dataset_dir(cwd, 'test', 2)
+    dataset_dir = get_dataset_dir(cwd, 'igs', 3)
     ROBOT_ID = 0
     fields = ['FRAME_NR', 'ROBOT_ID', \
         'ODOMETRY X', 'ODOMETRY Y', 'ODOMETRY THETA', \
@@ -106,10 +106,11 @@ if __name__ == "__main__":
            else: img = frame
 
         # DETECT OBJECT'S BOUNDING BOXES
-        jetson_vision_goal = get_bbox(vision, img)
+        #jetson_vision_goal = get_bbox(vision, img)
 
-        # CHECK IF ALL FIELDS ARE AVAILABLE
-        has_goal = (jetson_vision_goal is not None)
+        # CHECK IF GOAL WAS DETECTED
+        #has_goal = (jetson_vision_goal is not None)
+        has_goal = False
 
         # UPDATE DATA AND PRINT FOR DEBUG
         if not has_goal:
