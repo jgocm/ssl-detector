@@ -1,4 +1,0 @@
-numpy>=1.15.1
-pycuda<2021.1
-nltk>=3.5
-wget

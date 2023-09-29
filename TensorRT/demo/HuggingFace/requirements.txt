@@ -1,7 +1,0 @@
-transformers==4.6.1
-tabulate
-toml
-sentencepiece
---extra-index-url https://pypi.ngc.nvidia.com
-onnx_graphsurgeon
-polygraphy

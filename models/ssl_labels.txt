@@ -1,3 +1,0 @@
-0  ball
-1  goal
-2  robot
