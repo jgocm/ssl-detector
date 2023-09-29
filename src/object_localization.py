@@ -1,8 +1,6 @@
 import numpy as np
 import cv2
 import math
-import time
-from sklearn import linear_model
 
 class Camera():
     def __init__(
@@ -251,5 +249,64 @@ class Camera():
         return theta
 
 if __name__=="__main__":
-    print("make test script")
+    import os
+    import interface
+
+    cwd = os.getcwd()
+
+    # SET WINDOW TITLE
+    WINDOW_TITLE = 'Object Localization'
+
+    # CAMERA PARAMETERS SETUP
+    PATH_TO_INTRINSIC_PARAMETERS = cwd+"/configs/mtx.txt"
+    PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
+    PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
+    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
+    cam = Camera(camera_matrix=camera_matrix)
+
+    # SET CAMERA EXTRINSIC PARAMETERS FROM 2D<=>3D POINTS CORRESPONDENCE
+    points2d = np.loadtxt(PATH_TO_2D_POINTS, dtype="float64")
+    points3d = np.loadtxt(PATH_TO_3D_POINTS, dtype="float64")
+    cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
+
+    # READ IMAGE
+    PATH_TO_IMG = cwd+"/configs/calibration_image.jpg"
+    img = cv2.imread(PATH_TO_IMG)
+
+    # USER INTERFACE SETUP
+    myGUI = interface.GUI(play = True,
+                          mode = "debug")
+
+    while True:
+        # Run UI
+        myGUI.runUI(myGUI.screen)
+
+        # DISPLAY WINDOW
+        cv2.imshow(WINDOW_TITLE, myGUI.screen)
+
+        # KEYBOARD COMMANDS
+        key = cv2.waitKey(10) & 0xFF
+        quit = myGUI.commandHandler(key=key)
+        cv2.setMouseCallback(WINDOW_TITLE, myGUI.pointCrossMarker)
+        if myGUI.save:
+            cv2.imwrite('configs/calibration_image_markers.jpg', myGUI.screen)
+            np.savetxt(f'configs/calibration_points2d.txt', points2d)
+            np.savetxt(f'configs/calibration_points3d.txt', points3d)
+            myGUI.save = False
+        if quit:
+            break
+        else:
+            myGUI.updateGUI(img)
+        
+        # SHOW POINTS POSITIONS
+        for marker in myGUI.markers:
+            [pixel, skip_marker] = marker
+            pixel_x, pixel_y = pixel
+
+            # BACK PROJECT PIXEL POSITION TO CAMERA 3D COORDINATES
+            object_position = cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
+            x, y, z = (position[0] for position in object_position)
+            caption = f"Position:{x:.2f},{y:.2f}"
+            myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+30)), 0.5)
+
 

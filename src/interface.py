@@ -98,6 +98,9 @@ class GUI():
         self.create_marker=True
         
     def removeCrossMarker(self):
+        if len(self.markers)==0 and self.mode=="debug":
+            print("Already empty of markers!")
+            return
         last_marker = self.markers[-1:][0]
         [(marker_x, marker_y),skip_marker] = last_marker
         if skip_marker:
@@ -162,25 +165,19 @@ class GUI():
     
     def makeCalibrationUI(self, img):
         titles = [
-            'Field Left Corner',
-            'Keeper Area Upper Left Corner',
-            'Goal Bottom Left Corner',
-            'Goal Bottom Center',
-            'Goal Bottom Right Corner',
-            'Keeper Area Upper Right Corner',
-            'Field Right Corner',
-            'Keeper Area Lower Left Corner',
-            'Keeper Area Lower Right Corner',
-            'Field Center',
+            'Arena Lower Left Corner',
+            'Arena Lower Right Corner',
+            'Arena Upper Left Corner',
+            'Arena Upper Right Corner',
             'All Points Collected'
         ]
 
         n = len(self.markers)
-        if n>9:
-            caption = 'All Points Collected ('+ str(10)+'/10)'
+        if n>3:
+            caption = f'All Points Collected ({n}/4)'
             done = True
         else:
-            caption = titles[n] + ' ('+ str(n)+'/10)'
+            caption = titles[n] + f' ({n}/4)'
             if self.create_marker:
                 self.current_marker = self.createCrossMarker()
                 self.create_marker = False

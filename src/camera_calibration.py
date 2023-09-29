@@ -14,38 +14,20 @@ if __name__=="__main__":
     PATH_TO_DISTORTION_PARAMETERS = cwd+"/configs/dist.txt"
     PATH_TO_2D_POINTS = cwd+"/configs/calibration_points2d.txt"
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
-    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
-    calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
-    ssl_cam = object_localization.Camera(
-                camera_matrix=camera_matrix,
-                camera_initial_position=calibration_position
-                )
-    PATH_TO_FIELD_POINTS = cwd+"/configs/field_points3d.txt"
+    PATH_TO_FIELD_POINTS = cwd+"/configs/arena_points3d.txt"
     FIELD_POINTS = np.loadtxt(PATH_TO_FIELD_POINTS, dtype="float64")
-
-    # VIDEO CAPTURE CONFIGS
-    cap = cv2.VideoCapture("/dev/video0")
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
+    cam = object_localization.Camera(camera_matrix=camera_matrix)
 
     # IMAGE READ SETUP
     PATH_TO_IMG = cwd+"/configs/calibration_image.jpg"
     img = cv2.imread(PATH_TO_IMG)
 
     # USER INTERFACE SETUP
-    myGUI = interface.GUI(
-                        play = True,
-                        mode = "calibration"
-                        )
+    myGUI = interface.GUI(play = True,
+                          mode = "calibration")
 
-    while True:
-        if cap.isOpened():
-           ret, frame = cap.read()
-           if not ret:
-               print("Check video capture path")
-               break
-           else: img = frame
-        
+    while True:        
         if myGUI.mode == "calibration":
             marking_done = myGUI.runUI(myGUI.screen)
             if marking_done==True:
@@ -60,8 +42,9 @@ if __name__=="__main__":
                     index += 1
                 points2d = np.array(points2d,dtype="float64")
                 points3d = np.array(points3d,dtype="float64")
-                camera_position, euler_angles = ssl_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
-
+                camera_position, euler_angles = cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
+        else:
+            marking_done = myGUI.runUI(myGUI.screen)
 
         # DISPLAY WINDOW
         cv2.imshow(WINDOW_TITLE,myGUI.screen)
@@ -71,7 +54,6 @@ if __name__=="__main__":
         quit = myGUI.commandHandler(key=key)
         cv2.setMouseCallback(WINDOW_TITLE, myGUI.pointCrossMarker)
         if myGUI.save:
-            cv2.imwrite('configs/calibration_image.jpg', img)
             cv2.imwrite('configs/calibration_image_markers.jpg', myGUI.screen)
             np.savetxt(f'configs/calibration_position.txt', camera_position)
             np.savetxt(f'configs/calibration_rotation.txt', euler_angles)
@@ -86,5 +68,4 @@ if __name__=="__main__":
             myGUI.updateGUI(img)
     
     # RELEASE WINDOW AND DESTROY
-    cap.release()
     cv2.destroyAllWindows()
