@@ -3,9 +3,9 @@ import time
 import os
 
 # LOCAL IMPORTS
-import communication_proto
-from fsm import FSM, Stage1States
-from jetson_vision import JetsonVision
+import Communication.communication_proto as communication_proto
+from Behavior.fsm import FSM, Stage1States
+from Vision.jetson_vision import JetsonVision
 
 def main():
     cwd = os.getcwd()

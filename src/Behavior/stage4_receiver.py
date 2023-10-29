@@ -10,13 +10,13 @@ import sys
 import os
 
 # LOCAL IMPORTS
-from entities import Robot, Goal, Ball, Frame
-import object_detection
-import object_localization
-import communication_proto
-import interface
-from fsm import FSM, Stage4PasserStates
-from navigation import TargetPoint
+from Vision.entities import Robot, Goal, Ball, Frame
+import Vision.object_detection as object_detection
+import Vision.camera_transformation as camera_transformation
+import Communication.communication_proto as communication_proto
+import Calibration.interface as interface
+from Behavior.fsm import FSM, Stage4ReceiverStates
+from Navigation.navigation import TargetPoint
 
 def main():
     cwd = os.getcwd()
@@ -46,6 +46,7 @@ def main():
 
     # INIT ENTITIES
     ssl_ball = Ball()
+    ssl_goal = Goal()
     ssl_robot_ally = Robot()
     target = TargetPoint(x = 0, y = 0, w = 0)
 
@@ -79,7 +80,7 @@ def main():
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
-    ssl_cam = object_localization.Camera(
+    ssl_cam = camera_transformation.Camera(
                 camera_matrix=camera_matrix,
                 camera_initial_position=calibration_position
                 )
@@ -115,7 +116,7 @@ def main():
 
     # INIT VISION BLACKOUT STATE MACHINE
     INITIAL_STATE = 1
-    STAGE = 4
+    STAGE = 5
     state_machine = FSM(
         stage = STAGE,
         initial_state = INITIAL_STATE,
@@ -175,14 +176,36 @@ def main():
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
                 ssl_ball = current_frame.updateBall(x, y, score)
 
+            if class_id==2:
+                # COMPUTE PIXEL FOR GOAL BOUNDING BOX -> USING BOTTOM CENTER FOR ALINGING
+                pixel_x, pixel_y = ssl_cam.goalAsPoint(
+                                                    left=xmin,
+                                                    top=ymin,
+                                                    right=xmax,
+                                                    bottom=ymax)
+                # DRAW OBJECT POINT ON SCREEN
+                if DRAW:
+                    myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
+                
+                # BACK PROJECT GOAL CENTER POSITION TO CAMERA 3D COORDINATES
+                object_position = ssl_cam.pixelToCameraCoordinates(x=pixel_x, y=pixel_y, z_world=0)
+                x, y = object_position[0], object_position[1]
+
+                if DRAW:
+                    caption = f"Position:{x[0]:.2f},{y[0]:.2f}"
+                    myGUI.drawText(myGUI.screen, caption, (int(pixel_x-25), int(pixel_y+25)), 0.4)
+                
+                # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
+                x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
+                ssl_goal = current_frame.updateGoalCenter(x, y, score)
+
             if class_id==3:
                 #COMPUTE PIXEL FOR ROBOT ASSISTANT POSITION
                 pixel_x, pixel_y = ssl_cam.robotAsPoint(
                                                     left=xmin,
                                                     top=ymin,
                                                     right=xmax,
-                                                    bottom=ymax
-                )
+                                                    bottom=ymax)
                 #DRAW OBJECT PONIT ON SCREEN
                 if DRAW:
                     myGUI.drawCrossMarker(myGUI.screen, int(pixel_x), int(pixel_y))
@@ -198,13 +221,14 @@ def main():
                 # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
                 x, y, w = ssl_robot.cameraToRobotCoordinates(x[0], y[0])
                 ssl_robot_ally = current_frame.updateRobot(x, y, score)
-        
+
         # STATE MACHINE
-        target, ssl_robot = state_machine.stage4Passer(
+        target, ssl_robot = state_machine.stage4Receiver(
                                 frame = current_frame, 
                                 ball = ssl_ball,
+                                goal = ssl_goal,
                                 ally = ssl_robot_ally,
-                                robot = ssl_robot)    
+                                robot = ssl_robot)
 
         # UPDATE PROTO MESSAGE
         eth_comm.setSSLMessage(target = target, robot = ssl_robot)
@@ -213,7 +237,7 @@ def main():
         eth_comm.sendSSLMessage()
         print(f'{state_machine.current_state} | Target: {eth_comm.msg.x:.3f}, {eth_comm.msg.y:.3f}, {eth_comm.msg.w:.3f}, {eth_comm.msg.posType}')
         
-        if state_machine.current_state == Stage4PasserStates.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
+        if state_machine.current_state == Stage4ReceiverStates.finish and state_machine.getStateDuration(current_timestamp=current_frame.timestamp)>1:
             break
 
         # DISPLAY WINDOW

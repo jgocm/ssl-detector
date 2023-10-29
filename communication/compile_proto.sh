@@ -1,1 +1,1 @@
-protoc --python_out=. CommTypes.proto
+protoc --python_out=../src/Communication CommTypes.proto

@@ -9,13 +9,13 @@ import sys
 import os
 
 # LOCAL IMPORTS
-from entities import Robot, Goal, Ball, Frame
-import object_detection
-import object_localization
-import communication_proto
-import interface
-from fsm import FSM, Stage2States
-from navigation import TargetPoint
+from Vision.entities import Robot, Goal, Ball, Frame
+import Vision.object_detection as object_detection
+import Vision.camera_transformation as camera_transformation
+import Communication.communication_proto as communication_proto
+import Calibration.interface as interface
+from Behavior.fsm import FSM, Stage2States
+from Navigation.navigation import TargetPoint
 
 
 def main():
@@ -77,7 +77,7 @@ def main():
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
-    ssl_cam = object_localization.Camera(
+    ssl_cam = camera_transformation.Camera(
                 camera_matrix=camera_matrix,
                 camera_initial_position=calibration_position
                 )

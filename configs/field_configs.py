@@ -1,12 +1,5 @@
 import numpy as np
 
-# PS EYE CAMERA INTRINSIC PARAMETERS
-mtx = np.array([
-            (522.572,0,331.090),
-            (0,524.896,244.689),
-            (0,0,1)
-            ])
-
 # FIELD DIMENSIONS
 field_length = 5640
 field_width = 3760

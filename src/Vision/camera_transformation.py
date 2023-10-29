@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 import math
 import time
-from sklearn import linear_model
 
 class KeypointRegression():
     def __init__(
@@ -483,12 +482,10 @@ class Camera():
         points2d: pixel positions on image
         """
         #points3d = self.fixPoints3d(points3d=points3d)
-        _,rvec,tvec=cv2.solvePnP(
-                                points3d,
-                                points2d,
-                                self.intrinsic_parameters,
-                                self.distortion_parameters
-                                )
+        _,rvec,tvec=cv2.solvePnP(points3d,
+                                 points2d,
+                                 self.intrinsic_parameters,
+                                 self.distortion_parameters)
 
         rmtx, jacobian=cv2.Rodrigues(rvec)
         
@@ -556,6 +553,11 @@ class Camera():
 
         return tvec, rmtx
 
+    def setPoseFrom3DModel(self, height, angle, center_offset=0):
+        camera_position = np.array([[0], [center_offset], [height]])
+        euler_angles = np.array([[angle], [0], [0]])
+        self.setPoseFromFile(camera_position, euler_angles)
+
     def pixelToCameraCoordinates(self, x, y, z_world=0):
         uvPoint = np.array([(x,y,1)])
         mtx = self.intrinsic_parameters
@@ -584,7 +586,7 @@ class Camera():
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
     
-    def goalAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.1):
+    def goalAsPoint(self, left, top, right, bottom, weight_x = 0.5, weight_y=0.12):
         x = weight_x*left+(1-weight_x)*right
         y = weight_y*top+(1-weight_y)*bottom
         return x, y
@@ -623,6 +625,42 @@ class Camera():
         robot_w = math.atan2(robot_y, robot_x)
 
         return robot_x, robot_y, robot_w
+    
+    def robotToCameraCoordinates(self, x, y, camera_offset=90):
+        """
+        Converts x, y ground position from robot axis to camera axis
+        
+        Parameters:
+        x: x position from robot coordinates in millimeters
+        y: y position from robot coordinates in millimeters
+        camera_offset: camera to robot center distance in millimeters
+        -----------
+        Returns:
+        camera_x: x position from camera coordinates in meters
+        camera_y: y position from camera coordinates in meters
+        """
+        camera_x = -1000*y
+        camera_y = 1000*x - camera_offset
+
+        return camera_x, camera_y        
+
+    def robotToPixelCoordinates(self, x, y, camera_offset=90):
+        """
+        Converts x, y ground position from robot axis to a pixel position on screen
+        
+        Parameters:
+        x: x position from robot coordinates in millimeters
+        y: y position from robot coordinates in millimeters
+        camera_offset: camera to robot center distance in millimeters
+        -----------
+        Returns:
+        pixel_x: x position on screen
+        pixel_y: y position on screen
+        """
+        camera_x, camera_y = self.robotToCameraCoordinates(x, y, camera_offset)
+        pixel = self.cameraToPixelCoordinates(x=camera_x, y=camera_y, z_world=0)
+        pixel_x, pixel_y = pixel[0], pixel[1]
+        return pixel_x[0], pixel_y[0]
 
     def pixelToRobotCoordinates(self, pixel_x, pixel_y, z_world):
         # BACK PROJECT OBJECT POSITION TO CAMERA 3D COORDINATES
@@ -630,8 +668,17 @@ class Camera():
         x, y = object_position[0], object_position[1]
 
         # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-        x, y, w = self.cameraToRobotCoordinates(x[0], y[0])
+        x, y, w = self.cameraToRobotCoordinates(x[0], y[0], camera_offset=80)
         return x, y, w
+
+    def xyToPolarCoordinates(self, x, y):
+        '''
+        Converts an x, y relative position to relative polar coordinates (distance and bearing angle), as suggested in: 
+            Monte Carlo Localization for Robocup 3D Soccer Simulation League - 2016
+        '''
+        distance = np.sqrt(x**2 + y**2)
+        theta = np.rad2deg(np.arctan2(y, x))
+        return np.array([distance, theta])
 
     def selfLocalizationFromGoalCorners(self, x1, y1, x2, y2):
         theta = math.atan((y2-y1)/(x1-x2))

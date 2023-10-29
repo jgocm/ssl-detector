@@ -14,7 +14,7 @@ import os
 
 import tensorrt as trt
 
-import trt_common as common
+import Vision.trt_common as common
 
 TRT_LOGGER = trt.Logger()
 trt.init_libnvinfer_plugins(TRT_LOGGER, "")

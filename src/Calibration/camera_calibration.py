@@ -1,8 +1,8 @@
 import os
-import interface
+import Calibration.interface as interface
 import numpy as np
 import cv2
-import object_localization
+import Vision.camera_transformation as camera_transformation
 
 if __name__=="__main__":
     WINDOW_TITLE = "Camera Calibration"
@@ -16,7 +16,7 @@ if __name__=="__main__":
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
-    ssl_cam = object_localization.Camera(
+    ssl_cam = camera_transformation.Camera(
                 camera_matrix=camera_matrix,
                 camera_initial_position=calibration_position
                 )

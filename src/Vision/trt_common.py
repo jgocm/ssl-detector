@@ -22,6 +22,7 @@ import pycuda.autoinit
 import pycuda.driver as cuda
 import tensorrt as trt
 
+
 try:
     # Sometimes python does not understand FileNotFoundError
     FileNotFoundError

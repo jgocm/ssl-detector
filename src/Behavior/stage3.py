@@ -9,12 +9,12 @@ import sys
 import os
 
 # LOCAL IMPORTS
-from entities import Robot, Goal, Ball, Frame, Field
-import object_detection
-import object_localization
-import communication_proto
-import interface
-from navigation import GroundPoint, TargetPoint
+from Vision.entities import Robot, Goal, Ball, Frame, Field
+import Vision.object_detection as object_detection
+import Vision.camera_transformation as camera_transformation
+import Communication.communication_proto as communication_proto
+import Calibration.interface as interface
+from Navigation.navigation import GroundPoint, TargetPoint
 
 def rotationSign(x, y):
     w = math.atan2(-y, -x)
@@ -104,7 +104,7 @@ def main():
     PATH_TO_3D_POINTS = cwd+"/configs/calibration_points3d.txt"
     camera_matrix = np.loadtxt(PATH_TO_INTRINSIC_PARAMETERS, dtype="float64")
     calibration_position = np.loadtxt(cwd+"/configs/camera_initial_position.txt", dtype="float64")
-    ssl_cam = object_localization.Camera(
+    ssl_cam = camera_transformation.Camera(
                 camera_matrix=camera_matrix,
                 camera_initial_position=calibration_position
                 )
@@ -113,7 +113,7 @@ def main():
     ssl_cam.computePoseFromPoints(points3d=points3d, points2d=points2d)
 
     # GOAL POST DETECTION
-    keypoint_regressor = object_localization.KeypointRegression()
+    keypoint_regressor = camera_transformation.KeypointRegression()
 
     # OBJECT DETECTION MODEL
     PATH_TO_MODEL = cwd+"/models/ssdlite_mobilenet_v2_300x300_ssl_fp16.trt"

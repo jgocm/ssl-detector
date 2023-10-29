@@ -106,6 +106,8 @@ class Field():
                 boundary_width = 0.180,
                 line_thickness = 0.020
                 ):
+                
+        # FIELD DIMENSION PROPERTIES
         self.width = field_width
         self.length = field_length
         self.penalty_area_width = penalty_area_width
@@ -113,11 +115,25 @@ class Field():
         self.boundary_width = boundary_width
         self.line_thickness = line_thickness
         self.center_radius = center_radius
+
+        # FIELD GOAL POSITION
         self.left_goal = Goal()
         self.left_goal.center_x, self.left_goal.center_y = -self.length/2, 0
         self.right_goal = Goal()
         self.right_goal.center_x, self.right_goal.center_y = self.length/2, 0
-    
+
+        # FIELD LIMITS
+        self.x_max = field_length/2 + boundary_width
+        self.x_min = -self.x_max
+        self.y_max = field_width/2 + boundary_width
+        self.y_min = -self.y_max
+
+    def redefineFieldLimits(self, x_max, y_max, x_min, y_min):
+        self.x_max = x_max
+        self.y_max = y_max
+        self.x_min = x_min
+        self.y_min = y_min
+
 class Frame():
     def __init__(
                 self,

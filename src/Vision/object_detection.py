@@ -215,7 +215,7 @@ if __name__ == "__main__":
                 labels_path=cwd+"/models/ssl_labels.txt", 
                 input_width=300, 
                 input_height=300,
-                score_threshold = 0.5,
+                score_threshold = 0.8,
                 draw = True,
                 display_fps = True,
                 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
