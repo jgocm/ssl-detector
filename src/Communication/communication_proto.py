@@ -1,7 +1,7 @@
 import socket
-import CommTypes_pb2 as pb
-from Navigation.navigation import TargetPoint
-from Vision.entities import Robot
+import src.Communication.CommTypes_pb2 as pb
+from src.Navigation.navigation import TargetPoint
+from src.Entities.entities import Robot
 
 class SocketUDP():
     def __init__(

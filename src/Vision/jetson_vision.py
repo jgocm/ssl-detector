@@ -3,6 +3,14 @@ import cv2
 import os
 import time
 
+from src.Entities.entities import Ball, Robot, Goal, Field, Frame
+from src.Vision.field_detection import FieldDetection
+from src.Vision.camera_transformation import Camera
+try:
+    from src.Vision.object_detection import DetectNet
+except Exception as e:
+    print(f"Import failed due to: {e} => RUNNING WITHOUT OBJECTS DETECTION!")
+
 class JetsonVision():
     cwd = os.getcwd()
 
@@ -282,21 +290,12 @@ class JetsonVision():
 
         return processed_vision
 
-if __name__ == "__main__":
-    from entities import Ball, Robot, Goal, Field, Frame
-    from field_detection import FieldDetection
-    from camera_transformation import Camera
-    try:
-        from object_detection import DetectNet
-    except Exception as e:
-        print(f"Import failed due to: {e} => RUNNING WITHOUT OBJECTS DETECTION!")
-    import time
+def get_image_from_frame_nr(path_to_images_folder, frame_nr):
+    dir = path_to_images_folder+f'/cam/{frame_nr}.png'
+    img = cv2.imread(dir)
+    return img
 
-    def get_image_from_frame_nr(path_to_images_folder, frame_nr):
-        dir = path_to_images_folder+f'/cam/{frame_nr}.png'
-        img = cv2.imread(dir)
-        return img
-
+def test_jetson_vision():
     cwd = os.getcwd()
 
     frame_nr = 50
@@ -319,7 +318,6 @@ if __name__ == "__main__":
         _, _, _, _, particle_filter_observations = vision.process(img, timestamp=time.time())
         boundary_ground_points, line_ground_points = particle_filter_observations
         for point in boundary_ground_points:
-            point = vision.jetson_cam.xyToPolarCoordinates(point[0], point[1])
             print(point)
         cv2.imshow(WINDOW_NAME, img[:, :])
         key = cv2.waitKey(-1) & 0xFF
@@ -329,12 +327,3 @@ if __name__ == "__main__":
             cv2.imwrite(WINDOW_NAME + '.png', img[:, :])
         else:
             frame_nr=frame_nr+1
-
-else:
-    from Vision.entities import Ball, Robot, Goal, Field, Frame
-    from Vision.field_detection import FieldDetection
-    from Vision.camera_transformation import Camera
-    try:
-        from object_detection import DetectNet
-    except Exception as e:
-        print(f"Import failed due to: {e} => RUNNING WITHOUT OBJECTS DETECTION!")

@@ -1,9 +1,9 @@
-from enum import Enum
 import math
-from Vision.entities import Robot, Goal, Ball, Frame
-from Navigation.navigation import TargetPoint
-import Communication.communication_proto as communication_proto
 import numpy as np
+from enum import Enum
+from src.Entities.entities import Robot, Goal, Ball, Frame
+from src.Navigation.navigation import TargetPoint
+from src.Communication import communication_proto
 
 class Stage(Enum):
     unknown = 0

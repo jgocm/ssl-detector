@@ -9,7 +9,7 @@ import sys
 import os
 
 # LOCAL IMPORTS
-from Vision.entities import Robot, Goal, Ball, Frame, Field
+from Entities.entities import Robot, Goal, Ball, Frame, Field
 import Vision.object_detection as object_detection
 import Vision.camera_transformation as camera_transformation
 import Communication.communication_proto as communication_proto

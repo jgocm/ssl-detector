@@ -1,10 +1,10 @@
 import os
-import Calibration.interface as interface
 import numpy as np
 import cv2
+import Calibration.interface as interface
 import Vision.camera_transformation as camera_transformation
 
-if __name__=="__main__":
+def camera_calibration():
     WINDOW_TITLE = "Camera Calibration"
 
     cwd = os.getcwd()

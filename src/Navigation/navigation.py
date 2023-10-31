@@ -1,4 +1,4 @@
-import CommTypes_pb2 as pb
+import src.Communication.CommTypes_pb2 as pb
 import math
 import numpy as np
 

@@ -6,7 +6,7 @@ import time
 import os
 
 # LOCAL IMPORTS
-from Vision.entities import Robot, Goal, Ball, Frame
+from Entities.entities import Robot, Goal, Ball, Frame
 import Vision.object_detection as object_detection
 import Vision.camera_transformation as camera_transformation
 import Communication.communication_proto as communication_proto
