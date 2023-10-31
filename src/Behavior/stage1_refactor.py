@@ -3,11 +3,11 @@ import time
 import os
 
 # LOCAL IMPORTS
-import Communication.communication_proto as communication_proto
-from Behavior.fsm import FSM, Stage1States
-from Vision.jetson_vision import JetsonVision
+import src.Communication.communication_proto as communication_proto
+from src.Behavior.fsm import FSM, Stage1States
+from src.Vision.jetson_vision import JetsonVision
 
-def main():
+def run_stage():
     cwd = os.getcwd()
 
     # START TIME
@@ -87,6 +87,3 @@ def main():
     # RELEASE WINDOW AND DESTROY
     cap.release()
     cv2.destroyAllWindows()
-
-if __name__=="__main__":
-    main()

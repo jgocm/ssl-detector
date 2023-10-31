@@ -1,7 +1,7 @@
 # LOCAL IMPORTS
-from src.Vision import *
+from src.Behavior.stage1_refactor import run_stage
 
 if __name__=="__main__":
     print("imports worked")
 
-    test_jetson_vision()
+    run_stage()
